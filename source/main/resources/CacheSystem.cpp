@@ -25,11 +25,11 @@
 
 #include "CacheSystem.h"
 
-#include <OgreException.h>
 #include "Application.h"
 #include "SimData.h"
 #include "ContentManager.h"
 #include "ErrorUtils.h"
+#include "GameContext.h"
 #include "GUI_LoadingWindow.h"
 #include "GUI_GameMainMenu.h"
 #include "GUIManager.h"
@@ -44,6 +44,8 @@
 #include "Terrn2FileFormat.h"
 #include "Utils.h"
 
+#include <memory>
+#include <OgreException.h>
 #include <OgreFileSystem.h>
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h>
@@ -118,9 +120,18 @@ void CacheSystem::LoadModCache(CacheValidity validity)
     m_resource_paths.clear();
     m_update_time = getTimeStamp();
 
-    if (validity != CacheValidity::VALID)
+    if (validity == CacheValidity::CACHE_VALID)
     {
-        if (validity == CacheValidity::NEEDS_REBUILD)
+        this->LoadCacheFileJson();
+        RoR::Log("[RoR|ModCache] Cache loaded");
+    }
+    else
+    {
+        m_async_tasks_submitted = false;
+        m_async_complete_files = 0;
+        m_async_pending_files = 0;
+
+        if (validity == CacheValidity::CACHE_NEEDS_REBUILD)
         {
             RoR::Log("[RoR|ModCache] Performing rebuild ...");
             this->ClearCache();
@@ -135,12 +146,19 @@ void CacheSystem::LoadModCache(CacheValidity validity)
         this->ParseZipArchives(RGN_CONTENT);
         this->ParseKnownFiles(RGN_CONTENT);
         App::diag_log_console_echo->setVal(orig_echo);
-        this->DetectDuplicates();
-        this->WriteCacheFileJson();
+        m_async_tasks_submitted = true;
     }
+}
 
+void CacheSystem::FinalizeAsyncCacheUpdate()
+{
+    this->DetectDuplicates();
+    this->WriteCacheFileJson();
     this->LoadCacheFileJson();
-
+    for (std::string grp_name: m_async_temp_groups)
+    {
+        ResourceGroupManager::getSingleton().destroyResourceGroup(grp_name);
+    }
     RoR::Log("[RoR|ModCache] Cache loaded");
 }
 
@@ -585,7 +603,7 @@ void CacheSystem::ClearCache()
     m_entries.clear();
 }
 
-Ogre::String CacheSystem::StripUIDfromString(Ogre::String uidstr)
+std::string CacheUpdateTask::StripUIDfromString(std::string const& uidstr)
 {
     size_t pos = uidstr.find("-");
     if (pos != String::npos && pos >= 3 && uidstr.substr(pos - 3, 3) == "UID")
@@ -610,20 +628,35 @@ void CacheSystem::AddFile(String group, Ogre::FileInfo f, String ext)
                 { return !e.deleted && e.fname == f.filename && e.resource_bundle_path == path; }) != m_entries.end())
         return;
 
-    RoR::LogFormat("[RoR|CacheSystem] Preparing to add file '%f'", f.filename.c_str());
+    RoR::LogFormat("[RoR|CacheSystem] Preparing to add file '%s'", f.filename.c_str());
+
+    auto func = std::function<void()>([f, group, ext]()
+        {
+            CacheUpdateTask task(f, group, ext);
+            task.ProcessFile();
+        });
+    App::GetThreadPool()->RunTask(func);
+
+    m_async_pending_files++;
+}
+
+void CacheUpdateTask::ProcessFile()
+{
+    String type = m_fileinfo.archive ? m_fileinfo.archive->getType() : "FileSystem";
+    String path = m_fileinfo.archive ? m_fileinfo.archive->getName() : "";
 
     try
     {
-        DataStreamPtr ds = ResourceGroupManager::getSingleton().openResource(f.filename, group);
+        DataStreamPtr ds = ResourceGroupManager::getSingleton().openResource(m_fileinfo.filename, m_group);
         // ds closes automatically, so do _not_ close it explicitly below
 
-        std::vector<CacheEntry> new_entries;
-        if (ext == "terrn2")
+        std::vector<CacheEntry>* new_entries = new std::vector<CacheEntry>();
+        if (m_ext == "terrn2")
         {
-            new_entries.resize(1);
-            FillTerrainDetailInfo(new_entries.back(), ds, f.filename);
+            new_entries->resize(1);
+            FillTerrainDetailInfo(new_entries->back(), ds, m_fileinfo.filename);
         }
-        else if (ext == "skin")
+        else if (m_ext == "skin")
         {
             auto new_skins = RoR::SkinParser::ParseSkins(ds);
             for (auto skin_def: new_skins)
@@ -643,46 +676,74 @@ void CacheSystem::AddFile(String group, Ogre::FileInfo f, String ext)
                 entry.categoryid  = -1;
                 entry.skin_def    = skin_def; // Needed to generate preview image
 
-                new_entries.push_back(entry);
+                new_entries->push_back(entry);
             }
         }
         else
         {
-            new_entries.resize(1);
-            FillTruckDetailInfo(new_entries.back(), ds, f.filename, group);
+            new_entries->resize(1);
+            FillTruckDetailInfo(new_entries->back(), ds, m_fileinfo.filename, m_group);
         }
 
-        for (auto& entry: new_entries)
+        for (auto& entry: *new_entries)
         {
             Ogre::StringUtil::toLowerCase(entry.guid); // Important for comparsion
-            entry.fpath = f.path;
-            entry.fname = f.filename;
-            entry.fname_without_uid = StripUIDfromString(f.filename);
-            entry.fext = ext;
+            entry.fpath = m_fileinfo.path;
+            entry.fname = m_fileinfo.filename;
+            entry.fname_without_uid = StripUIDfromString(m_fileinfo.filename);
+            entry.fext = m_ext;
             if (type == "Zip")
             {
                 entry.filetime = RoR::GetFileLastModifiedTime(path);
             }
             else
             {
-                entry.filetime = RoR::GetFileLastModifiedTime(PathCombine(path, f.filename));
+                entry.filetime = RoR::GetFileLastModifiedTime(PathCombine(path, m_fileinfo.filename));
             }
             entry.resource_bundle_type = type;
             entry.resource_bundle_path = path;
-            entry.number = static_cast<int>(m_entries.size() + 1); // Let's number mods from 1
-            entry.addtimestamp = m_update_time;
-            this->GenerateFileCache(entry, group);
-            m_entries.push_back(entry);
+            this->GenerateFileCache(entry, m_group);
+
+            App::GetGameContext()->PushMessage(Message(MSG_APP_MODCACHE_FILE_PROCESSED, (void*)new_entries));
         }
     }
     catch (Ogre::Exception& e)
     {
         RoR::LogFormat("[RoR|CacheSystem] Error processing file '%s', message :%s",
-            f.filename.c_str(), e.getFullDescription().c_str());
+            m_fileinfo.filename.c_str(), e.getFullDescription().c_str());
     }
 }
 
-void CacheSystem::FillTruckDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr stream, String file_name, String group)
+void CacheSystem::SubmitEntries(CacheEntryVec& entries)
+{
+    for (CacheEntry& entry: entries)
+    {
+        entry.number = static_cast<int>(m_entries.size() + 1); // Let's number mods from 1
+        entry.addtimestamp = m_update_time;
+        m_entries.push_back(entry);
+    }
+    m_async_complete_files++;
+}
+
+void CacheSystem::UpdateProgressWindow()
+{
+    Str<100> msg;
+    int perc = 0;
+    if (m_async_tasks_submitted)
+    {
+        msg << "(" << m_async_complete_files << "/" << m_async_pending_files << ")";
+        perc = m_async_complete_files / m_async_pending_files;
+    }
+    else
+    {
+        msg << "(" << m_async_complete_files << "/?)";
+        perc = GUI::LoadingWindow::PERC_SHOW_SPINNER;
+    }
+    App::GetGuiManager()->GetLoadingWindow()->SetProgress(perc, msg.ToCStr(), /*render_frame=*/false);
+}
+
+void CacheUpdateTask::FillTruckDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr stream,
+                                          std::string const& file_name, std::string const& group)
 {
     /* LOAD AND PARSE THE VEHICLE */
     RigDef::Parser parser;
@@ -887,7 +948,7 @@ void CacheSystem::RemoveFileCache(CacheEntry& entry)
     }
 }
 
-void CacheSystem::GenerateFileCache(CacheEntry& entry, String group)
+void CacheUpdateTask::GenerateFileCache(CacheEntry& entry, std::string const& group)
 {
     if (entry.fname.empty())
         return;
@@ -948,11 +1009,6 @@ void CacheSystem::ParseZipArchives(String group)
     int i = 0, count = static_cast<int>(files->size());
     for (const auto& file : *files)
     {
-        int progress = ((float)i++ / (float)count) * 100;
-        std::string text = fmt::format("{}{}\n{}\n{}/{}",
-            _L("Loading zips in group "), group, file.filename, i, count);
-        RoR::App::GetGuiManager()->GetLoadingWindow()->SetProgress(progress, text);
-
         String path = PathCombine(file.archive->getName(), file.filename);
         this->ParseSingleZip(path);
     }
@@ -966,11 +1022,13 @@ void CacheSystem::ParseSingleZip(String path)
     if (std::find(m_resource_paths.begin(), m_resource_paths.end(), path) == m_resource_paths.end())
     {
         RoR::LogFormat("[RoR|ModCache] Adding archive '%s'", path.c_str());
-        ResourceGroupManager::getSingleton().createResourceGroup(RGN_TEMP, false);
+        Str<200> buf; buf << RGN_TEMP << m_async_pending_files << "~" << path;
+        std::string grp_name = buf.ToCStr();
+        ResourceGroupManager::getSingleton().createResourceGroup(grp_name, false);
         try
         {
-            ResourceGroupManager::getSingleton().addResourceLocation(path, "Zip", RGN_TEMP);
-            if (ParseKnownFiles(RGN_TEMP))
+            ResourceGroupManager::getSingleton().addResourceLocation(path, "Zip", grp_name);
+            if (ParseKnownFiles(grp_name))
             {
                 LOG("No usable content in: '" + path + "'");
             }
@@ -979,7 +1037,7 @@ void CacheSystem::ParseSingleZip(String path)
         {
             LOG("Error while opening archive: '" + path + "': " + e.getFullDescription());
         }
-        ResourceGroupManager::getSingleton().destroyResourceGroup(RGN_TEMP);
+        m_async_temp_groups.push_back(grp_name);
         m_resource_paths.insert(path);
     }
 }
@@ -1005,7 +1063,7 @@ void CacheSystem::GenerateHashFromFilenames()
     m_filenames_hash = HashData(filenames.c_str(), static_cast<int>(filenames.size()));
 }
 
-void CacheSystem::FillTerrainDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr ds, Ogre::String fname)
+void CacheUpdateTask::FillTerrainDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr ds, std::string const& fname)
 {
     Terrn2Def def;
     Terrn2Parser parser;

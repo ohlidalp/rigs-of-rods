@@ -30,10 +30,13 @@
 #include "Language.h"
 #include "RigDef_File.h"
 #include "SimData.h"
+#include "ThreadPool.h"
 
 #include <Ogre.h>
+#include <ostream>
 #include <rapidjson/document.h>
 #include <string>
+#include <vector>
 
 #define CACHE_FILE "mods.cache"
 #define CACHE_FILE_FORMAT 11
@@ -125,6 +128,8 @@ public:
     std::vector<Ogre::String> sectionconfigs;
 };
 
+typedef std::vector<CacheEntry> CacheEntryVec;
+
 enum CacheCategoryId
 {
     CID_Max           = 9000,
@@ -178,6 +183,28 @@ enum class CacheValidity
     NEEDS_REBUILD,
 };
 
+/// Async operation: Processes a known file and submits a batch of CacheEntries via message queue.
+class CacheUpdateTask
+{
+public:
+    CacheUpdateTask(Ogre::FileInfo const& f, std::string const& grp, std::string const& ext):
+        m_fileinfo(f), m_group(grp), m_ext(ext)
+        {}
+
+    void                ProcessFile();
+
+private:
+    std::string         StripUIDfromString(std::string const& uidstr);
+    void                GenerateFileCache(CacheEntry& entry, std::string const& group); //!< Extracts preview image
+    void                FillTerrainDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr ds, std::string const& fname);
+    void                FillTruckDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr stream,
+                                            std::string const& file_name, std::string const& group);
+
+    Ogre::FileInfo      m_fileinfo;
+    std::string         m_group;
+    std::string         m_ext;
+};
+
 /// A content database
 /// MOTIVATION:
 ///    RoR users usually have A LOT of content installed. Traversing it all on every game startup would be a pain.
@@ -198,6 +225,12 @@ public:
     CacheEntry*           FetchSkinByName(std::string const & skin_name);
     CacheValidity         EvaluateCacheValidity();
     size_t                Query(CacheQuery& query);
+    const CacheEntryVec   &GetEntries() const { return m_entries; }
+    void                  SubmitEntries(CacheEntryVec& entries);
+    void                  SetNumPendingFiles(int num) { m_async_pending_files = num; }
+    void                  UpdateProgressWindow();
+    bool                  IsAsyncUpdateComplete() { return m_async_tasks_submitted && m_async_pending_files == m_async_complete_files; }
+    void                  FinalizeAsyncCacheUpdate();
 
     void LoadResource(CacheEntry& t); //!< Loads the associated resource bundle if not already done.
     bool CheckResourceLoaded(Ogre::String &in_out_filename); //!< Finds + loads the associated resource bundle if not already done.
@@ -207,7 +240,6 @@ public:
 
     const std::vector<CacheEntry>   &GetEntries()        const { return m_entries; }
     const CategoryIdNameMap         &GetCategories()     const { return m_categories; }
-
     std::shared_ptr<RoR::SkinDef> FetchSkinDef(CacheEntry* cache_entry); //!< Loads+parses the .skin file once
 
     CacheEntry *GetEntry(int modid);
@@ -221,7 +253,6 @@ private:
     void LoadCacheFileJson();
     void ImportEntryFromJson(rapidjson::Value& j_entry, CacheEntry & out_entry);
 
-    static Ogre::String StripUIDfromString(Ogre::String uidstr); 
     static Ogre::String StripSHA1fromString(Ogre::String sha1str);
 
     void ParseZipArchives(Ogre::String group);
@@ -235,21 +266,23 @@ private:
 
     void DetectDuplicates();
 
-    void FillTerrainDetailInfo(CacheEntry &entry, Ogre::DataStreamPtr ds, Ogre::String fname);
-    void FillTruckDetailInfo(CacheEntry &entry, Ogre::DataStreamPtr ds, Ogre::String fname, Ogre::String group);
-
     void GenerateHashFromFilenames();         //!< For quick detection of added/removed content
 
-    void GenerateFileCache(CacheEntry &entry, Ogre::String group);
     void RemoveFileCache(CacheEntry &entry);
 
     bool Match(size_t& out_score, std::string data, std::string const& query, size_t );
 
-    std::time_t                          m_update_time;      //!< Ensures that all inserted files share the same timestamp
-    std::string                          m_filenames_hash;   //!< stores hash over the content, for quick update detection
+    std::time_t                          m_update_time;                    //!< Ensures that all inserted files share the same timestamp
+    std::string                          m_filenames_hash;                 //!< stores hash over the content, for quick update detection
+    std::map<Ogre::String, Ogre::String> m_loaded_resource_bundles;        //!< Assosiates resource path with resource group
     std::vector<CacheEntry>              m_entries;
-    std::vector<Ogre::String>            m_known_extensions; //!< the extensions we track in the cache system
-    std::set<Ogre::String>               m_resource_paths;   //!< A temporary list of existing resource paths
+    std::vector<Ogre::String>            m_known_extensions;               //!< the extensions we track in the cache system
+    std::set<Ogre::String>               m_resource_paths;                 //!< A temporary list of existing resource paths
+    int                                  m_async_pending_files = 0;        //!< How many `SubmitEntries()` calls to expect?
+    int                                  m_async_complete_files = 0;       //!< How many `SubmitEntries()` calls hapenned?
+    bool                                 m_async_tasks_submitted = false;  //!< Is `m_async_pending_files` a final value yet?
+    std::vector<std::string>             m_async_temp_groups;              //!< Temp. OGRE resource groups, one per task
+    
     std::map<int, Ogre::String>          m_categories = {
             // these are the category numbers from the repository. do not modify them!
 

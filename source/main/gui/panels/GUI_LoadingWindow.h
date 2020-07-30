@@ -31,8 +31,8 @@ namespace GUI {
 class LoadingWindow 
 {
 public:
-    const int PERC_HIDE_PROGRESSBAR = -1;
-    const int PERC_SHOW_SPINNER = -2;
+    static const int PERC_HIDE_PROGRESSBAR = -1;
+    static const int PERC_SHOW_SPINNER = -2;
 
     void SetProgress(int _percent, const std::string& _text = "", bool render_frame = true);
     void SetProgressNetConnect(const std::string& net_status);

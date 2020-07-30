@@ -385,6 +385,21 @@ int main(int argc, char *argv[])
                     }
                     break;
 
+                case MSG_APP_MODCACHE_FILE_PROCESSED:
+                    App::GetCacheSystem()->SubmitEntries(*(CacheEntryVec*)m.payload);
+                    delete (CacheEntryVec*)m.payload;
+                    if (App::GetCacheSystem()->IsAsyncUpdateComplete())
+                    {
+                        App::GetCacheSystem()->FinalizeAsyncCacheUpdate();
+                        App::GetGuiManager()->SetVisible_LoadingWindow(false);
+                        App::GetGuiManager()->SetVisible_GameMainMenu(true);
+                    }
+                    else
+                    {
+                        App::GetCacheSystem()->UpdateProgressWindow();
+                    }
+                    break;
+
                 // -- Network events --
 
                 case MSG_NET_CONNECT_REQUESTED:
