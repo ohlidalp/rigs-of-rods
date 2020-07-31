@@ -184,26 +184,27 @@ enum class CacheValidity
 };
 
 /// Async operation: Processes a known file and submits a batch of CacheEntries via message queue.
-class CacheUpdateTask
+struct CacheUpdateTask
 {
-public:
     CacheUpdateTask(Ogre::FileInfo const& f, std::string const& grp, std::string const& ext):
-        m_fileinfo(f), m_group(grp), m_ext(ext)
+        cuk_fileinfo(f), cuk_group(grp), cuk_ext(ext)
         {}
 
     void                ProcessFile();
 
-private:
     std::string         StripUIDfromString(std::string const& uidstr);
     void                GenerateFileCache(CacheEntry& entry, std::string const& group); //!< Extracts preview image
     void                FillTerrainDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr ds, std::string const& fname);
     void                FillTruckDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr stream,
                                             std::string const& file_name, std::string const& group);
 
-    Ogre::FileInfo      m_fileinfo;
-    std::string         m_group;
-    std::string         m_ext;
+    Ogre::FileInfo      cuk_fileinfo;
+    std::string         cuk_group;
+    std::string         cuk_ext;
+    CacheEntryVec       cuk_entries;
 };
+
+typedef std::vector<std::unique_ptr<CacheUpdateTask>> CacheUpdateTaskUniqPtrVec;
 
 /// A content database
 /// MOTIVATION:
@@ -226,10 +227,9 @@ public:
     CacheValidity         EvaluateCacheValidity();
     size_t                Query(CacheQuery& query);
     const CacheEntryVec   &GetEntries() const { return m_entries; }
-    void                  SubmitEntries(CacheEntryVec& entries);
-    void                  SetNumPendingFiles(int num) { m_async_pending_files = num; }
+    void                  AsyncTaskComplete(CacheUpdateTask* task);
     void                  UpdateProgressWindow();
-    bool                  IsAsyncUpdateComplete() { return m_async_tasks_submitted && m_async_pending_files == m_async_complete_files; }
+    bool                  IsAsyncUpdateComplete() { return m_async_tasks.size() == m_async_tasks_num_completed; }
     void                  FinalizeAsyncCacheUpdate();
 
     void LoadResource(CacheEntry& t); //!< Loads the associated resource bundle if not already done.
@@ -262,7 +262,7 @@ private:
     void ClearCache(); // removes                   all files from the cache
     void PruneCache(); // removes modified (or deleted) files from the cache
 
-    void AddFile(Ogre::String group, Ogre::FileInfo f, Ogre::String ext);
+    void AddFile(std::string const& group, Ogre::FileInfo const& f, std::string const& ext);
 
     void DetectDuplicates();
 
@@ -278,10 +278,9 @@ private:
     std::vector<CacheEntry>              m_entries;
     std::vector<Ogre::String>            m_known_extensions;               //!< the extensions we track in the cache system
     std::set<Ogre::String>               m_resource_paths;                 //!< A temporary list of existing resource paths
-    int                                  m_async_pending_files = 0;        //!< How many `SubmitEntries()` calls to expect?
-    int                                  m_async_complete_files = 0;       //!< How many `SubmitEntries()` calls hapenned?
-    bool                                 m_async_tasks_submitted = false;  //!< Is `m_async_pending_files` a final value yet?
-    std::vector<std::string>             m_async_temp_groups;              //!< Temp. OGRE resource groups, one per task
+    std::vector<std::string>             m_async_temp_groups;
+    CacheUpdateTaskUniqPtrVec            m_async_tasks;
+    size_t                               m_async_tasks_num_completed = 0;
     
     std::map<int, Ogre::String>          m_categories = {
             // these are the category numbers from the repository. do not modify them!

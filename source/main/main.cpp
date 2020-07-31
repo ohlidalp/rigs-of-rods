@@ -386,8 +386,7 @@ int main(int argc, char *argv[])
                     break;
 
                 case MSG_APP_MODCACHE_FILE_PROCESSED:
-                    App::GetCacheSystem()->SubmitEntries(*(CacheEntryVec*)m.payload);
-                    delete (CacheEntryVec*)m.payload;
+                    App::GetCacheSystem()->AsyncTaskComplete((CacheUpdateTask*)m.payload);
                     if (App::GetCacheSystem()->IsAsyncUpdateComplete())
                     {
                         App::GetCacheSystem()->FinalizeAsyncCacheUpdate();
