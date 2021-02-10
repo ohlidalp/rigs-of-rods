@@ -2478,20 +2478,20 @@ void ActorSpawner::ProcessAxle(RigDef::Axle & def)
         {
             switch (*itor)
             {
-            case RigDef::Axle::OPTION_l_LOCKED:
+            case RigDef::DifferentialType::DIFF_l_LOCKED:
                 diff->AddDifferentialType(LOCKED_DIFF);
                 break;
-            case RigDef::Axle::OPTION_o_OPEN:
+            case RigDef::DifferentialType::DIFF_o_OPEN:
                 diff->AddDifferentialType(OPEN_DIFF);
                 break;
-            case RigDef::Axle::OPTION_s_SPLIT:
+            case RigDef::DifferentialType::DIFF_s_SPLIT:
                 diff->AddDifferentialType(SPLIT_DIFF);
                 break;
-            case RigDef::Axle::OPTION_s_VISCOUS:
+            case RigDef::DifferentialType::DIFF_v_VISCOUS:
                 diff->AddDifferentialType(VISCOUS_DIFF);
                 break;
             default:
-                AddMessage(Message::TYPE_WARNING, "Unknown differential type: " + *itor);
+                AddMessage(Message::TYPE_WARNING, fmt::format("Unknown differential type: '{}'", (char)*itor));
                 break;
             }
         }
@@ -2536,20 +2536,20 @@ void ActorSpawner::ProcessInterAxle(RigDef::InterAxle & def)
         {
             switch (*itor)
             {
-            case RigDef::Axle::OPTION_l_LOCKED:
+            case RigDef::DifferentialType::DIFF_l_LOCKED:
                 diff->AddDifferentialType(LOCKED_DIFF);
                 break;
-            case RigDef::Axle::OPTION_o_OPEN:
+            case RigDef::DifferentialType::DIFF_o_OPEN:
                 diff->AddDifferentialType(OPEN_DIFF);
                 break;
-            case RigDef::Axle::OPTION_s_SPLIT:
+            case RigDef::DifferentialType::DIFF_s_SPLIT:
                 diff->AddDifferentialType(SPLIT_DIFF);
                 break;
-            case RigDef::Axle::OPTION_s_VISCOUS:
+            case RigDef::DifferentialType::DIFF_v_VISCOUS:
                 diff->AddDifferentialType(VISCOUS_DIFF);
                 break;
             default:
-                AddMessage(Message::TYPE_WARNING, "Unknown differential type: " + *itor);
+                AddMessage(Message::TYPE_WARNING, fmt::format("Unknown differential type: '{}'", (char)*itor));
                 break;
             }
         }
