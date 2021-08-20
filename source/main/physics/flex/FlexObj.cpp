@@ -31,6 +31,7 @@ along with Rigs of Rods.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace Ogre;
 
+  // SerializedRig:   (nodes,    free_texcoord,          texcoords,         free_cab,           cabs,         free_sub,     subtexcoords,          subcabs,       texname,      wname,      subisback,       backmatname,       transmatname);
 FlexObj::FlexObj(node_t *nds, int numtexcoords, Vector3* texcoords, int numtriangles, int* triangles, int numsubmeshes, int* subtexindex, int* subtriindex, char* texname, char* name, int* subisback, char* backtexname, char* transtexname)
 {
 	unsigned int i;
