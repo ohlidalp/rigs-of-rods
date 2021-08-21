@@ -92,10 +92,10 @@ namespace Ogre {
 			{
 				p = pi.getNext();
 
-				if ( middlePoint.squaredDistance(p->position) < squaredRadius )
+				if ( middlePoint.squaredDistance(p->mPosition) < squaredRadius )
 				{
 					// This particle is inside the fire, dispose of it in the next update
-					p->timeToLive = 0;
+					p->mTimeToLive = 0;
 					++fireHits;
 				}
 			}

@@ -30,12 +30,12 @@ class CBytecodeStream : public AngelScript::asIBinaryStream
 {
 public:
 	CBytecodeStream(std::string filename);
-	~CBytecodeStream();
-	void Read(void *ptr, AngelScript::asUINT size);
-	void Write(const void *ptr, AngelScript::asUINT size);
+	virtual ~CBytecodeStream() override;
+	int Read(void *ptr, AngelScript::asUINT size) override;
+	int Write(const void *ptr, AngelScript::asUINT size) override;
 	bool Existing();
 private:
-	FILE *f;
+	FILE *f; // FIXME 2021: This won't work under Windows with Unicode characters in path. TODO: Use Ogre resource system instead.
 };
 
 #endif //CBYTECODEESTREAM_H__

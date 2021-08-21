@@ -30,7 +30,7 @@ LocalStorage::LocalStorage(AngelScript::asIScriptEngine *engine_in, std::string 
 	refCount++;
 	cgflag=false;
 	this->engine = engine_in;
-	engine->NotifyGarbageCollectorOfNewObject(this, engine->GetTypeIdByDecl("LocalStorage"));
+	engine->NotifyGarbageCollectorOfNewObject(this, engine->GetTypeInfoByDecl("LocalStorage"));
 
 	// inversed logic, better use a whiteliste instead of a blacklist, so you are on the safe side ;) - tdev
 	std::string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-";
@@ -53,7 +53,7 @@ LocalStorage::LocalStorage(AngelScript::asIScriptEngine *engine_in)
 	this->engine = engine_in;
 	refCount++;
 
-	engine->NotifyGarbageCollectorOfNewObject(this, engine->GetTypeIdByDecl("LocalStorage"));	
+	engine->NotifyGarbageCollectorOfNewObject(this, engine->GetTypeInfoByDecl("LocalStorage"));	
 	saved = true;
 }
 
@@ -99,12 +99,12 @@ LocalStorage &LocalStorage::operator =(LocalStorage &other)
 {
 	filename = other.getFilename();
 	sectionName = other.getSection();
-	SettingsBySection::iterator secIt;
-	SettingsBySection osettings = other.getSettings();
+	SettingsBySection_::const_iterator secIt;
+	SettingsBySection_ const& osettings = other.getSettingsBySection();
 	for (secIt = osettings.begin(); secIt!=osettings.end(); secIt++)
 	{
-		SettingsMultiMap::iterator setIt;
-		for (setIt = secIt->second->begin(); setIt!=secIt->second->end(); setIt++)
+		SettingsMultiMap::const_iterator setIt;
+		for (setIt = secIt->second.begin(); setIt!=secIt->second.end(); setIt++)
 		{
 			setSetting(setIt->first, setIt->second, secIt->first);
 		}
@@ -259,8 +259,8 @@ void LocalStorage::eraseKey(std::string &key)
 {
 	std::string sec;
 	parseKey(key, sec);
-	if (mSettings.find(sec) != mSettings.end() && mSettings[sec]->find(key) != mSettings[sec]->end())
-		if (mSettings[sec]->erase(key) > 0)
+	if (mSettings.find(sec) != mSettings.end() && mSettings[sec].find(key) != mSettings[sec].end())
+		if (mSettings[sec].erase(key) > 0)
 			saved = false;
 }
 

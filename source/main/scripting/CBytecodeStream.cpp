@@ -32,16 +32,20 @@ CBytecodeStream::~CBytecodeStream()
 		fclose(f);
 }
 
-void CBytecodeStream::Write(const void *ptr, AngelScript::asUINT size)
+int CBytecodeStream::Write(const void *ptr, AngelScript::asUINT size)
 {
-	if (!f) return;
-	fwrite(ptr, size, 1, f);
+	if (!f)
+		return 0;
+	else
+		return (int) fwrite(ptr, size, 1, f);
 }
 
-void CBytecodeStream::Read(void *ptr, AngelScript::asUINT size)
+int CBytecodeStream::Read(void *ptr, AngelScript::asUINT size)
 {
-	if (!f) return;
-	fread(ptr, size, 1, f);
+	if (!f)
+		return 0;
+	else
+		return (int) fread(ptr, size, 1, f);
 }
 
 bool CBytecodeStream::Existing()

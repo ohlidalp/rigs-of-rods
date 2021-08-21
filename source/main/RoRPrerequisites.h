@@ -50,6 +50,10 @@ along with Rigs of Rods.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef AS_USE_NAMESPACE
 #define AS_USE_NAMESPACE
 #endif //AS_USE_NAMESPACE
+#include <angelscript.h>
+typedef AngelScript::asIScriptFunction* ScriptFuncPtr;
+#else // USE_ANGELSCRIPT
+typedef void* ScriptFuncPtr;
 #endif // USE_ANGELSCRIPT
 
 // macro that checks for the correct ogre version and aborts compilation if not correct

@@ -20,13 +20,12 @@ along with Rigs of Rods.  If not, see <http://www.gnu.org/licenses/>.
 #include "GameScript.h"
 
 // AS addons start
-#include "contextmgr/contextmgr.h"
 #include "scriptany/scriptany.h"
 #include "scriptarray/scriptarray.h"
 #include "scripthelper/scripthelper.h"
 #include "scriptmath/scriptmath.h"
 #include "scriptstdstring/scriptstdstring.h"
-#include "scriptstring/scriptstring.h"
+#include "scriptstdstring/scriptstdstring.h"
 // AS addons end
 
 #ifdef USE_CURL
@@ -309,7 +308,7 @@ void GameScript::spawnObject(const String &objectName, const String &instanceNam
 		return;
 	}
 	if (!mod) return;
-	int functionPtr = mod->GetFunctionIdByName(eventhandler.c_str());
+	AngelScript::asIScriptFunction *functionPtr = mod->GetFunctionByName(eventhandler.c_str());
 
 	// trying to create the new object
 	SceneNode *bakeNode = gEnv->sceneManager->getRootSceneNode()->createChildSceneNode();
@@ -758,6 +757,8 @@ int GameScript::useOnlineAPIDirectly(OnlineAPIParams_t params)
 
 int GameScript::useOnlineAPI(const String &apiquery, const AngelScript::CScriptDictionary &d, String &result)
 {
+#if 0 // Disabled in 2021 ~ Online API is different.
+
 	// malloc this, so we are safe from this function scope
 	OnlineAPIParams_t *params = (OnlineAPIParams_t *)malloc(sizeof(OnlineAPIParams_t));
 	if (!params)
@@ -807,6 +808,8 @@ int GameScript::useOnlineAPI(const String &apiquery, const AngelScript::CScriptD
 		return 1;
 	}
 
+#endif // #if 0 // Disabled in 2021 ~ Online API is different.
+
 	return 0;
 }
 
@@ -849,6 +852,7 @@ int GameScript::deleteScriptVariable(const String &arg)
 
 int GameScript::sendGameCmd(const String& message)
 {
+#ifdef USE_SOCKETW
 	if (!gEnv->network)
 	{
 		return -11;
@@ -856,4 +860,7 @@ int GameScript::sendGameCmd(const String& message)
 	{
 		return gEnv->network->sendScriptMessage(const_cast<char*>(message.c_str()), (unsigned int)message.size());
 	}
+#else // USE_SOCKETW
+	return -1;
+#endif // USE_SOCKETW
 }

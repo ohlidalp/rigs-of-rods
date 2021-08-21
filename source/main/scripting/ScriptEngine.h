@@ -38,7 +38,6 @@ along with Rigs of Rods.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * @file ScriptEngine.h
- * @version 0.1.0
  * @brief AngelScript interface to the game
  * @authors Thomas Fischer (thomas{AT}rigsofrods{DOT}com)
  */
@@ -130,7 +129,7 @@ public:
 
 	int fireEvent(std::string instanceName, float intensity);
 
-	int envokeCallback(int functionPtr, eventsource_t *source, node_t *node=0, int type=0);
+	int envokeCallback(AngelScript::asIScriptFunction *functionPtr, eventsource_t *source, node_t *node=0, int type=0);
 
 	AngelScript::asIScriptEngine *getEngine() { return engine; };
 
@@ -152,17 +151,19 @@ public:
 
 protected:
 
+	typedef std::map <std::string , std::vector<AngelScript::asIScriptFunction *> > ScriptCallbackMap;
+
     RoRFrameListener *mefl;                 //!< local RoRFrameListener instance, used as proxy for many functions
 	Collisions *coll;
     AngelScript::asIScriptEngine *engine;   //!< instance of the scripting engine
 	AngelScript::asIScriptContext *context; //!< context in which all scripting happens
-	int frameStepFunctionPtr;               //!< script function pointer to the frameStep function
-	int wheelEventFunctionPtr;              //!< script function pointer
-	int eventCallbackFunctionPtr;           //!< script function pointer to the event callback function
-	int defaultEventCallbackFunctionPtr;    //!< script function pointer for spawner events
+	AngelScript::asIScriptFunction *frameStepFunctionPtr;               //!< script function pointer to the frameStep function
+	AngelScript::asIScriptFunction *wheelEventFunctionPtr;              //!< script function pointer
+	AngelScript::asIScriptFunction *eventCallbackFunctionPtr;           //!< script function pointer to the event callback function
+	AngelScript::asIScriptFunction *defaultEventCallbackFunctionPtr;    //!< script function pointer for spawner events
 	Ogre::String scriptName;
 	Ogre::String scriptHash;
-	std::map <std::string , std::vector<int> > callbacks;
+	ScriptCallbackMap callbacks;
 	
 	InterThreadStoreVector< Ogre::String > stringExecutionQueue;     //!< The string execution queue \see queueStringForExecution
 
