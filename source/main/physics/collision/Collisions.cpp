@@ -1126,8 +1126,8 @@ bool Collisions::nodeCollision(node_t *node, bool iscinecam, int contacted, floa
 								// collision boxes are always out of concrete as it seems
 								primitiveCollision(node, node->Forces, node->Velocity, normal, dt, defaultgm, nso);
 								if (ogm) *ogm=defaultgm;
-								}
 							}
+						}
 					} else
 					{
 						if (cbox->eventsourcenum!=-1 && permitEvent(cbox->event_filter))
