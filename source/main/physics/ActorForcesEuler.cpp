@@ -1367,6 +1367,9 @@ void Actor::CalcBeams(bool trigger_hooks)
                                 }
                             }
                         }
+
+                        // experimental - only logging for now.
+                        this->determineLoosePartsOnBeamBreak((NodeId_t)ar_beams[i].p1->pos, (NodeId_t)ar_beams[i].p2->pos);
                     }
                     else
                     {

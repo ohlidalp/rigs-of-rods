@@ -508,6 +508,9 @@ private:
     /// @return a pair containing the rail, and the distant to the SlideNode
     std::pair<RailGroup*, Ogre::Real> GetClosestRailOnActor( ActorPtr actor, const SlideNode& node);
 
+    bool determineLoosePartsOnBeamBreak(NodeId_t n1, NodeId_t n2);
+    bool findPathRecursive(NodeId_t n1, NodeId_t n2, std::vector<bool>& searched_nodes); //!< Check if there is any connection between the nodes.
+
     // -------------------- data -------------------- //
 
     std::vector<std::shared_ptr<Task>> m_flexbody_tasks;   //!< Gfx state

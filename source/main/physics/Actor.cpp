@@ -2,7 +2,7 @@
     This source file is part of Rigs of Rods
     Copyright 2005-2012 Pierre-Michel Ricordel
     Copyright 2007-2012 Thomas Fischer
-    Copyright 2013-2022 Petr Ohlidal
+    Copyright 2013-2023 Petr Ohlidal
 
     For more information, see http://www.rigsofrods.org/
 
@@ -4565,4 +4565,38 @@ void Actor::UpdatePropAnimInputEvents()
 std::string Actor::getTruckFileResourceGroup()
 {
     return m_gfx_actor->GetResourceGroup();
+}
+
+bool Actor::findPathRecursive(NodeId_t cur_node, NodeId_t target_node, std::vector<bool>& visited_nodes)
+{
+    for (int beamid: ar_node_to_beam_connections[cur_node])
+    {
+        if (!ar_beams[beamid].bm_broken && !ar_beams[beamid].bm_disabled)
+        {
+            NodeId_t nodeid = (ar_beams[beamid].p1->pos == cur_node) ? ar_beams[beamid].p2->pos : ar_beams[beamid].p1->pos;
+            if (!visited_nodes[nodeid])
+            {
+                visited_nodes[nodeid] = true;
+                if ((nodeid == (int)target_node || this->findPathRecursive((NodeId_t)nodeid, target_node, visited_nodes)))
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool Actor::determineLoosePartsOnBeamBreak(NodeId_t n1, NodeId_t n2)
+{
+    // Check if there is any connection between the end nodes of the broken beam.
+    // If not, we have a loose part.
+
+    std::vector<bool> visited_nodes;
+    visited_nodes.resize(ar_num_nodes, false);
+    visited_nodes[n1] = true;
+    bool loose = !this->findPathRecursive(n1, n2, visited_nodes);
+    App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE,
+        fmt::format("determineLoosePartsOnBeamBreak() -> {}", loose));
+    return loose;
 }
