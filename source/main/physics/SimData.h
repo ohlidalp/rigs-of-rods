@@ -225,6 +225,8 @@ enum class ActorState
 // --------------------------------
 // Soft body physics
 
+typedef uint16_t NodeIdx_t;
+
 /// Physics: A vertex in the softbody structure
 struct node_t
 {
@@ -528,8 +530,8 @@ struct hydrobeam_t
 struct rotator_t
 {
     bool needs_engine;
-    int nodes1[4];
-    int nodes2[4];
+    NodeIdx_t nodes1[4];
+    NodeIdx_t nodes2[4];
     int axis1; //!< rot axis
     int axis2;
     float angle;

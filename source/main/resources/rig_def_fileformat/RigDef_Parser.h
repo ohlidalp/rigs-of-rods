@@ -27,7 +27,6 @@
 
 #include "RigDef_Prerequisites.h"
 #include "RigDef_File.h"
-#include "RigDef_SequentialImporter.h"
 
 #include <memory>
 #include <string>
@@ -86,10 +85,8 @@ public:
 
     std::shared_ptr<RigDef::File> GetFile()
     {
-        return m_definition;
+        return m_document;
     }
-
-    SequentialImporter* GetSequentialImporter() { return &m_sequential_importer; }
 
 private:
 
@@ -103,6 +100,8 @@ private:
     void ParseDirectiveDetacherGroup();
     void ParseDirectiveFlexbodyCameraMode();
     void ParseDirectivePropCameraMode();
+    void ParseDirectiveSection();
+    void ParseDirectiveSectionConfig();
     void ParseDirectiveSetBeamDefaults();
     void ParseDirectiveSetBeamDefaultsScale();
     void ParseDirectiveSetDefaultMinimass();
@@ -198,8 +197,7 @@ private:
     void             ProcessCurrentLine();
     int              TokenizeCurrentLine();
     bool             CheckNumArguments(int num_required_args);
-    void             ChangeSection(RigDef::Section new_section);
-    void             ProcessChangeModuleLine(Keyword keyword);
+    void             ChangeSection(RigDef::Keyword keyword, RigDef::Section new_section);
 
     std::string        GetArgStr          (int index);
     int                GetArgInt          (int index);
@@ -210,6 +208,7 @@ private:
     bool               GetArgBool         (int index);
     Wheels::Propulsion GetArgPropulsion   (int index);
     Wheels::Braking    GetArgBraking      (int index);
+    int                GetArgNodeOptions  (int index);
     Node::Ref          GetArgNodeRef      (int index);
     Node::Ref          GetArgRigidityNode (int index);
     Node::Ref          GetArgNullableNode (int index);
@@ -243,7 +242,6 @@ private:
     {
         this->AddMessage(m_current_line, type, msg);
     }
-    void VerifyModuleIsRoot(Keyword keyword); //!< Reports warning message if we're not in root module
 
     /// Print a log INFO message.
     void _PrintNodeDataForVerification(Ogre::String& line, Ogre::StringVector& args, int num_args, Node& node);
@@ -254,31 +252,13 @@ private:
 
     void _ParseCameraSettings(CameraSettings & camera_settings, Ogre::String input_str);
 
-    void _ParseNodeOptions(unsigned int & options, const std::string & options_str);
+    void _ParseNodeOptions(int & options, const std::string & options_str);
 
     void ParseOptionalInertia(Inertia& inertia, int index);
 
 // --------------------------------------------------------------------------
 
-    // RoR defaults
-
-    std::shared_ptr<Inertia>             m_ror_default_inertia;
-    std::shared_ptr<NodeDefaults>        m_ror_node_defaults;
-    std::shared_ptr<MinimassPreset>      m_ror_minimass;
-
-    // Data from user directives
-    // Each affected section-struct has a shared_ptr to it's respective defaults
-    std::shared_ptr<Inertia>             m_user_default_inertia;
-    std::shared_ptr<BeamDefaults>        m_user_beam_defaults;
-    std::shared_ptr<NodeDefaults>        m_user_node_defaults;
-    std::shared_ptr<MinimassPreset>      m_user_minimass;
-    int                                  m_current_detacher_group;
-    ManagedMaterialsOptions              m_current_managed_material_options;
-
     // Parser state
-    std::shared_ptr<File::Module>        m_root_module;
-    std::shared_ptr<File::Module>        m_current_module;
-
     unsigned int                         m_current_line_number;
     char                                 m_current_line[LINE_BUFFER_LENGTH];
     Token                                m_args[LINE_MAX_ARGS];    //!< Tokens of current line.
@@ -287,17 +267,11 @@ private:
     Subsection                     m_current_subsection;     //!< Parser state.
     bool                                 m_in_block_comment;       //!< Parser state.
     bool                                 m_in_description_section; //!< Parser state.
-    bool                                 m_any_named_node_defined; //!< Parser state.
-    std::shared_ptr<Submesh>             m_current_submesh;        //!< Parser state.
-    std::shared_ptr<CameraRail>          m_current_camera_rail;    //!< Parser state.
-    std::shared_ptr<Flexbody>            m_last_flexbody;
-
-    SequentialImporter                   m_sequential_importer;
 
     Ogre::String                         m_filename; // Logging
     Ogre::String                         m_resource_group;
 
-    std::shared_ptr<RigDef::File>        m_definition;
+    std::shared_ptr<RigDef::File>        m_document;
 };
 
 } // namespace RigDef

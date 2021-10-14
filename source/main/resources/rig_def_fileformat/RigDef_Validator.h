@@ -90,11 +90,6 @@ private:
     bool CheckSection(RigDef::Keyword keyword, bool unique, bool required);
 
     /**
-    * Checks if a module contains a section.
-    */
-    bool HasModuleKeyword(std::shared_ptr<RigDef::File::Module> module, RigDef::Keyword keyword);
-
-    /**
     * Inline-ection 'submesh_groundmodel', unique across all modules.
     */
     bool CheckSectionSubmeshGroundmodel();
@@ -132,7 +127,6 @@ private:
 /* -------------------------------------------------------------------------- */
 
     std::shared_ptr<RigDef::File> m_file; //!< The parsed input file.
-    std::list<std::shared_ptr<RigDef::File::Module>> m_selected_modules;
     bool m_check_beams;
 
 };

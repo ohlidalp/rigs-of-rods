@@ -30,13 +30,17 @@ namespace RoR {
 class FlexAirfoil : public ZeroedMemoryAllocator
 {
 public:
+    // Construction
     FlexAirfoil(Ogre::String const& wname, Actor* actor,
         int pnfld, int pnfrd, int pnflu, int pnfru, int pnbld, int pnbrd, int pnblu, int pnbru,
         std::string const & texname,
         Ogre::Vector2 texlf, Ogre::Vector2 texrf, Ogre::Vector2 texlb, Ogre::Vector2 texrb,
         char mtype, float controlratio, float mind, float maxd, Ogre::String const& afname, float lift_coef, bool break_able);
 
+    void setupVisuals();
+
     ~FlexAirfoil();
+
 
     // DEV NOTE: original `updateVertices()` updated both physics state + visuals.
     void updateVerticesPhysics();
@@ -129,6 +133,13 @@ private:
     int free_wash;
     int washpropnum[MAX_AEROENGINES];
     float washpropratio[MAX_AEROENGINES];
+
+    // hack: Constructor args kept for `setupVisuals()`
+    // TODO: read these from RigDef directly
+    std::string name;
+    Actor* actor;
+    std::string texname;
+    std::string texband;
 };
 
 } // namespace RoRs

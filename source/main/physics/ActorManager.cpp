@@ -95,10 +95,9 @@ void ActorManager::SetupActor(Actor* actor, ActorSpawnRequest rq, std::shared_pt
     ActorSpawner spawner;
     spawner.Setup(actor, def, parent_scene_node, rq.asr_position);
     /* Setup modules */
-    spawner.AddModule(def->root_module);
     if (!actor->m_section_config.empty())
     {
-        spawner.AddModule(actor->m_section_config);
+        spawner.SetConfig(actor->m_section_config);
     }
     spawner.SpawnActor();
 
@@ -326,6 +325,12 @@ void ActorManager::SetupActor(Actor* actor, ActorSpawnRequest rq, std::shared_pt
     if (App::diag_actor_dump->getBool())
     {
         actor->WriteDiagnosticDump(actor->ar_filename + "_dump.txt"); // Saves file to 'logs'
+    }
+
+    // lock slide nodes after spawning the actor?
+    if (actor->m_slidenodes_connect_instantly)
+    {
+        actor->toggleSlideNodeLock();
     }
 }
 
@@ -1229,6 +1234,7 @@ std::shared_ptr<RigDef::File> ActorManager::FetchActorDef(std::string filename, 
         // VALIDATING
         LOG(" == Validating vehicle: " + def->name);
 
+ #if 0 // disabled while remaking parser, 2021-11
         RigDef::Validator validator;
         validator.Setup(def);
 
@@ -1247,6 +1253,7 @@ std::shared_ptr<RigDef::File> ActorManager::FetchActorDef(std::string filename, 
         }
 
         validator.Validate(); // Sends messages to console
+ #endif
 
         def->hash = Utils::Sha1Hash(stream->getAsString());
 

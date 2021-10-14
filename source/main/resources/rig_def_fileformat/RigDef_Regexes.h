@@ -228,6 +228,7 @@ namespace Regexes
     E_KEYWORD_BLOCK("flexbodies")                                 \
     E_KEYWORD_INLINE("flexbody_camera_mode")                      \
     E_KEYWORD_BLOCK("flexbodywheels")                             \
+    E_KEYWORD_INLINE("forset")                                    \
     E_KEYWORD_BLOCK("forwardcommands")                            \
     E_KEYWORD_BLOCK("fusedrag")                                   \
     E_KEYWORD_BLOCK("globals")                                    \

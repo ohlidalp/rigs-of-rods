@@ -686,15 +686,15 @@ void Actor::RecalculateNodeMasses(Real total)
     // Apply pre-defined cinecam node mass
     for (int i = 0; i < this->ar_num_cinecams; ++i)
     {
-        // TODO: this expects all cinecams to be defined in root module (i.e. outside 'section/end_section')
-        ar_nodes[ar_cinecam_node[i]].mass = m_definition->root_module->cinecam[i].node_mass;
+        // FIXME: this ignores sectionconfig!
+        ar_nodes[ar_cinecam_node[i]].mass = m_definition->cinecam[i].node_mass;
     }
 
     //update mass
     for (int i = 0; i < ar_num_nodes; i++)
     {
         if (!ar_nodes[i].nd_tyre_node &&
-            !(m_definition->minimass_skip_loaded_nodes && ar_nodes[i].nd_loaded_mass) &&
+            !(ar_minimass_skip_loaded && ar_nodes[i].nd_loaded_mass) &&
             ar_nodes[i].mass < ar_minimass[i])
         {
             if (App::diag_truck_mass->getBool())

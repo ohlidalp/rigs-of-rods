@@ -38,15 +38,10 @@ namespace RigDef
 
 struct Node
 {
-    /// Abstract node ID (numbered or named)
-    /// Node name is always available. For numbered nodes, it's the number converted to string.
-    /// Node number is only available for explicitly numbered nodes (legacy).
+
     class Id
     {
     public:
-        BITMASK_PROPERTY_GET (m_flags,  1, IS_VALID,         IsValid);
-        BITMASK_PROPERTY_GET (m_flags,  2, IS_TYPE_NUMBERED, IsTypeNumbered);
-        BITMASK_PROPERTY_GET (m_flags,  3, IS_TYPE_NAMED,    IsTypeNamed);
 
         // Constructors
         Id();
@@ -62,31 +57,18 @@ struct Node
         inline unsigned int        Num() const { return m_id_num; }
 
         // Util
-        void Invalidate();
         std::string ToString() const;
 
     private:
 
         unsigned int m_id_num;
         std::string  m_id_str;
-        unsigned int m_flags;
     };
 
-    /// Legacy parser resolved references on-the-fly and the condition to check named nodes was "are there any named nodes defined at this point?"
-    /// The new parser defers node resolution, so every ref. must keep track whether named nodes were already defined at that point.
+
     class Ref
     {
     public:
-        // Since fileformatversion is not known from the beginning of parsing, 2 states must be kept 
-        // at the same time: IMPORT_STATE and REGULAR_STATE. The outer logic must make the right pick.
-        BITMASK_PROPERTY     (m_flags,  1, IMPORT_STATE_IS_VALID,               GetImportState_IsValid,            SetImportState_IsValid);
-        BITMASK_PROPERTY_GET (m_flags,  2, IMPORT_STATE_MUST_CHECK_NAMED_FIRST, GetImportState_MustCheckNamedFirst);
-        BITMASK_PROPERTY_GET (m_flags,  3, IMPORT_STATE_IS_RESOLVED_NAMED,      GetImportState_IsResolvedNamed);
-        BITMASK_PROPERTY_GET (m_flags,  4, IMPORT_STATE_IS_RESOLVED_NUMBERED,   GetImportState_IsResolvedNumbered);
-
-        BITMASK_PROPERTY     (m_flags,  5, REGULAR_STATE_IS_VALID,            GetRegularState_IsValid,           SetRegularState_IsValid);
-        BITMASK_PROPERTY_GET (m_flags,  6, REGULAR_STATE_IS_NAMED,            GetRegularState_IsNamed);
-        BITMASK_PROPERTY_GET (m_flags,  7, REGULAR_STATE_IS_NUMBERED,         GetRegularState_IsNumbered);
 
         Ref(std::string const & id_str, unsigned int id_num, unsigned flags, unsigned line_number_defined);
         Ref();
@@ -98,16 +80,14 @@ struct Node
         inline bool operator==(Ref const & rhs) const { return Compare(rhs); }
         inline bool operator!=(Ref const & rhs) const { return ! Compare(rhs); }
 
-        inline bool     IsValidAnyState() const       { return GetImportState_IsValid() || GetRegularState_IsValid(); }
+        inline bool     IsValidAnyState() const       { return true; } // TODO: remove
         inline unsigned GetLineNumber() const         { return m_line_number; }
 
-        void Invalidate();
         std::string ToString() const;
 
     private:
         std::string  m_id;
         unsigned int m_id_as_number;
-        unsigned int m_flags;
         unsigned int m_line_number;
     };
 
@@ -138,9 +118,7 @@ struct Node
     Node():
         position(Ogre::Vector3::ZERO),
         options(0),
-        load_weight_override(0),
-        _has_load_weight_override(false),
-        detacher_group(0) /* Global detacher group */
+        load_weight_override(0)
     {}
 
     BITMASK_PROPERTY( options,  1, OPTION_n_MOUSE_GRAB        , HasFlag_n, SetFlag_n)
@@ -158,13 +136,9 @@ struct Node
 
     Id id;
     Ogre::Vector3 position;
-    unsigned int options; //!< Bit flags
+    int options; //!< Bit flags
     float load_weight_override;
-    bool _has_load_weight_override;
-    std::shared_ptr<NodeDefaults> node_defaults;
-    std::shared_ptr<MinimassPreset> node_minimass;
-    std::shared_ptr<BeamDefaults> beam_defaults; /* Needed for hook */
-    int detacher_group;
+    int _num_args = -1;
 };
 
 } //namespace RigDef

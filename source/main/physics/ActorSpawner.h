@@ -77,6 +77,8 @@ class ActorSpawner
 
 public:
 
+    ActorSpawner() {}
+
     struct ActorMemoryRequirements
     {
         ActorMemoryRequirements() { memset(this,0, sizeof(ActorMemoryRequirements)); }
@@ -124,19 +126,9 @@ public:
     Actor *SpawnActor();
 
     /**
-    * Adds a vehicle module to the validated configuration.
-    * @param module_name A module from the validated rig-def file.
+    * Defines which configuration (sectionconfig) to use.
     */
-    bool AddModule(Ogre::String const & module_name);
-
-    /**
-    * Adds a vehicle module to the validated configuration.
-    * @param module_name A module from the validated rig-def file.
-    */
-    void AddModule(std::shared_ptr<RigDef::File::Module> module)
-    {
-        m_selected_modules.push_back(module);
-    }
+    void SetConfig(std::string const & config) { m_selected_config = config; }
 
     Actor *GetActor()
     {
@@ -159,13 +151,13 @@ public:
     * @return Index of existing node
     * @throws Exception If the node isn't found.
     */
-    unsigned int GetNodeIndexOrThrow(RigDef::Node::Ref const & id);
+    NodeIdx_t GetNodeIndexOrThrow(RigDef::Node::Ref const & id);
+
+    std::string GetSubmeshGroundmodelName() { return m_state.submeshes_ground_model_name; }
 
     static void SetupDefaultSoundSources(Actor *vehicle);
 
     static void ComposeName(RoR::Str<100>& str, const char* type, int number, int actor_id);
-
-    std::string GetSubmeshGroundmodelName();
 
 private:
 
@@ -242,9 +234,17 @@ private:
         RigDef::FlexBodyWheel* flexbodywheel_def;
 
         uint16_t               wheel_index;
-        uint16_t               base_node_index;
-        uint16_t               axis_node_1;
-        uint16_t               axis_node_2;
+        NodeIdx_t              base_node_index;
+        NodeIdx_t              axis_node_1;
+        NodeIdx_t              axis_node_2;
+    };
+
+    struct FlexbodyTicket
+    {
+        // offsets to RigDef::File data arrays
+        RigDef::DataPos_t flexbodies_data_pos           = RigDef::DATAPOS_INVALID;
+        RigDef::DataPos_t forset_data_pos               = RigDef::DATAPOS_INVALID;
+        RigDef::DataPos_t flexbody_camera_mode_data_pos = RigDef::DATAPOS_INVALID;
     };
 
 /* -------------------------------------------------------------------------- */
@@ -290,7 +290,7 @@ private:
     /**
     * Section 'camerarail', depends on 'nodes'.
     */
-    void ProcessCameraRail(RigDef::CameraRail & def);
+    void ProcessCameraRail(int pos);
 
     /**
     * Section 'cameras', depends on 'nodes'.
@@ -360,12 +360,16 @@ private:
     /**
     * Section 'flexbodies'.
     */
-    void ProcessFlexbody(std::shared_ptr<RigDef::Flexbody> def);
+    void ProcessFlexbody(RigDef::DataPos_t pos);
+
+    void ProcessFlexbodyCameraMode(RigDef::DataPos_t pos);
 
     /**
     * Section 'flexbodywheels'.
     */
     void ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def);
+
+    void ProcessForset(RigDef::DataPos_t pos);
 
     /**
     * Section 'fusedrag'.
@@ -401,6 +405,8 @@ private:
     */
     void ProcessLockgroup(RigDef::Lockgroup & lockgroup);
 
+    void ProcessLockgroupDefaultNolock();
+
     /**
     * Section 'managedmaterials'
     */
@@ -419,7 +425,7 @@ private:
     /**
     * Section 'minimass'.
     */
-    void ProcessMinimassInAnyModule();
+    void ProcessMinimass(RigDef::Minimass& def);
 
     void ProcessNode(RigDef::Node & def);
 
@@ -479,10 +485,7 @@ private:
     */
     void ProcessSlidenode(RigDef::SlideNode & def);
 
-    /**
-    * Section 'SlopeBrake' in any module.
-    */
-    void ProcessSlopeBrake(RigDef::SlopeBrake & def);
+    void ProcessSlidenodeConnectInstantly();
 
     /**
     * Section 'soundsources'.
@@ -492,12 +495,17 @@ private:
     /**
     * Section 'soundsources2'.
     */
-    void ProcessSoundSource2(RigDef::SoundSource2 & def); 
+    void ProcessSoundSource2(RigDef::SoundSource2 & def);
+
+    void ProcessSpeedLimiter(RigDef::SpeedLimiter & def);
 
     /**
     * Section 'submeshes'.
     */
-    void ProcessSubmesh(RigDef::Submesh & def);
+    void ProcessSubmesh();
+    void ProcessSubmeshGroundModel(int pos);
+
+    void ProcessTexcoord(RigDef::Texcoord & def);
 
     /**
     * Section 'ties'.
@@ -552,32 +560,42 @@ private:
     void ProcessWing(RigDef::Wing & def);
 
 /* -------------------------------------------------------------------------- */
+/* Presets/modifiers processing.                                              */
+/* -------------------------------------------------------------------------- */
+
+    void ProcessNodeDefaults(RigDef::DataPos_t pos);
+    void ProcessInertiaDefaults(RigDef::DataPos_t pos);
+    void ProcessBeamDefaults(RigDef::DataPos_t pos);
+    void ProcessBeamDefaultsScale(RigDef::DataPos_t pos);
+    void ProcessCollisionRange(RigDef::DataPos_t pos);
+    void ProcessManagedMatOptions(RigDef::DataPos_t pos);
+    void ProcessSkeletonSettings(RigDef::DataPos_t pos);
+
+/* -------------------------------------------------------------------------- */
 /* Partial processing functions.                                              */
 /* -------------------------------------------------------------------------- */
 
-    void BuildAerialEngine(
-        int ref_node_index,
-        int back_node_index,
-        int blade_1_node_index,
-        int blade_2_node_index,
-        int blade_3_node_index,
-        int blade_4_node_index,
-        int couplenode_index,
+    void BuildAeroEngine(
+        NodeIdx_t ref_node_index,
+        NodeIdx_t back_node_index,
+        NodeIdx_t blade_1_node_index,
+        NodeIdx_t blade_2_node_index,
+        NodeIdx_t blade_3_node_index,
+        NodeIdx_t blade_4_node_index,
+        NodeIdx_t couplenode_index,
         bool is_turboprops,
         Ogre::String const & airfoil,
         float power,
         float pitch
     );
 
+    void BuildFlexbody(FlexbodyTicket const& ticket);
+
     /**
     * Fetches free beam and sets up defaults.
     */
-    beam_t & AddBeam(
-        node_t & node_1, 
-        node_t & node_2, 
-        std::shared_ptr<RigDef::BeamDefaults> & defaults,
-        int detacher_group
-    );
+    beam_t & AddBeam(node_t & node_1, node_t & node_2);
+    beam_t & AddBeam(RigDef::Node::Ref n1, RigDef::Node::Ref n2);
 
     /**
     * Adds complete wheel (section 'wheels') to the rig.
@@ -591,11 +609,12 @@ private:
     */
     unsigned int AddWheel2(RigDef::Wheel2 & wheel_2_def);
 
-    void CreateBeamVisuals(beam_t const& beam, int beam_index, bool visible, std::shared_ptr<RigDef::BeamDefaults> const& beam_defaults, std::string material_override="");
+    void CreateBeamVisuals(beam_t const& beam, int beam_index, bool visible, std::string material_override="");
+    void ProcessBackmesh();
 
     RailGroup *CreateRail(std::vector<RigDef::Node::Range> & node_ranges);
 
-    static void AddSoundSource(Actor *vehicle, SoundScriptInstance *sound_script, int node_index, int type = -2);
+    static void AddSoundSource(Actor *vehicle, SoundScriptInstance *sound_script, NodeIdx_t node_index, int type = -2);
 
     static void AddSoundSourceInstance(Actor *vehicle, Ogre::String const & sound_script_name, int node_index, int type = -2);
 
@@ -616,20 +635,6 @@ private:
     * @return True if there is space left.
     */
     bool CheckAxleLimit(unsigned int count);
-
-    /**
-    * Checks there is still space left in rig_t::subtexcoords, rig_t::subcabs and rig_t::subisback arrays.
-    * @param count Required number of free slots.
-    * @return True if there is space left.
-    */
-    bool CheckSubmeshLimit(unsigned int count);
-
-    /**
-    * Checks there is still space left in rig_t::texcoords array.
-    * @param count Required number of free slots.
-    * @return True if there is space left.
-    */
-    bool CheckTexcoordLimit(unsigned int count);
 
     /**
     * Checks there is still space left in rig_t::cabs array.
@@ -680,7 +685,7 @@ private:
     * Seeks node in both RigDef::File definition and rig_t generated rig.
     * @return Node index or -1 if the node was not found.
     */
-    int FindNodeIndex(RigDef::Node::Ref & node_ref, bool silent = false);
+    NodeIdx_t FindNodeIndex(RigDef::Node::Ref & node_ref, bool silent = false);
 
     /**
     * Finds wheel with given axle nodes and returns it's index.
@@ -697,12 +702,6 @@ private:
     );
 
     /**
-    * Adds a node to the rig.
-    * @return First: node index, second: True if the node was inserted, false if duplicate.
-    */
-    std::pair<unsigned int, bool> AddNode(RigDef::Node::Id & id);
-
-    /**
     * Adds a message to internal log.
     */
     void AddMessage(Message::Type type, Ogre::String const & text);
@@ -712,11 +711,13 @@ private:
         unsigned int direction_node_idx
     );
 
+    NodeIdx_t ResolveNodeRef(RigDef::Node::Ref const & node_ref);
+
     /**
     * Finds existing node by Node::Ref
     * @return First: Index of existing node; Second: true if node was found.
     */
-    std::pair<unsigned int, bool> GetNodeIndex(RigDef::Node::Ref const & node_ref, bool quiet = false);
+    std::pair<NodeIdx_t, bool> GetNodeIndex(RigDef::Node::Ref const & node_ref, bool quiet = false);
 
     /**
     * Finds existing node by Node::Ref
@@ -756,7 +757,7 @@ private:
     * Finds existing node by index.
     * @return Pointer to node or nullptr if not found.
     */
-    node_t & GetNode(unsigned int node_index);
+    node_t & GetNode(NodeIdx_t node_index);
 
     /**
     * Sets up defaults & position of a node.
@@ -793,7 +794,7 @@ private:
     */
     bool CollectNodesFromRanges(
         std::vector<RigDef::Node::Range> & node_ranges,
-        std::vector<unsigned int> & out_node_indices
+        std::vector<NodeIdx_t> & out_node_indices
     );
 
     /**
@@ -835,21 +836,11 @@ private:
 
     void SetBeamDamping(beam_t & beam, float damping);
 
-    beam_t *FindBeamInRig(unsigned int node_a, unsigned int node_b);
-
-    void SetBeamDeformationThreshold(beam_t & beam, std::shared_ptr<RigDef::BeamDefaults> beam_defaults);
+    beam_t *FindBeamInRig(NodeIdx_t node_a, NodeIdx_t node_b);
 
     void UpdateCollcabContacterNodes();
 
     wheel_t::BrakeCombo TranslateBrakingDef(RigDef::Wheels::Braking def);
-
-    /**
-    * Checks a section only appears in one module and reports a warning if not.
-    */
-    void CheckSectionSingleModule(
-        Ogre::String const & section_name,
-        std::list<std::shared_ptr<RigDef::File::Module>> & found_items	
-    );
 
     /**
     * Creates beam pre-configured for use as rim with section 'wheels2'.
@@ -902,8 +893,6 @@ private:
     */
     void SetupNewEntity(Ogre::Entity* e, Ogre::ColourValue simple_color);
 
-    void CreateGfxActor();
-
     /**
     * Factory of GfxActor; invoke after all gfx setup was done.
     */
@@ -912,7 +901,7 @@ private:
     /**
     * Validator for the rotator reference structure
     */
-    void ValidateRotator(int id, int axis1, int axis2, int *nodes1, int *nodes2);
+    void ValidateRotator(int id, int axis1, int axis2, NodeIdx_t *nodes1, NodeIdx_t *nodes2);
 
     /**
     * Helper for 'SetupNewEntity()' - see it's doc.
@@ -950,7 +939,6 @@ private:
         float wheel_radius,
         RigDef::Wheels::Propulsion propulsion,
         RigDef::Wheels::Braking braking,
-        std::shared_ptr<RigDef::NodeDefaults> node_defaults,
         float wheel_mass,
         float wheel_width = -1.f
     );
@@ -967,7 +955,6 @@ private:
         float tyre_damping,
         float rim_spring,
         float rim_damping,
-        std::shared_ptr<RigDef::BeamDefaults> beam_defaults,
         RigDef::Node::Ref const & rigidity_node_id,
         float max_extension = 0.f
     );
@@ -980,7 +967,6 @@ private:
         node_t *node_2,
         float spring,
         float damping,
-        std::shared_ptr<RigDef::BeamDefaults> beam_defaults,
         float max_contraction = -1.f,
         float max_extension = -1.f,
         BeamType type = BEAM_NORMAL
@@ -1015,7 +1001,6 @@ private:
 
     void _ProcessKeyInertia(
         RigDef::Inertia & inertia, 
-        RigDef::Inertia & inertia_defaults, 
         RoR::CmdKeyInertia& contract_key, 
         RoR::CmdKeyInertia& extend_key
     );
@@ -1023,12 +1008,12 @@ private:
     /** 
     * For specified nodes
     */
-    void AdjustNodeBuoyancy(node_t & node, RigDef::Node & node_def, std::shared_ptr<RigDef::NodeDefaults> defaults);
+    void AdjustNodeBuoyancy(node_t & node, RigDef::Node & node_def);
 
     /** 
     * For generated nodes
     */
-    void AdjustNodeBuoyancy(node_t & node, std::shared_ptr<RigDef::NodeDefaults> defaults);
+    void AdjustNodeBuoyancy(node_t & node);
 
     /**
     * Ported from SerializedRig::loadTruck() [v0.4.0.7]
@@ -1040,17 +1025,96 @@ private:
     */
     void InitializeRig();
 
-    void CalcMemoryRequirements(ActorMemoryRequirements& req, RigDef::File::Module* module_def);
+    void CalcMemoryRequirements(ActorMemoryRequirements& req);
 
     void HandleException();
 
-    // Spawn
+    // Input
+    std::shared_ptr<RigDef::File>    m_document; //!< The parsed input file.
+    Ogre::Vector3                    m_spawn_position;
+    std::string                      m_selected_config;
+
+    // Context
+    struct ActorSpawnState
+    {
+        // Globals
+        float       truckmass=0;   //!< Keyword 'globals' - dry mass
+        float       loadmass=0;
+        std::string texname;       //!< Keyword 'globals' - submeshes texture
+
+        bool        wheel_contact_requested = false;
+        bool        rescuer = false;
+        bool        disable_default_sounds=false;
+        int         detacher_group_state=DEFAULT_DETACHER_GROUP;
+        bool        slope_brake=false;
+        float       beam_creak=BEAM_CREAK_DEFAULT;
+        int         externalcameramode=0;
+        int         externalcameranode=-1;
+        bool        slidenodes_connect_instantly=false;
+
+        float       default_spring=DEFAULT_SPRING;
+        float       default_spring_scale=1;
+        float       default_damp=DEFAULT_DAMP;
+        float       default_damp_scale=1;
+        float       default_deform=BEAM_DEFORM;
+        float       default_deform_scale=1;
+        float       default_break=BEAM_BREAK;
+        float       default_break_scale=1;
+
+        float       default_beam_diameter=DEFAULT_BEAM_DIAMETER;
+        float       default_plastic_coef=0;
+        float       skeleton_beam_diameter=BEAM_SKELETON_DIAMETER;
+        std::string default_beam_material = "tracks/beam";
+        float       default_node_friction=NODE_FRICTION_COEF_DEFAULT;
+        float       default_node_volume=NODE_VOLUME_COEF_DEFAULT;
+        float       default_node_surface=NODE_SURFACE_COEF_DEFAULT;
+        float       default_node_loadweight=NODE_LOADWEIGHT_DEFAULT;
+        std::string default_node_options;
+
+        bool        managedmaterials_doublesided=false;
+        float       inertia_startDelay=-1;
+        float       inertia_stopDelay=-1;
+        std::string inertia_default_startFunction;
+        std::string inertia_default_stopFunction;
+
+        bool        enable_advanced_deformation = false;
+        int         lockgroup_default = NODE_LOCKGROUP_DEFAULT;
+
+        // Minimass
+        float       global_minimass=DEFAULT_MINIMASS;   //!< 'minimass' - does not change default minimass (only updates global fallback value)!
+        float       default_minimass=-1;                //!< 'set_default_minimass' - does not change global minimass!
+        bool        minimass_skip_loaded = false;       //!< The 'l' flag on 'minimass'.
+
+        // Submeshes
+        std::vector<CabTexcoord>         texcoords;       //!< 'texcoords'
+        int                              free_sub = 0;    //!< Counter of 'submesh' (+1) or 'backmesh' (+2)
+        std::vector<CabBackmeshType>     subisback;       //!< 'backmesh'
+        std::vector<int>                 subtexcoords;    //!< maps 'texcoords' to 'submesh'
+        std::vector<int>                 subcabs;         //!< maps 'cab' to 'submesh'
+        std::string                      submeshes_ground_model_name;
+
+        // 'guisettings':
+        std::string helpmat;
+        std::string tachomat;
+        std::string speedomat;
+
+    };
+    std::map<std::string, NodeIdx_t> m_node_names;
+    RigDef::DataPos_t                m_pending_flexbody = RigDef::DATAPOS_INVALID; //!< set by 'flexbody', reset by 'forset'
+    FlexBody*                        m_last_flexbody = nullptr;
+    std::vector<RoR::Prop>           m_props;              //!< 'props', 'prop_camera_mode'
+
+    ActorSpawnState                  m_state;
+    RigDef::Keyword                  m_current_keyword; //!< For error reports
+
+    // Output
     Actor*             m_actor; //!< The output actor.
-    Ogre::Vector3      m_spawn_position;
-    bool               m_apply_simple_materials;
+    
+    // ***** TO BE SORTED ******
+
+    bool                           m_apply_simple_materials;
     std::string        m_cab_material_name; //!< Original name defined in truckfile/globals.
-    std::string        m_custom_resource_group;
-    std::string        m_help_material_name;
+    std::string                    m_custom_resource_group;
     float              m_wing_area;
     int                m_airplane_left_light;
     int                m_airplane_right_light;
@@ -1067,22 +1131,17 @@ private:
     bool               m_generate_wing_position_lights;
     int                m_first_wing_index;
     Ogre::SceneNode*   m_curr_mirror_prop_scenenode;
-    std::vector<RoR::Prop>    m_props;
+    
     int                       m_driverseat_prop_index;
-    std::vector<CabTexcoord>  m_oldstyle_cab_texcoords;
-    std::vector<CabSubmesh>   m_oldstyle_cab_submeshes;
     ActorMemoryRequirements   m_memory_requirements;
-    RigDef::Keyword     m_current_keyword; //!< For error reports
     std::vector<RoR::NodeGfx> m_gfx_nodes;
     CustomMaterial::MirrorPropType         m_curr_mirror_prop_type;
-    std::shared_ptr<RigDef::File>          m_file; //!< The parsed input file.
-    std::map<Ogre::String, unsigned int>   m_named_nodes;
+    
     std::map<std::string, CustomMaterial>  m_material_substitutions; //!< Maps original material names (shared) to their actor-specific substitutes; There's 1 substitute per 1 material, regardless of user count.
     std::vector<BeamVisualsTicket>         m_beam_visuals_queue; //!< We want to spawn visuals asynchronously in the future
     std::vector<WheelVisualsTicket>        m_wheel_visuals_queue; //!< We want to spawn visuals asynchronously in the future
+    std::vector<FlexbodyTicket>            m_flexbody_queue; //!< We want to process this asynchronously in the future
     std::map<std::string, Ogre::MaterialPtr>  m_managed_materials;
-    std::list<std::shared_ptr<RigDef::File::Module>>  m_selected_modules;
-
 };
 
 } // namespace RoR

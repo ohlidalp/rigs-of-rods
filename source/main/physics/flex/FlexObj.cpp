@@ -46,14 +46,14 @@ FlexObj::FlexObj(RoR::GfxActor* gfx_actor, node_t* all_nodes, std::vector<CabTex
         Ogre::SubMesh* submesh = m_mesh->createSubMesh();
         switch (submesh_defs[j].backmesh_type)
         {
-        case CabSubmesh::BACKMESH_OPAQUE:      submesh->setMaterialName(backtexname);  break;
-        case CabSubmesh::BACKMESH_TRANSPARENT: submesh->setMaterialName(transtexname); break;
-        default:                               submesh->setMaterialName(texname);
+        case BACKMESH_OPAQUE:      submesh->setMaterialName(backtexname);  break;
+        case BACKMESH_TRANSPARENT: submesh->setMaterialName(transtexname); break;
+        default:                   submesh->setMaterialName(texname);
         }
         m_submeshes.push_back(submesh);
     };
 
-    // Define the m_vertices_raw (8 vertices, each consisting of 3 groups of 3 floats
+    // Define the verts (8 vertices, each consisting of 3 groups of 3 floats
     m_vertex_count = texcoords.size();
     m_vertices_raw=(float*)malloc(((2*3+2)*m_vertex_count)*sizeof(float));
     m_vertex_nodes=(int*)malloc(m_vertex_count*sizeof(int));

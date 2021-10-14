@@ -71,6 +71,7 @@ static const float HOOK_RANGE_DEFAULT           = 0.4f;
 static const float HOOK_SPEED_DEFAULT           = 0.00025f;
 static const float HOOK_LOCK_TIMER_DEFAULT      = 5.0;
 static const int   NODE_LOCKGROUP_DEFAULT       = -1; // all hooks scan all nodes
+static const int   NODE_LOCKGROUP_NOLOCK        = 9999; // hooks do not scan any nodes (performance tweak)
 static const int   DEFAULT_DETACHER_GROUP       = 0; // default for detaching beam group
 
 static const float FLAP_ANGLES[6] = {0.f, -0.07f, -0.17f, -0.33f, -0.67f, -1.f};

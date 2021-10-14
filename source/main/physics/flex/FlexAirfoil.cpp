@@ -117,20 +117,7 @@ FlexAirfoil::FlexAirfoil(Ogre::String const & name, Actor* actor, int pnfld, int
         airfoilpos[55+9]=controlratio-0.5;
         for (i=0; i<12; i++) airfoilpos[54+12+i]=airfoilpos[54+i];
     }
-    /// Create the mesh via the MeshManager
-    msh = MeshManager::getSingleton().createManual(name, actor->GetGfxActor()->GetResourceGroup());
 
-    /// Create submeshes
-    subface = msh->createSubMesh();
-    subband = msh->createSubMesh();
-    subcup = msh->createSubMesh();
-    subcdn = msh->createSubMesh();
-
-    //materials
-    subface->setMaterialName(texband);
-    subband->setMaterialName(texband);
-    subcup->setMaterialName(texband);
-    subcdn->setMaterialName(texband);
 
     /// Define the vertices
     nVertices = 24*2+4+2;
@@ -290,6 +277,32 @@ FlexAirfoil::FlexAirfoil(Ogre::String const & name, Actor* actor, int pnfld, int
 
     //update coords
     this->updateVerticesPhysics();
+
+    // HACK: args kept for `setupVisuals()`
+    this->texname = texname;
+    this->actor = actor;
+    this->name = name;
+    this->texband = texband;
+}
+
+void FlexAirfoil::setupVisuals()
+{
+
+    /// Create the mesh via the MeshManager
+    msh = MeshManager::getSingleton().createManual(name, actor->GetGfxActor()->GetResourceGroup());
+
+    /// Create submeshes
+    subface = msh->createSubMesh();
+    subband = msh->createSubMesh();
+    subcup = msh->createSubMesh();
+    subcdn = msh->createSubMesh();
+
+    //materials
+    subface->setMaterialName(texband);
+    subband->setMaterialName(texband);
+    subcup->setMaterialName(texband);
+    subcdn->setMaterialName(texband);
+
     this->updateVerticesGfx(actor->GetGfxActor());
 
     /// Create vertex data structure for 8 vertices shared between submeshes

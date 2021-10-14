@@ -99,7 +99,7 @@ private:
     Ogre::HardwareVertexBufferSharedPtr m_shared_vbuf_color;
 
     int                                 m_num_submesh_vbufs;
-    int                                 m_submesh_vbufs_vertex_counts[16];
+    int                                 m_submesh_vbufs_vertex_counts[16] = {};
     Ogre::HardwareVertexBufferSharedPtr m_submesh_vbufs_pos[16];   //!< positions
     Ogre::HardwareVertexBufferSharedPtr m_submesh_vbufs_norm[16];  //!< normals
     Ogre::HardwareVertexBufferSharedPtr m_submesh_vbufs_color[16]; //!< colors

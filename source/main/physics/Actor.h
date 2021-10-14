@@ -241,6 +241,7 @@ public:
     std::vector<std::pair<float, float>> ar_initial_beam_defaults;
     std::vector<wheeldetacher_t>   ar_wheeldetachers;
     std::vector<float>             ar_minimass; //!< minimum node mass in Kg
+    bool                           ar_minimass_skip_loaded = false;
     std::vector<std::vector<int>>  ar_node_to_node_connections;
     std::vector<std::vector<int>>  ar_node_to_beam_connections;
     std::vector<Ogre::AxisAlignedBox>  ar_collision_bounding_boxes; //!< smart bounding boxes, used for determining the state of an actor (every box surrounds only a subset of nodes)
@@ -451,6 +452,7 @@ private:
     PerVehicleCameraContext            m_camera_context;
     Ogre::String                       m_section_config;
     std::vector<SlideNode>             m_slidenodes;       //!< all the SlideNodes available on this actor
+    bool                               m_slidenodes_connect_instantly = false; //!< Should slidenodes lock after spawn?
     std::vector<RailGroup*>            m_railgroups;       //!< all the available RailGroups for this actor
     std::vector<Ogre::Entity*>         m_deletion_entities;    //!< For unloading vehicle; filled at spawn.
     std::vector<Ogre::SceneNode*>      m_deletion_scene_nodes; //!< For unloading vehicle; filled at spawn.

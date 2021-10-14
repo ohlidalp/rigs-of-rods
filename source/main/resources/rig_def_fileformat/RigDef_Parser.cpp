@@ -71,10 +71,7 @@ inline bool StrEqualsNocase(std::string const & s1, std::string const & s2)
 
 Parser::Parser()
 {
-    // Push defaults 
-    m_ror_default_inertia = std::shared_ptr<Inertia>(new Inertia);
-    m_ror_node_defaults = std::shared_ptr<NodeDefaults>(new NodeDefaults);
-    m_ror_minimass = std::shared_ptr<MinimassPreset>(new MinimassPreset);
+
 }
 
 void Parser::ProcessCurrentLine()
@@ -100,7 +97,8 @@ void Parser::ProcessCurrentLine()
         }
         else
         {
-            m_definition->description.push_back(m_current_line);
+            m_document->description.push_back(m_current_line);
+            m_document->lines.emplace_back(Line(KEYWORD_DESCRIPTION, (int)m_document->description.size() - 1));
         }
         return;
     }
@@ -118,79 +116,79 @@ void Parser::ProcessCurrentLine()
         case KEYWORD_INVALID: break; // No new section  - carry on with processing data
 
         case KEYWORD_ADD_ANIMATION:            this->ParseDirectiveAddAnimation();                  return;
-        case KEYWORD_AIRBRAKES:                this->ChangeSection(SECTION_AIRBRAKES);        return;
-        case KEYWORD_ANIMATORS:                this->ChangeSection(SECTION_ANIMATORS);        return;
+        case KEYWORD_AIRBRAKES:                this->ChangeSection(keyword, SECTION_AIRBRAKES);        return;
+        case KEYWORD_ANIMATORS:                this->ChangeSection(keyword, SECTION_ANIMATORS);        return;
         case KEYWORD_ANTI_LOCK_BRAKES:         this->ParseAntiLockBrakes();                         return;
-        case KEYWORD_AXLES:                    this->ChangeSection(SECTION_AXLES);            return;
+        case KEYWORD_AXLES:                    this->ChangeSection(keyword, SECTION_AXLES);            return;
         case KEYWORD_AUTHOR:                   this->ParseAuthor();                                 return;
         case KEYWORD_BACKMESH:                 this->ParseDirectiveBackmesh();                      return;
-        case KEYWORD_BEAMS:                    this->ChangeSection(SECTION_BEAMS);            return;
-        case KEYWORD_BRAKES:                   this->ChangeSection(SECTION_BRAKES);           return;
+        case KEYWORD_BEAMS:                    this->ChangeSection(keyword, SECTION_BEAMS);            return;
+        case KEYWORD_BRAKES:                   this->ChangeSection(keyword, SECTION_BRAKES);           return;
         case KEYWORD_CAB:                      this->ProcessKeywordCab();                           return;
-        case KEYWORD_CAMERAS:                  this->ChangeSection(SECTION_CAMERAS);          return;
-        case KEYWORD_CAMERARAIL:               this->ChangeSection(SECTION_CAMERA_RAIL);      return;
-        case KEYWORD_CINECAM:                  this->ChangeSection(SECTION_CINECAM);          return;
-        case KEYWORD_COLLISIONBOXES:           this->ChangeSection(SECTION_COLLISION_BOXES);  return;
-        case KEYWORD_COMMANDS:                 this->ChangeSection(SECTION_COMMANDS);         return;
-        case KEYWORD_COMMANDS2:                this->ChangeSection(SECTION_COMMANDS_2);       return;
-        case KEYWORD_CONTACTERS:               this->ChangeSection(SECTION_CONTACTERS);       return;
+        case KEYWORD_CAMERAS:                  this->ChangeSection(keyword, SECTION_CAMERAS);          return;
+        case KEYWORD_CAMERARAIL:               this->ChangeSection(keyword, SECTION_CAMERA_RAIL);      return;
+        case KEYWORD_CINECAM:                  this->ChangeSection(keyword, SECTION_CINECAM);          return;
+        case KEYWORD_COLLISIONBOXES:           this->ChangeSection(keyword, SECTION_COLLISION_BOXES);  return;
+        case KEYWORD_COMMANDS:                 this->ChangeSection(keyword, SECTION_COMMANDS);         return;
+        case KEYWORD_COMMANDS2:                this->ChangeSection(keyword, SECTION_COMMANDS_2);       return;
+        case KEYWORD_CONTACTERS:               this->ChangeSection(keyword, SECTION_CONTACTERS);       return;
         case KEYWORD_CRUISECONTROL:            this->ParseCruiseControl();                          return;
-        case KEYWORD_DESCRIPTION:              this->ChangeSection(SECTION_NONE); m_in_description_section = true; return;
+        case KEYWORD_DESCRIPTION:              this->ChangeSection(keyword, SECTION_NONE); m_in_description_section = true; return;
         case KEYWORD_DETACHER_GROUP:           this->ParseDirectiveDetacherGroup();                 return;
         case KEYWORD_DISABLEDEFAULTSOUNDS:     this->ProcessGlobalDirective(keyword);               return;
         case KEYWORD_ENABLE_ADVANCED_DEFORM:   this->ProcessGlobalDirective(keyword);               return;
-        case KEYWORD_END:                      this->ChangeSection(SECTION_NONE);             return;
-        case KEYWORD_END_SECTION:              this->ProcessChangeModuleLine(keyword);              return;
-        case KEYWORD_ENGINE:                   this->ChangeSection(SECTION_ENGINE);           return;
-        case KEYWORD_ENGOPTION:                this->ChangeSection(SECTION_ENGOPTION);        return;
-        case KEYWORD_ENGTURBO:                 this->ChangeSection(SECTION_ENGTURBO);         return;
+        case KEYWORD_END:                      m_document->lines.emplace_back(Line(keyword, -1));  return;
+        case KEYWORD_END_SECTION:              m_document->lines.emplace_back(Line(keyword, -1));  return;
+        case KEYWORD_ENGINE:                   this->ChangeSection(keyword, SECTION_ENGINE);           return;
+        case KEYWORD_ENGOPTION:                this->ChangeSection(keyword, SECTION_ENGOPTION);        return;
+        case KEYWORD_ENGTURBO:                 this->ChangeSection(keyword, SECTION_ENGTURBO);         return;
         case KEYWORD_ENVMAP:                   /* Ignored */                                        return;
-        case KEYWORD_EXHAUSTS:                 this->ChangeSection(SECTION_EXHAUSTS);         return;
+        case KEYWORD_EXHAUSTS:                 this->ChangeSection(keyword, SECTION_EXHAUSTS);         return;
         case KEYWORD_EXTCAMERA:                this->ParseExtCamera();                              return;
         case KEYWORD_FILEFORMATVERSION:        this->ParseFileFormatVersion();                      return;
         case KEYWORD_FILEINFO:                 this->ParseFileinfo();                               return;
-        case KEYWORD_FIXES:                    this->ChangeSection(SECTION_FIXES);            return;
-        case KEYWORD_FLARES:                   this->ChangeSection(SECTION_FLARES);           return;
-        case KEYWORD_FLARES2:                  this->ChangeSection(SECTION_FLARES_2);         return;
-        case KEYWORD_FLEXBODIES:               this->ChangeSection(SECTION_FLEXBODIES);       return;
+        case KEYWORD_FIXES:                    this->ChangeSection(keyword, SECTION_FIXES);            return;
+        case KEYWORD_FLARES:                   this->ChangeSection(keyword, SECTION_FLARES);           return;
+        case KEYWORD_FLARES2:                  this->ChangeSection(keyword, SECTION_FLARES_2);         return;
+        case KEYWORD_FLEXBODIES:               this->ChangeSection(keyword, SECTION_FLEXBODIES);       return;
         case KEYWORD_FLEXBODY_CAMERA_MODE:     this->ParseDirectiveFlexbodyCameraMode();            return;
-        case KEYWORD_FLEXBODYWHEELS:           this->ChangeSection(SECTION_FLEX_BODY_WHEELS); return;
+        case KEYWORD_FLEXBODYWHEELS:           this->ChangeSection(keyword, SECTION_FLEX_BODY_WHEELS); return;
         case KEYWORD_FORWARDCOMMANDS:          this->ProcessGlobalDirective(keyword);               return;
-        case KEYWORD_FUSEDRAG:                 this->ChangeSection(SECTION_FUSEDRAG);         return;
-        case KEYWORD_GLOBALS:                  this->ChangeSection(SECTION_GLOBALS);          return;
+        case KEYWORD_FUSEDRAG:                 this->ChangeSection(keyword, SECTION_FUSEDRAG);         return;
+        case KEYWORD_GLOBALS:                  this->ChangeSection(keyword, SECTION_GLOBALS);          return;
         case KEYWORD_GUID:                     this->ParseGuid();                                   return;
-        case KEYWORD_GUISETTINGS:              this->ChangeSection(SECTION_GUI_SETTINGS);     return;
-        case KEYWORD_HELP:                     this->ChangeSection(SECTION_HELP);             return;
+        case KEYWORD_GUISETTINGS:              this->ChangeSection(keyword, SECTION_GUI_SETTINGS);     return;
+        case KEYWORD_HELP:                     this->ChangeSection(keyword, SECTION_HELP);             return;
         case KEYWORD_HIDE_IN_CHOOSER:          this->ProcessGlobalDirective(keyword);               return;
         case KEYWORD_HOOKGROUP:                /* Obsolete, ignored */                              return;
-        case KEYWORD_HOOKS:                    this->ChangeSection(SECTION_HOOKS);            return;
-        case KEYWORD_HYDROS:                   this->ChangeSection(SECTION_HYDROS);           return;
-        case KEYWORD_IMPORTCOMMANDS:           m_definition->import_commands = true;                return;
-        case KEYWORD_INTERAXLES:               this->ChangeSection(SECTION_INTERAXLES);       return;
-        case KEYWORD_LOCKGROUPS:               this->ChangeSection(SECTION_LOCKGROUPS);       return;
+        case KEYWORD_HOOKS:                    this->ChangeSection(keyword, SECTION_HOOKS);            return;
+        case KEYWORD_HYDROS:                   this->ChangeSection(keyword, SECTION_HYDROS);           return;
+        case KEYWORD_IMPORTCOMMANDS:           m_document->lines.emplace_back(Line(keyword, -1));  return;
+        case KEYWORD_INTERAXLES:               this->ChangeSection(keyword, SECTION_INTERAXLES);       return;
+        case KEYWORD_LOCKGROUPS:               this->ChangeSection(keyword, SECTION_LOCKGROUPS);       return;
         case KEYWORD_LOCKGROUP_DEFAULT_NOLOCK: this->ProcessGlobalDirective(keyword);               return;
-        case KEYWORD_MANAGEDMATERIALS:         this->ChangeSection(SECTION_MANAGED_MATERIALS); return;
-        case KEYWORD_MATERIALFLAREBINDINGS:    this->ChangeSection(SECTION_MAT_FLARE_BINDINGS); return;
-        case KEYWORD_MESHWHEELS:               this->ChangeSection(SECTION_MESH_WHEELS);      return;
-        case KEYWORD_MESHWHEELS2:              this->ChangeSection(SECTION_MESH_WHEELS_2);    return;
-        case KEYWORD_MINIMASS:                 this->ChangeSection(SECTION_MINIMASS);         return;
-        case KEYWORD_NODECOLLISION:            this->ChangeSection(SECTION_NODE_COLLISION);   return;
-        case KEYWORD_NODES:                    this->ChangeSection(SECTION_NODES);            return;
-        case KEYWORD_NODES2:                   this->ChangeSection(SECTION_NODES_2);          return;
-        case KEYWORD_PARTICLES:                this->ChangeSection(SECTION_PARTICLES);        return;
-        case KEYWORD_PISTONPROPS:              this->ChangeSection(SECTION_PISTONPROPS);      return;
+        case KEYWORD_MANAGEDMATERIALS:         this->ChangeSection(keyword, SECTION_MANAGED_MATERIALS); return;
+        case KEYWORD_MATERIALFLAREBINDINGS:    this->ChangeSection(keyword, SECTION_MAT_FLARE_BINDINGS); return;
+        case KEYWORD_MESHWHEELS:               this->ChangeSection(keyword, SECTION_MESH_WHEELS);      return;
+        case KEYWORD_MESHWHEELS2:              this->ChangeSection(keyword, SECTION_MESH_WHEELS_2);    return;
+        case KEYWORD_MINIMASS:                 this->ChangeSection(keyword, SECTION_MINIMASS);         return;
+        case KEYWORD_NODECOLLISION:            this->ChangeSection(keyword, SECTION_NODE_COLLISION);   return;
+        case KEYWORD_NODES:                    this->ChangeSection(keyword, SECTION_NODES);            return;
+        case KEYWORD_NODES2:                   this->ChangeSection(keyword, SECTION_NODES_2);          return;
+        case KEYWORD_PARTICLES:                this->ChangeSection(keyword, SECTION_PARTICLES);        return;
+        case KEYWORD_PISTONPROPS:              this->ChangeSection(keyword, SECTION_PISTONPROPS);      return;
         case KEYWORD_PROP_CAMERA_MODE:         this->ParseDirectivePropCameraMode();                return;
-        case KEYWORD_PROPS:                    this->ChangeSection(SECTION_PROPS);            return;
-        case KEYWORD_RAILGROUPS:               this->ChangeSection(SECTION_RAILGROUPS);       return;
+        case KEYWORD_PROPS:                    this->ChangeSection(keyword, SECTION_PROPS);            return;
+        case KEYWORD_RAILGROUPS:               this->ChangeSection(keyword, SECTION_RAILGROUPS);       return;
         case KEYWORD_RESCUER:                  this->ProcessGlobalDirective(keyword);               return;
         case KEYWORD_RIGIDIFIERS:              this->AddMessage(Message::TYPE_WARNING, "Rigidifiers are not supported, ignoring..."); return;
         case KEYWORD_ROLLON:                   this->ProcessGlobalDirective(keyword);               return;
-        case KEYWORD_ROPABLES:                 this->ChangeSection(SECTION_ROPABLES);         return;
-        case KEYWORD_ROPES:                    this->ChangeSection(SECTION_ROPES);            return;
-        case KEYWORD_ROTATORS:                 this->ChangeSection(SECTION_ROTATORS);         return;
-        case KEYWORD_ROTATORS2:                this->ChangeSection(SECTION_ROTATORS_2);       return;
-        case KEYWORD_SCREWPROPS:               this->ChangeSection(SECTION_SCREWPROPS);       return;
-        case KEYWORD_SECTION:                  this->ProcessChangeModuleLine(keyword);              return;
+        case KEYWORD_ROPABLES:                 this->ChangeSection(keyword, SECTION_ROPABLES);         return;
+        case KEYWORD_ROPES:                    this->ChangeSection(keyword, SECTION_ROPES);            return;
+        case KEYWORD_ROTATORS:                 this->ChangeSection(keyword, SECTION_ROTATORS);         return;
+        case KEYWORD_ROTATORS2:                this->ChangeSection(keyword, SECTION_ROTATORS_2);       return;
+        case KEYWORD_SCREWPROPS:               this->ChangeSection(keyword, SECTION_SCREWPROPS);       return;
+        case KEYWORD_SECTION:                  this->ParseDirectiveSection();              return;
         case KEYWORD_SECTIONCONFIG:            /* Ignored */                                        return;
         case KEYWORD_SET_BEAM_DEFAULTS:        this->ParseDirectiveSetBeamDefaults();               return;
         case KEYWORD_SET_BEAM_DEFAULTS_SCALE:  this->ParseDirectiveSetBeamDefaultsScale();          return;
@@ -200,31 +198,31 @@ void Parser::ProcessCurrentLine()
         case KEYWORD_SET_MANAGEDMATS_OPTIONS:  this->ParseDirectiveSetManagedMaterialsOptions();    return;
         case KEYWORD_SET_NODE_DEFAULTS:        this->ParseDirectiveSetNodeDefaults();               return;
         case KEYWORD_SET_SKELETON_SETTINGS:    this->ParseSetSkeletonSettings();                    return;
-        case KEYWORD_SHOCKS:                   this->ChangeSection(SECTION_SHOCKS);           return;
-        case KEYWORD_SHOCKS2:                  this->ChangeSection(SECTION_SHOCKS_2);         return;
-        case KEYWORD_SHOCKS3:                  this->ChangeSection(SECTION_SHOCKS_3);         return;
+        case KEYWORD_SHOCKS:                   this->ChangeSection(keyword, SECTION_SHOCKS);           return;
+        case KEYWORD_SHOCKS2:                  this->ChangeSection(keyword, SECTION_SHOCKS_2);         return;
+        case KEYWORD_SHOCKS3:                  this->ChangeSection(keyword, SECTION_SHOCKS_3);         return;
         case KEYWORD_SLIDENODE_CONNECT_INSTANT:this->ProcessGlobalDirective(keyword);               return;
-        case KEYWORD_SLIDENODES:               this->ChangeSection(SECTION_SLIDENODES);       return;
+        case KEYWORD_SLIDENODES:               this->ChangeSection(keyword, SECTION_SLIDENODES);       return;
         case KEYWORD_SLOPE_BRAKE:              this->ParseSlopeBrake();                             return;
-        case KEYWORD_SOUNDSOURCES:             this->ChangeSection(SECTION_SOUNDSOURCES);     return;
-        case KEYWORD_SOUNDSOURCES2:            this->ChangeSection(SECTION_SOUNDSOURCES2);    return;
+        case KEYWORD_SOUNDSOURCES:             this->ChangeSection(keyword, SECTION_SOUNDSOURCES);     return;
+        case KEYWORD_SOUNDSOURCES2:            this->ChangeSection(keyword, SECTION_SOUNDSOURCES2);    return;
         case KEYWORD_SPEEDLIMITER:             this->ParseSpeedLimiter();                           return;
         case KEYWORD_SUBMESH_GROUNDMODEL:      this->ParseSubmeshGroundModel();                     return;
-        case KEYWORD_SUBMESH:                  this->ChangeSection(SECTION_SUBMESH);          return;
+        case KEYWORD_SUBMESH:                  this->ChangeSection(keyword, SECTION_SUBMESH);          return;
         case KEYWORD_TEXCOORDS:                this->ProcessKeywordTexcoords();                     return;
-        case KEYWORD_TIES:                     this->ChangeSection(SECTION_TIES);             return;
-        case KEYWORD_TORQUECURVE:              this->ChangeSection(SECTION_TORQUE_CURVE);     return;
+        case KEYWORD_TIES:                     this->ChangeSection(keyword, SECTION_TIES);             return;
+        case KEYWORD_TORQUECURVE:              this->ChangeSection(keyword, SECTION_TORQUE_CURVE);     return;
         case KEYWORD_TRACTION_CONTROL:         this->ParseTractionControl();                        return;
-        case KEYWORD_TRANSFER_CASE:            this->ChangeSection(SECTION_TRANSFER_CASE);    return;
-        case KEYWORD_TRIGGERS:                 this->ChangeSection(SECTION_TRIGGERS);         return;
-        case KEYWORD_TURBOJETS:                this->ChangeSection(SECTION_TURBOJETS);        return;
-        case KEYWORD_TURBOPROPS:               this->ChangeSection(SECTION_TURBOPROPS);       return;
-        case KEYWORD_TURBOPROPS2:              this->ChangeSection(SECTION_TURBOPROPS_2);     return;
-        case KEYWORD_VIDEOCAMERA:              this->ChangeSection(SECTION_VIDEO_CAMERA);     return;
-        case KEYWORD_WHEELDETACHERS:           this->ChangeSection(SECTION_WHEELDETACHERS);   return;
-        case KEYWORD_WHEELS:                   this->ChangeSection(SECTION_WHEELS);           return;
-        case KEYWORD_WHEELS2:                  this->ChangeSection(SECTION_WHEELS_2);         return;
-        case KEYWORD_WINGS:                    this->ChangeSection(SECTION_WINGS);            return;
+        case KEYWORD_TRANSFER_CASE:            this->ChangeSection(keyword, SECTION_TRANSFER_CASE);    return;
+        case KEYWORD_TRIGGERS:                 this->ChangeSection(keyword, SECTION_TRIGGERS);         return;
+        case KEYWORD_TURBOJETS:                this->ChangeSection(keyword, SECTION_TURBOJETS);        return;
+        case KEYWORD_TURBOPROPS:               this->ChangeSection(keyword, SECTION_TURBOPROPS);       return;
+        case KEYWORD_TURBOPROPS2:              this->ChangeSection(keyword, SECTION_TURBOPROPS_2);     return;
+        case KEYWORD_VIDEOCAMERA:              this->ChangeSection(keyword, SECTION_VIDEO_CAMERA);     return;
+        case KEYWORD_WHEELDETACHERS:           this->ChangeSection(keyword, SECTION_WHEELDETACHERS);   return;
+        case KEYWORD_WHEELS:                   this->ChangeSection(keyword, SECTION_WHEELS);           return;
+        case KEYWORD_WHEELS2:                  this->ChangeSection(keyword, SECTION_WHEELS_2);         return;
+        case KEYWORD_WINGS:                    this->ChangeSection(keyword, SECTION_WINGS);            return;
     }
 
     // Parse current section, if any 
@@ -318,8 +316,8 @@ bool Parser::CheckNumArguments(int num_required_args)
 
 void Parser::ParseActorNameLine()
 {
-    m_definition->name = m_current_line; // Already trimmed
-    this->ChangeSection(SECTION_NONE);
+    m_document->name = m_current_line; // Already trimmed
+    this->ChangeSection(KEYWORD_INVALID, SECTION_NONE);
 }
 
 void Parser::ParseWing()
@@ -338,7 +336,8 @@ void Parser::ParseWing()
     if (m_num_args > 20)         { wing.airfoil         = this->GetArgStr         (20); }
     if (m_num_args > 21)         { wing.efficacy_coef   = this->GetArgFloat       (21); }
 
-    m_current_module->wings.push_back(wing);
+    m_document->wings.push_back(wing);
+    m_document->lines.emplace_back(Line(KEYWORD_WINGS, (int)m_document->wings.size() - 1));
 }
 
 void Parser::ParseSetCollisionRange()
@@ -346,10 +345,9 @@ void Parser::ParseSetCollisionRange()
     if (! this->CheckNumArguments(2)) { return; } // 2 items: keyword, arg
 
     float value = this->GetArgFloat(1);
-    if (value >= 0)
-    {
-        m_definition->collision_range = value;
-    }
+
+    m_document->collision_range.push_back(value);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_COLLISION_RANGE, (int)m_document->collision_range.size() - 1));
 }
 
 void Parser::ParseWheel2()
@@ -357,8 +355,6 @@ void Parser::ParseWheel2()
     if (!this->CheckNumArguments(17)) { return; }
 
     Wheel2 wheel_2;
-    wheel_2.node_defaults = m_user_node_defaults;
-    wheel_2.beam_defaults = m_user_beam_defaults;
 
     wheel_2.rim_radius         = this->GetArgFloat        ( 0);
     wheel_2.tyre_radius        = this->GetArgFloat        ( 1);
@@ -378,12 +374,8 @@ void Parser::ParseWheel2()
     wheel_2.face_material_name = this->GetArgStr          (15);
     wheel_2.band_material_name = this->GetArgStr          (16);
 
-    if (m_sequential_importer.IsEnabled())
-    {
-        m_sequential_importer.GenerateNodesForWheel(KEYWORD_WHEELS2, wheel_2.num_rays, wheel_2.rigidity_node.IsValidAnyState());
-    }
-
-    m_current_module->wheels_2.push_back(wheel_2);
+    m_document->wheels_2.push_back(wheel_2);
+    m_document->lines.emplace_back(Line(KEYWORD_WHEELS2, (int)m_document->wheels_2.size() - 1));
 }
 
 void Parser::ParseWheel()
@@ -391,8 +383,6 @@ void Parser::ParseWheel()
     if (! this->CheckNumArguments(14)) { return; }
 
     Wheel wheel;
-    wheel.node_defaults = m_user_node_defaults;
-    wheel.beam_defaults = m_user_beam_defaults;
 
     wheel.radius             = this->GetArgFloat        ( 0);
     wheel.width              = this->GetArgFloat        ( 1);
@@ -409,12 +399,8 @@ void Parser::ParseWheel()
     wheel.face_material_name = this->GetArgStr          (12);
     wheel.band_material_name = this->GetArgStr          (13);
 
-    if (m_sequential_importer.IsEnabled())
-    {
-        m_sequential_importer.GenerateNodesForWheel(KEYWORD_WHEELS, wheel.num_rays, wheel.rigidity_node.IsValidAnyState());
-    }
-
-    m_current_module->wheels.push_back(wheel);
+    m_document->wheels.push_back(wheel);
+    m_document->lines.emplace_back(Line(KEYWORD_WHEELS, (int)m_document->wheels.size() - 1));
 }
 
 void Parser::ParseWheelDetachers()
@@ -426,7 +412,7 @@ void Parser::ParseWheelDetachers()
     wheeldetacher.wheel_id       = this->GetArgInt(0);
     wheeldetacher.detacher_group = this->GetArgInt(1);
 
-    m_current_module->wheeldetachers.push_back(wheeldetacher);
+    m_document->wheeldetachers.push_back(wheeldetacher);
 }
 
 void Parser::ParseTractionControl()
@@ -475,12 +461,8 @@ void Parser::ParseTractionControl()
         }
     }
 
-    if (m_current_module->traction_control != nullptr)
-    {
-        this->AddMessage(Message::TYPE_WARNING, "Multiple inline-sections 'TractionControl' in a module, using last one ...");
-    }
-
-    m_current_module->traction_control = std::shared_ptr<TractionControl>( new TractionControl(tc) );
+    m_document->traction_control.push_back(tc);
+    m_document->lines.emplace_back(Line(KEYWORD_TRACTION_CONTROL, (int)m_document->traction_control.size() - 1));
 }
 
 void Parser::ParseTransferCase()
@@ -495,32 +477,24 @@ void Parser::ParseTransferCase()
     if (m_num_args > 3) { tc.has_2wd_lo = this->GetArgInt(3); }
     for (int i = 4; i < m_num_args; i++) { tc.gear_ratios.push_back(this->GetArgFloat(i)); }
 
-    if (m_current_module->transfer_case != nullptr)
-    {
-        this->AddMessage(Message::TYPE_WARNING, "Multiple inline-sections 'transfercase' in a module, using last one ...");
-    }
-
-    m_current_module->transfer_case = std::shared_ptr<TransferCase>( new TransferCase(tc) );
+    m_document->transfer_case.push_back(tc);
+    m_document->lines.emplace_back(Line(KEYWORD_TRANSFER_CASE, (int)m_document->transfer_case.size() - 1));
 }
 
 void Parser::ParseSubmeshGroundModel()
 {
     if (!this->CheckNumArguments(2)) { return; } // Items: keyword, arg
 
-    m_current_module->submeshes_ground_model_name = this->GetArgStr(1);
+    m_document->submeshes_ground_model_name.push_back(this->GetArgStr(1));
+    m_document->lines.emplace_back(Line(KEYWORD_SUBMESH_GROUNDMODEL, (int)m_document->submeshes_ground_model_name.size() - 1));
 }
 
 void Parser::ParseSpeedLimiter()
 {
     if (! this->CheckNumArguments(2)) { return; } // 2 items: keyword, arg
 
-    SpeedLimiter& sl = m_current_module->speed_limiter;
-    if (sl.is_enabled)
-    {
-        this->AddMessage(Message::TYPE_WARNING, "Multiple inline-sections 'speedlimiter' in a module, using last one ...");
-    }
+    SpeedLimiter sl;
 
-    sl.is_enabled = true;
     sl.max_speed = this->GetArgFloat(1);
     if (sl.max_speed <= 0.f)
     {
@@ -528,33 +502,30 @@ void Parser::ParseSpeedLimiter()
         snprintf(msg, 200, "Invalid 'max_speed' (%f), must be > 0.0. Using it anyway (compatibility)", sl.max_speed);
         this->AddMessage(Message::TYPE_WARNING, msg);
     }
+
+    m_document->speed_limiter.push_back(sl);
+    m_document->lines.emplace_back(Line(KEYWORD_SPEEDLIMITER, (int)m_document->speed_limiter.size() - 1));
 }
 
 void Parser::ParseSlopeBrake()
 {
-    if (m_current_module->slope_brake != nullptr)
-    {
-        this->AddMessage(Message::TYPE_WARNING, "Multiple definitions 'SlopeBrake' in a module, using last one ...");
-    }
-    m_current_module->slope_brake = std::shared_ptr<SlopeBrake>( new SlopeBrake() );
-    
-    SlopeBrake* sb = m_current_module->slope_brake.get();
-    if (m_num_args > 1) { sb->regulating_force = this->GetArgFloat(1); }
-    if (m_num_args > 2) { sb->attach_angle     = this->GetArgFloat(2); }
-    if (m_num_args > 3) { sb->release_angle    = this->GetArgFloat(3); }
+    // Obsolete, removed.
 }
 
 void Parser::ParseSetSkeletonSettings()
 {
     if (! this->CheckNumArguments(2)) { return; }
     
-    SkeletonSettings& skel = m_current_module->skeleton_settings;    
+    SkeletonSettings skel;
     skel.visibility_range_meters = this->GetArgFloat(1);
     if (m_num_args > 2) { skel.beam_thickness_meters = this->GetArgFloat(2); }
     
     // Defaults
     if (skel.visibility_range_meters < 0.f) { skel.visibility_range_meters = 150.f; }
     if (skel.beam_thickness_meters   < 0.f) { skel.beam_thickness_meters   = BEAM_SKELETON_DIAMETER; }
+
+    m_document->skeleton_settings.push_back(skel);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_SKELETON_SETTINGS, (int)m_document->skeleton_settings.size() - 1));
 }
 
 void Parser::LogParsedDirectiveSetNodeDefaultsData(float load_weight, float friction, float volume, float surface, unsigned int options)
@@ -587,26 +558,20 @@ void Parser::ParseDirectiveSetNodeDefaults()
 {
     if (!this->CheckNumArguments(2)) { return; }
 
-    float load_weight   =                    this->GetArgFloat(1);
-    float friction      = (m_num_args > 2) ? this->GetArgFloat(2) : -1;
-    float volume        = (m_num_args > 3) ? this->GetArgFloat(3) : -1;
-    float surface       = (m_num_args > 4) ? this->GetArgFloat(4) : -1;
-    std::string opt_str = (m_num_args > 5) ? this->GetArgStr  (5) : "";
+    NodeDefaults def;
+    def._num_args = m_num_args;
 
-    m_user_node_defaults = std::shared_ptr<NodeDefaults>( new NodeDefaults(*m_user_node_defaults) );
+                        def.loadweight = this->GetArgFloat(1);
+    if (m_num_args > 2) def.friction   = this->GetArgFloat(2);
+    if (m_num_args > 3) def.volume     = this->GetArgFloat(3);
+    if (m_num_args > 4) def.surface    = this->GetArgFloat(4);
+    if (m_num_args > 5) def.options    = this->GetArgNodeOptions(5);
 
-    m_user_node_defaults->load_weight = (load_weight < 0) ? m_ror_node_defaults->load_weight : load_weight;
-    m_user_node_defaults->friction    = (friction    < 0) ? m_ror_node_defaults->friction    : friction;
-    m_user_node_defaults->volume      = (volume      < 0) ? m_ror_node_defaults->volume      : volume;
-    m_user_node_defaults->surface     = (surface     < 0) ? m_ror_node_defaults->surface     : surface;
-
-    this->_ParseNodeOptions(m_user_node_defaults->options, opt_str);
-
-    // Disabled until someone wants it back
-    //this->LogParsedDirectiveSetNodeDefaultsData(load_weight, friction, volume, surface, m_user_node_defaults->options);
+    m_document->node_defaults.push_back(def);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_NODE_DEFAULTS, (int)m_document->node_defaults.size() - 1));
 }
 
-void Parser::_ParseNodeOptions(unsigned int & options, const std::string & options_str)
+void Parser::_ParseNodeOptions(int & options, const std::string & options_str)
 {
     options = 0;
 
@@ -664,86 +629,93 @@ void Parser::_ParseNodeOptions(unsigned int & options, const std::string & optio
 void Parser::ParseDirectiveSetManagedMaterialsOptions()
 {
     if (! this->CheckNumArguments(2)) { return; } // 2 items: keyword, arg
-    
+
+    ManagedMaterialsOptions mmo;
+
     // This is what v0.3x's parser did.
     char c = this->GetArgChar(1);
-    m_current_managed_material_options.double_sided = (c != '0');
+    mmo.double_sided = (c != '0');
 
     if (c != '0' && c != '1')
     {
         this->AddMessage(Message::TYPE_WARNING,
             "Param 'doublesided' should be only 1 or 0, got '" + this->GetArgStr(1) + "', parsing as 0");
     }
+
+    m_document->managed_materials_options.push_back(mmo);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_MANAGEDMATS_OPTIONS, (int)m_document->managed_materials_options.size() - 1));
 }
 
 void Parser::ParseDirectiveSetBeamDefaultsScale()
 {
     if (! this->CheckNumArguments(5)) { return; }
-    
-    BeamDefaults* b = new BeamDefaults(*m_user_beam_defaults);
-    b->scale.springiness = this->GetArgFloat(1);
-    
-    if (m_num_args > 2) { b->scale.damping_constant               = this->GetArgFloat(2); }
-    if (m_num_args > 3) { b->scale.deformation_threshold_constant = this->GetArgFloat(3); }
-    if (m_num_args > 4) { b->scale.breaking_threshold_constant    = this->GetArgFloat(4); }
 
-    m_user_beam_defaults = std::shared_ptr<BeamDefaults>(b);
+    BeamDefaultsScale scale;
+    scale._num_args = m_num_args;
+
+    scale.springiness = this->GetArgFloat(1);
+    if (m_num_args > 2) { scale.damping_constant = this->GetArgFloat(2); }
+    if (m_num_args > 3) { scale.deformation_threshold_constant = this->GetArgFloat(3); }
+    if (m_num_args > 4) { scale.breaking_threshold_constant = this->GetArgFloat(4); }
+
+    m_document->beam_defaults_scale.push_back(scale);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_BEAM_DEFAULTS_SCALE, (int)m_document->beam_defaults_scale.size() - 1));
 }
 
 void Parser::ParseDirectiveSetBeamDefaults()
 {
     if (! this->CheckNumArguments(2)) { return; } // 2 items: keyword, arg
 
-    BeamDefaults d(*m_user_beam_defaults);
+    BeamDefaults d;
+    d._num_args = m_num_args;
 
-    // What's the state of "enable_advanced_deformation" feature at this point?
-    // Directive "enable_advanced_deformation" alters the effects of BeamDefaults
-    // Since the old parser worked on-the-fly, only BeamDefaults defined after the directive were affected
+    d.springiness = this->GetArgFloat(1);
+    if (m_num_args > 2) d.damping_constant = this->GetArgFloat(2);
+    if (m_num_args > 3) d.deformation_threshold = this->GetArgFloat(3);
+    if (m_num_args > 4) d.breaking_threshold = this->GetArgFloat(4);
+    if (m_num_args > 5) d.visual_beam_diameter = this->GetArgFloat(5);
+    if (m_num_args > 6) d.beam_material_name = this->GetArgStr(6);
+    if (m_num_args > 7) d.plastic_deform_coef = this->GetArgFloat(7);
 
-    d._enable_advanced_deformation = m_definition->enable_advanced_deformation;
-
-    d._is_user_defined = true; //The "_enable_advanced_deformation" must only be aplied to user-defined values, not defaults.
-    d.springiness      = this->GetArgFloat(1);
-
-    if (m_num_args > 2) { d.damping_constant       = this->GetArgFloat(2); }
-    if (m_num_args > 3) { d.deformation_threshold  = this->GetArgFloat(3); }
-    if (m_num_args > 4) { d.breaking_threshold     = this->GetArgFloat(4); }
-    if (m_num_args > 5) { d.visual_beam_diameter   = this->GetArgFloat(5); }
-    if (m_num_args > 6) { d.beam_material_name     = this->GetArgStr  (6); }
-    if (m_num_args > 7) { d.plastic_deform_coef    = this->GetArgFloat(7); }
-
-    if (m_num_args > 7 && d.plastic_deform_coef >= 0.0f) { d._is_plastic_deform_coef_user_defined = true; }
-
-    if (d.springiness           < 0.f) { d.springiness           = DEFAULT_SPRING;                              }
-    if (d.damping_constant      < 0.f) { d.damping_constant      = DEFAULT_DAMP;                                }
-    if (d.deformation_threshold < 0.f) { d.deformation_threshold = BEAM_DEFORM;                                 }
-    if (d.breaking_threshold    < 0.f) { d.breaking_threshold    = BEAM_BREAK;                                  }
-    if (d.visual_beam_diameter  < 0.f) { d.visual_beam_diameter  = DEFAULT_BEAM_DIAMETER;                       }
-    if (d.plastic_deform_coef   < 0.f) { d.plastic_deform_coef   = (*m_user_beam_defaults).plastic_deform_coef; }
-
-    m_user_beam_defaults = std::shared_ptr<BeamDefaults>( new BeamDefaults(d) );
-    return;
+    m_document->beam_defaults.push_back(d);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_BEAM_DEFAULTS, (int)m_document->beam_defaults.size() - 1));
 }
 
 void Parser::ParseDirectivePropCameraMode()
 {
-    ROR_ASSERT(m_current_module != nullptr);
-    if (m_current_module->props.size() == 0)
-    {
-        this->AddMessage(Message::TYPE_ERROR, "Directive 'prop_camera_mode' found but no 'prop' defined, ignoring...");
-        return;
-    }
-
     if (! this->CheckNumArguments(2)) { return; } // 2 items: keyword, arg
 
-    this->_ParseCameraSettings(m_current_module->props.back().camera_settings, this->GetArgStr(1));
+    this->_ParseCameraSettings(m_document->props.back().camera_settings, this->GetArgStr(1));
+}
+
+void Parser::ParseDirectiveSection()
+{
+    SectionTag def;
+
+    // arg 0: 'section'
+    // arg 1: version (unused)
+    for (int i = 2; i < m_num_args; ++i)
+    {
+        def.configs.push_back(this->GetArgStr(i));
+    }
+
+    m_document->section.push_back(def);
+    m_document->lines.emplace_back(Line(KEYWORD_SECTION, (int)m_document->section.size() - 1));
+}
+
+void Parser::ParseDirectiveSectionConfig()
+{
+    // arg 0 is the keyword 'sectionconfig'
+    // arg 1 is ignored arg 'version'
+    m_document->section_config.push_back(this->GetArgStr(2));
+    m_document->lines.emplace_back(Line(KEYWORD_SECTIONCONFIG, (int)m_document->section_config.size() - 1));
 }
 
 void Parser::ParseDirectiveBackmesh()
 {
     if (m_current_section == SECTION_SUBMESH)
     {
-        m_current_submesh->backmesh = true;
+        m_document->lines.emplace_back(Line(KEYWORD_BACKMESH, -1));
     }
     else
     {
@@ -760,7 +732,7 @@ void Parser::ProcessKeywordTexcoords()
     else
     {
         this->AddMessage(Message::TYPE_WARNING, "Misplaced sub-section 'texcoords' (belongs in section 'submesh'), falling back to classic unsafe parsing method.");
-        this->ChangeSection(SECTION_SUBMESH);
+        this->ChangeSection(KEYWORD_TEXCOORDS, SECTION_SUBMESH);
     }
 }
 
@@ -770,37 +742,29 @@ void Parser::ProcessKeywordCab()
     if (m_current_section != SECTION_SUBMESH)
     {
         this->AddMessage(Message::TYPE_WARNING, "Misplaced sub-section 'cab' (belongs in section 'submesh')");
-        this->ChangeSection(SECTION_SUBMESH);
+        this->ChangeSection(KEYWORD_CAB, SECTION_SUBMESH);
     }
 }
 
 void Parser::ProcessGlobalDirective(Keyword keyword)   // Directives that should only appear in root module
 {
-    this->VerifyModuleIsRoot(keyword); // Reports warning message if we're not in root module
 
     switch (keyword)
     {
-    case KEYWORD_DISABLEDEFAULTSOUNDS:      m_definition->disable_default_sounds = true;        return;
-    case KEYWORD_ENABLE_ADVANCED_DEFORM:    m_definition->enable_advanced_deformation = true;   return;
-    case KEYWORD_FORWARDCOMMANDS:           m_definition->forward_commands = true;              return;
-    case KEYWORD_HIDE_IN_CHOOSER:           m_definition->hide_in_chooser = true;               return;
-    case KEYWORD_LOCKGROUP_DEFAULT_NOLOCK:  m_definition->lockgroup_default_nolock = true;      return;
-    case KEYWORD_RESCUER:                   m_definition->rescuer = true;                       return;
-    case KEYWORD_ROLLON:                    m_definition->rollon = true;                        return;
-    case KEYWORD_SLIDENODE_CONNECT_INSTANT: m_definition->slide_nodes_connect_instantly = true; return;
+    case KEYWORD_DISABLEDEFAULTSOUNDS:     
+    case KEYWORD_ENABLE_ADVANCED_DEFORM:   
+    case KEYWORD_FORWARDCOMMANDS:          
+    case KEYWORD_HIDE_IN_CHOOSER:          
+    case KEYWORD_LOCKGROUP_DEFAULT_NOLOCK: 
+    case KEYWORD_RESCUER:                  
+    case KEYWORD_ROLLON:                   
+    case KEYWORD_SLIDENODE_CONNECT_INSTANT:
+        m_document->lines.emplace_back(Line(keyword, -1));
+        return;
 
-    default: this->AddMessage(Message::TYPE_ERROR, "INTERNAL ERROR: '"
-                 + std::string(File::KeywordToString(keyword)) + "' is not a global directive");      return;
-    }
-}
-
-void Parser::VerifyModuleIsRoot(Keyword keyword)
-{
-    if (m_current_module != m_root_module)
-    {
-        char buf[200];
-        snprintf(buf, 200, "Keyword '%s' has global effect and should not appear in a module", File::KeywordToString(keyword));
-        this->AddMessage(Message::TYPE_WARNING, buf);
+    default:
+        this->AddMessage(Message::TYPE_ERROR, "Invalid keyword: " + std::string(File::KeywordToString(keyword)));
+        return;
     }
 }
 
@@ -810,8 +774,6 @@ void Parser::ParseMeshWheelUnified()
 
     MeshWheel mesh_wheel;
     mesh_wheel._is_meshwheel2     = (m_current_section == SECTION_MESH_WHEELS_2);
-    mesh_wheel.node_defaults      = m_user_node_defaults;
-    mesh_wheel.beam_defaults      = m_user_beam_defaults;
 
     mesh_wheel.tyre_radius        = this->GetArgFloat        ( 0);
     mesh_wheel.rim_radius         = this->GetArgFloat        ( 1);
@@ -830,15 +792,16 @@ void Parser::ParseMeshWheelUnified()
     mesh_wheel.mesh_name          = this->GetArgStr          (14);
     mesh_wheel.material_name      = this->GetArgStr          (15);
 
-    if (m_sequential_importer.IsEnabled())
+    if (mesh_wheel._is_meshwheel2)
     {
-        Keyword keyword = (mesh_wheel._is_meshwheel2)
-            ? KEYWORD_MESHWHEELS2
-            : KEYWORD_MESHWHEELS;
-        m_sequential_importer.GenerateNodesForWheel(keyword, mesh_wheel.num_rays, mesh_wheel.rigidity_node.IsValidAnyState());
+        m_document->mesh_wheels_2.push_back(mesh_wheel);
+        m_document->lines.emplace_back(Line(KEYWORD_MESHWHEELS2, (int)m_document->mesh_wheels_2.size() - 1));
     }
-
-    m_current_module->mesh_wheels.push_back(mesh_wheel);
+    else
+    {
+        m_document->mesh_wheels.push_back(mesh_wheel);
+        m_document->lines.emplace_back(Line(KEYWORD_MESHWHEELS, (int)m_document->mesh_wheels.size() - 1));
+    }
 }
 
 void Parser::ParseHook()
@@ -877,75 +840,41 @@ void Parser::ParseHook()
         i++;
     }
 
-    m_current_module->hooks.push_back(hook);
+    m_document->hooks.push_back(hook);
 }
 
 void Parser::ParseHelp()
 {
-    if (! m_current_module->help_panel_material_name.empty())
-    {
-        this->AddMessage(Message::TYPE_WARNING, "Secton defined more than once.");
-    }
 
-    m_current_module->help_panel_material_name = m_current_line;
-    Ogre::StringUtil::trim(m_current_module->help_panel_material_name);
+    std::string helpmat = m_current_line;
+    Ogre::StringUtil::trim(helpmat);
+    m_document->help_panel_material_name.push_back(helpmat);
+    m_document->lines.emplace_back(Line(KEYWORD_HELP, (int)m_document->help_panel_material_name.size() - 1));
 }
 
 void Parser::ParseGuiSettings()
 {
     if (! this->CheckNumArguments(2)) { return; }
-    
-    GuiSettings* gui_settings = m_current_module->gui_settings.get();
    
-    std::string key = this->GetArgStr(0);
-    
-    if (key == "debugBeams") {} // Obsolete, ignored
-    
-    else if (key == "tachoMaterial")  { gui_settings->tacho_material     =  this->GetArgStr(1); }
-    else if (key == "speedoMaterial") { gui_settings->speedo_material    =  this->GetArgStr(1); }
-    else if (key == "ar_speedo_max_kph")      { gui_settings->speedo_highest_kph =  this->GetArgInt(1); }
-    else if (key == "useMaxRPM")      { gui_settings->use_max_rpm        = (this->GetArgInt(1) == 1); }
-    else if (key == "helpMaterial")   { gui_settings->help_material      =  this->GetArgStr(1); }
-    
-    else if (key == "dashboard")        { gui_settings->dashboard_layouts    .push_back(this->GetArgStr(1)); }
-    else if (key == "texturedashboard") { gui_settings->rtt_dashboard_layouts.push_back(this->GetArgStr(1)); }
-    
-    else if (key == "interactiveOverviewMap")
-    {
-        std::string val = this->GetArgStr(1);
-        
-             if (val == "off"   ) { gui_settings->interactive_overview_map_mode = GuiSettings::MAP_MODE_OFF;    }
-        else if (val == "simple") { gui_settings->interactive_overview_map_mode = GuiSettings::MAP_MODE_SIMPLE; }
-        else if (val == "zoom"  ) { gui_settings->interactive_overview_map_mode = GuiSettings::MAP_MODE_ZOOM;   }
-        
-        else { this->AddMessage(Message::TYPE_ERROR, "Unknown map mode [" + val + "], ignoring..."); }
-    }
-    else
-    {
-        this->AddMessage(Message::TYPE_ERROR, "Unknown setting [" + key + "], ignoring...");
-    }
+    GuiSettings gs;
+    gs.key = this->GetArgStr(0);
+    gs.value = this->GetArgStr(1);
+
+    m_document->gui_settings.push_back(gs);
+    m_document->lines.emplace_back(Line(KEYWORD_GUISETTINGS, (int)m_document->gui_settings.size() - 1));
 }
 
 void Parser::ParseGuid()
 {
     if (! this->CheckNumArguments(2)) { return; }
     
-    if (! m_definition->guid.empty())
-    {
-        this->AddMessage(Message::TYPE_WARNING, "Guid defined multiple times.");
-    }
-
-    m_definition->guid = this->GetArgStr(1);
+    m_document->guid = this->GetArgStr(1);
+    m_document->lines.emplace_back(Line(KEYWORD_GUID, -1));
 }
 
 void Parser::ParseGlobals()
 {
     if (! this->CheckNumArguments(2)) { return; }
-
-    if (m_current_module->globals != nullptr)
-    {
-        this->AddMessage(Message::TYPE_WARNING, "Globals defined more than once.");
-    }
 
     Globals globals;
     globals.dry_mass   = this->GetArgFloat(0);
@@ -953,7 +882,8 @@ void Parser::ParseGlobals()
 
     if (m_num_args > 2) { globals.material_name = this->GetArgStr(2); }
 
-    m_current_module->globals = std::shared_ptr<Globals>( new Globals(globals) );
+    m_document->globals.push_back(globals);
+    m_document->lines.emplace_back(Line(KEYWORD_GLOBALS, (int)m_document->globals.size() - 1));
 }
 
 void Parser::ParseFusedrag()
@@ -980,7 +910,7 @@ void Parser::ParseFusedrag()
         if (m_num_args > 3) { fusedrag.airfoil_name = this->GetArgStr(3); }
     }
 
-    m_current_module->fusedrag.push_back(fusedrag);
+    m_document->fusedrag.push_back(fusedrag);
 }
 
 void Parser::_ParseCameraSettings(CameraSettings & camera_settings, Ogre::String input_str)
@@ -1004,15 +934,12 @@ void Parser::_ParseCameraSettings(CameraSettings & camera_settings, Ogre::String
 
 void Parser::ParseDirectiveFlexbodyCameraMode()
 {
-    if (m_last_flexbody == nullptr)
-    {
-        this->AddMessage(Message::TYPE_ERROR, "No flexbody to update, ignoring...");
-        return;
-    }
-
     if (! this->CheckNumArguments(2)) { return; } // 2 items: keyword, arg
 
-    this->_ParseCameraSettings(m_last_flexbody->camera_settings, this->GetArgStr(1));
+    CameraSettings cam;
+    this->_ParseCameraSettings(cam, this->GetArgStr(1));
+    m_document->flexbody_camera_mode.push_back(cam);
+    m_document->lines.emplace_back(Line(KEYWORD_FLEXBODY_CAMERA_MODE, (int)m_document->flexbody_camera_mode.size() - 1));
 }
 
 void Parser::ParseSubmesh()
@@ -1051,7 +978,8 @@ void Parser::ParseSubmesh()
             }
         }
 
-        m_current_submesh->cab_triangles.push_back(cab);
+        m_document->cab_triangles.push_back(cab);
+        m_document->lines.emplace_back(Line(KEYWORD_CAB, (int)m_document->cab_triangles.size() - 1));
     }
     else if (m_current_subsection == SUBSECTION__SUBMESH__TEXCOORDS)
     {
@@ -1062,7 +990,8 @@ void Parser::ParseSubmesh()
         texcoord.u    = this->GetArgFloat  (1);
         texcoord.v    = this->GetArgFloat  (2);
 
-        m_current_submesh->texcoords.push_back(texcoord);
+        m_document->texcoords.push_back(texcoord);
+        m_document->lines.emplace_back(Line(KEYWORD_TEXCOORDS, (int)m_document->texcoords.size() - 1));
     }
     else
     {
@@ -1088,14 +1017,16 @@ void Parser::ParseFlexbody()
         flexbody.rotation.z     = this->GetArgFloat   (8);
         flexbody.mesh_name      = this->GetArgStr     (9);
 
-        m_last_flexbody = std::shared_ptr<Flexbody>( new Flexbody(flexbody) );
-        m_current_module->flexbodies.push_back(m_last_flexbody);
+        m_document->flexbodies.push_back(flexbody);
+        m_document->lines.emplace_back(Line(KEYWORD_FLEXBODIES, (int)m_document->flexbodies.size() - 1));
 
         // Switch subsection
         m_current_subsection =  SUBSECTION__FLEXBODIES__FORSET_LINE;
     }
     else if (m_current_subsection == SUBSECTION__FLEXBODIES__FORSET_LINE)
     {
+        Forset def;
+
         // Syntax: "forset", followed by space/comma, followed by ","-separated items.
         // Acceptable item forms:
         // * Single node number / node name
@@ -1131,10 +1062,10 @@ void Parser::ParseFlexbody()
                 b_text = std::string(item2, length);
 
                 // Add interval [a-b]
-                m_last_flexbody->node_list_to_import.push_back(
+                def.node_ranges.push_back(
                     Node::Range(
-                        Node::Ref(a_text, a, Node::Ref::IMPORT_STATE_IS_VALID, m_current_line_number),
-                        Node::Ref(b_text, b, Node::Ref::IMPORT_STATE_IS_VALID, m_current_line_number)));
+                        Node::Ref(a_text, a, 0, m_current_line_number),
+                        Node::Ref(b_text, b, 0, m_current_line_number)));
             }
             else
             {
@@ -1142,11 +1073,13 @@ void Parser::ParseFlexbody()
                 unsigned a = 0;
                 a = ::strtoul(item, nullptr, 10);
                 // Add interval [a-a]
-                Node::Range range_a = Node::Range(Node::Ref(std::string(item), a, Node::Ref::IMPORT_STATE_IS_VALID, m_current_line_number));
-                m_last_flexbody->node_list_to_import.push_back(range_a);
+                def.node_ranges.push_back(Node::Range(Node::Ref(std::string(item), a, 0, m_current_line_number)));
             }
             item = strtok(nullptr, ",");
         }
+
+        m_document->forset.push_back(def);
+        m_document->lines.emplace_back(Line(KEYWORD_FORSET, (int)m_document->forset.size() - 1));
 
         // Switch subsection 
         m_current_subsection =  SUBSECTION__FLEXBODIES__PROPLIKE_LINE;
@@ -1192,38 +1125,39 @@ void Parser::ParseFlaresUnified()
     if (m_num_args > pos) { flare2.size              = this->GetArgFloat    (pos++); }
     if (m_num_args > pos) { flare2.material_name     = this->GetArgStr      (pos++); }
 
-    m_current_module->flares_2.push_back(flare2);
+    m_document->flares_2.push_back(flare2);
+    m_document->lines.emplace_back(Line(KEYWORD_FLARES2, (int)m_document->flares_2.size() - 1));
 }
 
 void Parser::ParseFixes()
 {
-    m_current_module->fixes.push_back(this->GetArgNodeRef(0));
+    m_document->fixes.push_back(this->GetArgNodeRef(0));
+    m_document->lines.emplace_back(Line(KEYWORD_FIXES, (int)m_document->fixes.size() - 1));
 }
 
 void Parser::ParseExtCamera()
 {
     if (! this->CheckNumArguments(2)) { return; }
     
-    if (m_current_module->ext_camera == nullptr)
-    {
-        m_current_module->ext_camera = std::shared_ptr<RigDef::ExtCamera>( new RigDef::ExtCamera() );
-    }
-    ExtCamera* extcam = m_current_module->ext_camera.get();
+    ExtCamera extcam;
     
     auto mode_str = this->GetArgStr(1);
     if (mode_str == "classic")
     {
-        extcam->mode = ExtCamera::MODE_CLASSIC;
+        extcam.mode = ExtCamera::MODE_CLASSIC;
     }
     else if (mode_str == "cinecam")
     {
-        extcam->mode = ExtCamera::MODE_CINECAM;
+        extcam.mode = ExtCamera::MODE_CINECAM;
     }
     else if ((mode_str == "node") && (m_num_args > 2))
     {
-        extcam->mode = ExtCamera::MODE_NODE;
-        extcam->node = this->GetArgNodeRef(2);
+        extcam.mode = ExtCamera::MODE_NODE;
+        extcam.node = this->GetArgNodeRef(2);
     }
+
+    m_document->ext_camera.push_back(extcam);
+    m_document->lines.emplace_back(Line(KEYWORD_EXTCAMERA, (int)m_document->ext_camera.size() - 1));
 }
 
 void Parser::ParseExhaust()
@@ -1237,40 +1171,36 @@ void Parser::ParseExhaust()
     // Param [2] is unused
     if (m_num_args > 3) { exhaust.particle_name = this->GetArgStr(3); }
 
-    m_current_module->exhausts.push_back(exhaust);
+    m_document->exhausts.push_back(exhaust);
+    m_document->lines.emplace_back(Line(KEYWORD_EXHAUSTS, (int)m_document->exhausts.size() - 1));
 }
 
 void Parser::ParseFileFormatVersion()
 {
     if (! this->CheckNumArguments(2)) { return; }
 
-    if (m_current_module != m_root_module)
-    {
-        this->AddMessage(Message::TYPE_WARNING, "Inline section 'fileformatversion' has global effect and should not appear in a module");
-    }
+    m_document->file_format_version = this->GetArgUint(1);
+    m_document->lines.emplace_back(Line(KEYWORD_FILEFORMATVERSION, -1));
 
-    m_definition->file_format_version = this->GetArgUint(1);
-
-    if (m_definition->file_format_version >= 450)
-    {
-        m_sequential_importer.Disable();
-    }
-
-    this->ChangeSection(SECTION_NONE);
+    this->ChangeSection(KEYWORD_INVALID, SECTION_NONE);
 }
 
 void Parser::ParseDirectiveDetacherGroup()
 {
     if (! this->CheckNumArguments(2)) { return; } // 2 items: keyword, param
 
+    int detacher_group = -1;
     if (this->GetArgStr(1) == "end")
     {
-        m_current_detacher_group = 0;
+        detacher_group = 0;
     }
     else
     {
-        m_current_detacher_group = this->GetArgInt(1);
+        detacher_group = this->GetArgInt(1);
     }
+
+    m_document->detacher_group.push_back(detacher_group);
+    m_document->lines.emplace_back(Line(KEYWORD_DETACHER_GROUP, (int)m_document->detacher_group.size() - 1));
 }
 
 void Parser::ParseCruiseControl()
@@ -1281,21 +1211,12 @@ void Parser::ParseCruiseControl()
     cruise_control.min_speed = this->GetArgFloat(1);
     cruise_control.autobrake = this->GetArgInt(2);
 
-    if (m_current_module->cruise_control != nullptr)
-    {
-        this->AddMessage(Message::TYPE_WARNING, "Directive 'CruiseControl' used multiple times.");
-    }
-    m_current_module->cruise_control = std::shared_ptr<CruiseControl>( new CruiseControl(cruise_control) );
+    m_document->cruise_control.push_back(cruise_control);
+    m_document->lines.emplace_back(Line(KEYWORD_CRUISECONTROL, (int)m_document->cruise_control.size() - 1));
 }
 
 void Parser::ParseDirectiveAddAnimation()
 {
-    if (m_current_module->props.size() == 0)
-    {
-        AddMessage(Message::TYPE_ERROR, "Directive 'add_animation' has no prop to animate, ignoring...");
-        return;
-    }
-
     Ogre::StringVector tokens = Ogre::StringUtil::split(m_current_line + 14, ","); // "add_animation " = 14 characters
 
     if (tokens.size() < 4)
@@ -1448,7 +1369,8 @@ void Parser::ParseDirectiveAddAnimation()
         }
     }
 
-    m_current_module->props.back().animations.push_back(animation);
+    m_document->add_animation.push_back(animation);
+    m_document->lines.emplace_back(Line(KEYWORD_ADD_ANIMATION, (int)m_document->add_animation.size() - 1));
 }
 
 void Parser::ParseAntiLockBrakes()
@@ -1496,11 +1418,8 @@ void Parser::ParseAntiLockBrakes()
         }
     }
 
-    if (m_current_module->anti_lock_brakes != nullptr)
-    {
-        this->AddMessage(Message::TYPE_WARNING, "Found multiple sections 'AntiLockBrakes' in one module, using last one.");
-    }
-    m_current_module->anti_lock_brakes = std::shared_ptr<AntiLockBrakes>( new AntiLockBrakes(alb) );
+    m_document->anti_lock_brakes.push_back(alb);
+    m_document->lines.emplace_back(Line(KEYWORD_ANTI_LOCK_BRAKES, (int)m_document->anti_lock_brakes.size() - 1));
 }
 
 void Parser::ParseEngoption()
@@ -1525,7 +1444,8 @@ void Parser::ParseEngoption()
     if (m_num_args > 9) { engoption.min_idle_mixture = this->GetArgFloat(9); }
     if (m_num_args > 10){ engoption.braking_torque   = this->GetArgFloat(10);}
 
-    m_current_module->engoption = std::shared_ptr<Engoption>( new Engoption(engoption) );
+    m_document->engoption.push_back(engoption);
+    m_document->lines.emplace_back(Line(KEYWORD_ENGOPTION, (int)m_document->engoption.size() - 1));
 }
 
 void Parser::ParseEngturbo()
@@ -1555,7 +1475,8 @@ void Parser::ParseEngturbo()
         engturbo.nturbos = 4;
     }
 
-    m_current_module->engturbo = std::shared_ptr<Engturbo>(new Engturbo(engturbo));
+    m_document->engturbo.push_back(engturbo);
+    m_document->lines.emplace_back(Line(KEYWORD_ENGTURBO, (int)m_document->engturbo.size() - 1));
 }
 
 void Parser::ParseEngine()
@@ -1587,14 +1508,16 @@ void Parser::ParseEngine()
         return;
     }
 
-    m_current_module->engine = std::shared_ptr<Engine>( new Engine(engine) );
+    m_document->engine.push_back(engine);
+    m_document->lines.emplace_back(Line(KEYWORD_ENGINE, (int)m_document->engine.size() - 1));
 }
 
 void Parser::ParseContacter()
 {
     if (! this->CheckNumArguments(1)) { return; }
 
-    m_current_module->contacters.push_back(this->GetArgNodeRef(0));
+    m_document->contacters.push_back(this->GetArgNodeRef(0));
+    m_document->lines.emplace_back(Line(KEYWORD_CONTACTERS, (int)m_document->contacters.size() - 1));
 }
 
 void Parser::ParseCommandsUnified()
@@ -1604,10 +1527,7 @@ void Parser::ParseCommandsUnified()
     if (! this->CheckNumArguments(max_args)) { return; }
 
     Command2 command2;
-    command2.beam_defaults     = m_user_beam_defaults;
-    command2.detacher_group    = m_current_detacher_group;
     command2._format_version   = (is_commands2) ? 2 : 1;
-    command2.inertia_defaults  = m_user_default_inertia;
 
     int pos = 0;
     command2.nodes[0]          = this->GetArgNodeRef(pos++);
@@ -1630,7 +1550,7 @@ void Parser::ParseCommandsUnified()
 
     if (m_num_args <= max_args) // No more args?
     {
-        m_current_module->commands_2.push_back(command2);
+        m_document->commands_2.push_back(command2);
         return;
     }
 
@@ -1696,7 +1616,8 @@ void Parser::ParseCommandsUnified()
     if (m_num_args > pos) { command2.needs_engine  = this->GetArgBool (pos++);}
     if (m_num_args > pos) { command2.plays_sound   = this->GetArgBool (pos++);}
 
-    m_current_module->commands_2.push_back(command2);
+    m_document->commands_2.push_back(command2);
+    m_document->lines.emplace_back(Line(KEYWORD_COMMANDS2, (int)m_document->commands_2.size() - 1));
 }
 
 void Parser::ParseCollisionBox()
@@ -1710,7 +1631,8 @@ void Parser::ParseCollisionBox()
         collisionbox.nodes.push_back( this->_ParseNodeRef(*iter) );
     }
 
-    m_current_module->collision_boxes.push_back(collisionbox);
+    m_document->collision_boxes.push_back(collisionbox);
+    m_document->lines.emplace_back(Line(KEYWORD_COLLISIONBOXES, (int)m_document->collision_boxes.size() - 1));
 }
 
 void Parser::ParseCinecam()
@@ -1718,8 +1640,6 @@ void Parser::ParseCinecam()
     if (! this->CheckNumArguments(11)) { return; }
 
     Cinecam cinecam;
-    cinecam.beam_defaults = m_user_beam_defaults;
-    cinecam.node_defaults = m_user_node_defaults;
 
     // Required arguments
     cinecam.position.x = this->GetArgFloat  ( 0);
@@ -1745,34 +1665,30 @@ void Parser::ParseCinecam()
             cinecam.node_mass = value;
     }
 
-    if (m_sequential_importer.IsEnabled())
-    {
-        m_sequential_importer.AddGeneratedNode(KEYWORD_CINECAM);
-    }
-
-    m_current_module->cinecam.push_back(cinecam);
+    m_document->cinecam.push_back(cinecam);
+    m_document->lines.emplace_back(Line(KEYWORD_CINECAM, (int)m_document->cinecam.size() - 1));
 }
 
 void Parser::ParseCameraRails()
 {
-    m_current_camera_rail->nodes.push_back( this->GetArgNodeRef(0) );
+    m_document->camera_rails.push_back( this->GetArgNodeRef(0) );
+    m_document->lines.emplace_back(Line(KEYWORD_CAMERARAIL, (int)m_document->camera_rails.size() - 1));
 }
 
 void Parser::ParseBrakes()
 {
     if (!this->CheckNumArguments(1)) { return; }
 
-    if (m_current_module->brakes == nullptr)
-    {
-        m_current_module->brakes = std::shared_ptr<Brakes>( new Brakes() );
-    }
-
-    m_current_module->brakes->default_braking_force = this->GetArgFloat(0);
+    Brakes brakes;
+    brakes.default_braking_force = this->GetArgFloat(0);
 
     if (m_num_args > 1)
     {
-        m_current_module->brakes->parking_brake_force = this->GetArgFloat(1);
+        brakes.parking_brake_force = this->GetArgFloat(1);
     }
+
+    m_document->brakes.push_back(brakes);
+    m_document->lines.emplace_back(Line(KEYWORD_BRAKES, (int)m_document->brakes.size() - 1));
 }
 
 void Parser::ParseAxles()
@@ -1824,7 +1740,8 @@ void Parser::ParseAxles()
         }
     }
 
-    m_current_module->axles.push_back(axle);	
+    m_document->axles.push_back(axle);
+    m_document->lines.emplace_back(Line(KEYWORD_AXLES, (int)m_document->axles.size() - 1));
 }
 
 void Parser::ParseInterAxles()
@@ -1871,7 +1788,8 @@ void Parser::ParseInterAxles()
         }
     }
 
-    m_current_module->interaxles.push_back(interaxle);	
+    m_document->interaxles.push_back(interaxle);
+    m_document->lines.emplace_back(Line(KEYWORD_INTERAXLES, (int)m_document->interaxles.size() - 1));
 }
 
 void Parser::ParseAirbrakes()
@@ -1894,7 +1812,8 @@ void Parser::ParseAirbrakes()
     airbrake.texcoord_x2           = this->GetArgFloat  (12);
     airbrake.texcoord_y2           = this->GetArgFloat  (13);
 
-    m_current_module->airbrakes.push_back(airbrake);
+    m_document->airbrakes.push_back(airbrake);
+    m_document->lines.emplace_back(Line(KEYWORD_AIRBRAKES, (int)m_document->airbrakes.size() - 1));
 }
 
 void Parser::ParseVideoCamera()
@@ -1925,7 +1844,8 @@ void Parser::ParseVideoCamera()
 
     if (m_num_args > 19) { videocamera.camera_name = this->GetArgStr(19); }
 
-    m_current_module->videocameras.push_back(videocamera);
+    m_document->videocameras.push_back(videocamera);
+    m_document->lines.emplace_back(Line(KEYWORD_VIDEOCAMERA, (int)m_document->videocameras.size() - 1));
 }
 
 void Parser::ParseCameras()
@@ -1937,7 +1857,8 @@ void Parser::ParseCameras()
     camera.back_node   = this->GetArgNodeRef(1);
     camera.left_node   = this->GetArgNodeRef(2);
 
-    m_current_module->cameras.push_back(camera);
+    m_document->cameras.push_back(camera);
+    m_document->lines.emplace_back(Line(KEYWORD_CAMERAS, (int)m_document->cameras.size() - 1));
 }
 
 void Parser::ParseTurbopropsUnified()
@@ -1967,7 +1888,8 @@ void Parser::ParseTurbopropsUnified()
     turboprop.turbine_power_kW   = this->GetArgFloat  (6 + offset);
     turboprop.airfoil            = this->GetArgStr    (7 + offset);
     
-    m_current_module->turboprops_2.push_back(turboprop);
+    m_document->turboprops_2.push_back(turboprop);
+    m_document->lines.emplace_back(Line(KEYWORD_TURBOPROPS2, (int)m_document->turboprops_2.size() - 1));
 }
 
 void Parser::ParseTurbojets()
@@ -1985,7 +1907,7 @@ void Parser::ParseTurbojets()
     turbojet.back_diameter  = this->GetArgFloat  (7);
     turbojet.nozzle_length  = this->GetArgFloat  (8);
 
-    m_current_module->turbojets.push_back(turbojet);
+    m_document->turbojets.push_back(turbojet);
 }
 
 void Parser::ParseTriggers()
@@ -1993,8 +1915,6 @@ void Parser::ParseTriggers()
     if (! this->CheckNumArguments(6)) { return; }
 
     Trigger trigger;
-    trigger.beam_defaults             = m_user_beam_defaults;
-    trigger.detacher_group            = m_current_detacher_group;
     trigger.nodes[0]                  = this->GetArgNodeRef(0);
     trigger.nodes[1]                  = this->GetArgNodeRef(1);
     trigger.contraction_trigger_limit = this->GetArgFloat  (2);
@@ -2057,33 +1977,36 @@ void Parser::ParseTriggers()
         trigger.SetCommandKeyTrigger(command_keys);
     }
 
-    m_current_module->triggers.push_back(trigger);
+    m_document->triggers.push_back(trigger);
+    m_document->lines.emplace_back(Line(KEYWORD_TRIGGERS, (int)m_document->triggers.size() - 1));
 }
 
 void Parser::ParseTorqueCurve()
 {
-    if (m_current_module->torque_curve == nullptr)
-    {
-        m_current_module->torque_curve = std::shared_ptr<RigDef::TorqueCurve>(new RigDef::TorqueCurve());
-    }
+    TorqueCurve torque_curve;
 
     Ogre::StringVector args = Ogre::StringUtil::split(m_current_line, ",");
-    
+    bool valid = true;
     if (args.size() == 1u)
     {
-        m_current_module->torque_curve->predefined_func_name = args[0];
+        torque_curve.predefined_func_name = args[0];
     }
     else if (args.size() == 2u)
     {
-        TorqueCurve::Sample sample;
-        sample.power          = this->ParseArgFloat(args[0].c_str());
-        sample.torque_percent = this->ParseArgFloat(args[1].c_str());
-        m_current_module->torque_curve->samples.push_back(sample);  
+        torque_curve.sample.power          = this->ParseArgFloat(args[0].c_str());
+        torque_curve.sample.torque_percent = this->ParseArgFloat(args[1].c_str());
     }
     else
     {
         // Consistent with 0.38's parser.
-        this->AddMessage(Message::TYPE_ERROR, "Invalid line, too many arguments");   
+        this->AddMessage(Message::TYPE_ERROR, "Invalid line, too many arguments");
+        valid = false;
+    }
+
+    if (valid)
+    {
+        m_document->torque_curve.push_back(torque_curve);
+        m_document->lines.emplace_back(Line(KEYWORD_TORQUECURVE, (int)m_document->torque_curve.size() - 1));
     }
 }
 
@@ -2092,8 +2015,6 @@ void Parser::ParseTies()
     if (! this->CheckNumArguments(5)) { return; }
 
     Tie tie;
-    tie.beam_defaults     = m_user_beam_defaults;
-    tie.detacher_group    = m_current_detacher_group;
 
     tie.root_node         = this->GetArgNodeRef(0);
     tie.max_reach_length  = this->GetArgFloat  (1);
@@ -2129,7 +2050,8 @@ void Parser::ParseTies()
     if (m_num_args > 6) { tie.max_stress   =  this->GetArgFloat (6); }
     if (m_num_args > 7) { tie.group        =  this->GetArgInt   (7); }
 
-    m_current_module->ties.push_back(tie);
+    m_document->ties.push_back(tie);
+    m_document->lines.emplace_back(Line(KEYWORD_TIES, (int)m_document->ties.size() - 1));
 }
 
 void Parser::ParseSoundsources()
@@ -2140,7 +2062,8 @@ void Parser::ParseSoundsources()
     soundsource.node              = this->GetArgNodeRef(0);
     soundsource.sound_script_name = this->GetArgStr(1);
 
-    m_current_module->soundsources.push_back(soundsource);
+    m_document->soundsources.push_back(soundsource);
+    m_document->lines.emplace_back(Line(KEYWORD_SOUNDSOURCES, (int)m_document->soundsources.size() - 1));
 }
 
 void Parser::ParseSoundsources2()
@@ -2168,7 +2091,8 @@ void Parser::ParseSoundsources2()
         soundsource2.cinecam_index = mode;
     }
 
-    m_current_module->soundsources2.push_back(soundsource2);
+    m_document->soundsources2.push_back(soundsource2);
+    m_document->lines.emplace_back(Line(KEYWORD_SOUNDSOURCES2, (int)m_document->soundsources2.size() - 1));
 }
 
 void Parser::ParseSlidenodes()
@@ -2243,7 +2167,8 @@ void Parser::ParseSlidenodes()
         }
     }
     
-    m_current_module->slidenodes.push_back(slidenode);
+    m_document->slidenodes.push_back(slidenode);
+    m_document->lines.emplace_back(Line(KEYWORD_SLIDENODES, (int)m_document->slidenodes.size() - 1));
 }
 
 void Parser::ParseShock3()
@@ -2251,8 +2176,6 @@ void Parser::ParseShock3()
     if (! this->CheckNumArguments(15)) { return; }
 
     Shock3 shock_3;
-    shock_3.beam_defaults  = m_user_beam_defaults;
-    shock_3.detacher_group = m_current_detacher_group;
 
     shock_3.nodes[0]       = this->GetArgNodeRef( 0);
     shock_3.nodes[1]       = this->GetArgNodeRef( 1);
@@ -2300,7 +2223,8 @@ void Parser::ParseShock3()
         }
     }
 
-    m_current_module->shocks_3.push_back(shock_3);
+    m_document->shocks_3.push_back(shock_3);
+    m_document->lines.emplace_back(Line(KEYWORD_SHOCKS3, (int)m_document->shocks_3.size() - 1));
 }
 
 void Parser::ParseShock2()
@@ -2308,8 +2232,6 @@ void Parser::ParseShock2()
     if (! this->CheckNumArguments(13)) { return; }
 
     Shock2 shock_2;
-    shock_2.beam_defaults  = m_user_beam_defaults;
-    shock_2.detacher_group = m_current_detacher_group;
 
     shock_2.nodes[0]                   = this->GetArgNodeRef( 0);
     shock_2.nodes[1]                   = this->GetArgNodeRef( 1);
@@ -2357,7 +2279,8 @@ void Parser::ParseShock2()
         }
     }
 
-    m_current_module->shocks_2.push_back(shock_2);
+    m_document->shocks_2.push_back(shock_2);
+    m_document->lines.emplace_back(Line(KEYWORD_SHOCKS2, (int)m_document->shocks_3.size() - 1));
 }
 
 void Parser::ParseShock()
@@ -2365,8 +2288,6 @@ void Parser::ParseShock()
     if (! this->CheckNumArguments(7)) { return; }
 
     Shock shock;
-    shock.beam_defaults  = m_user_beam_defaults;
-    shock.detacher_group = m_current_detacher_group;
 
     shock.nodes[0]       = this->GetArgNodeRef(0);
     shock.nodes[1]       = this->GetArgNodeRef(1);
@@ -2409,7 +2330,8 @@ void Parser::ParseShock()
             }
         }
     }
-    m_current_module->shocks.push_back(shock);
+    m_document->shocks.push_back(shock);
+    m_document->lines.emplace_back(Line(KEYWORD_SHOCKS, (int)m_document->shocks.size() - 1));
 }
 
 void Parser::_CheckInvalidTrailingText(Ogre::String const & line, std::smatch const & results, unsigned int index)
@@ -2424,39 +2346,29 @@ void Parser::_CheckInvalidTrailingText(Ogre::String const & line, std::smatch co
 
 Node::Ref Parser::_ParseNodeRef(std::string const & node_id_str)
 {
-    if (m_sequential_importer.IsEnabled())
+
+    int node_id_num = STR_PARSE_INT(node_id_str);
+    if (node_id_num < 0)
     {
-        // Import of legacy fileformatversion
-        int node_id_num = STR_PARSE_INT(node_id_str);
-        if (node_id_num < 0)
-        {
-            Str<2000> msg;
-            msg << "Invalid negative node number " << node_id_num << ", parsing as " << (node_id_num*-1) << " for backwards compatibility";
-            AddMessage(node_id_str, Message::TYPE_WARNING, msg.ToCStr());
-            node_id_num *= -1;
-        }
-        // Since fileformatversion is not known from the beginning of parsing, 2 states must be kept 
-        // at the same time: IMPORT_STATE and REGULAR_STATE. The outer logic must make the right pick.
-        unsigned int flags = Node::Ref::IMPORT_STATE_IS_VALID |                                     // Import state
-                             Node::Ref::REGULAR_STATE_IS_VALID | Node::Ref::REGULAR_STATE_IS_NAMED; // Regular state (fileformatversion >= 450)
-        if (m_any_named_node_defined)
-        {
-            flags |= Node::Ref::IMPORT_STATE_MUST_CHECK_NAMED_FIRST;
-        }
-        return Node::Ref(node_id_str, node_id_num, flags, m_current_line_number);
+        Str<2000> msg;
+        msg << "Invalid negative node number " << node_id_num << ", parsing as " << (node_id_num*-1) << " for backwards compatibility";
+        AddMessage(node_id_str, Message::TYPE_WARNING, msg.ToCStr());
+        node_id_num *= -1;
     }
-    else
-    {
-        // fileformatversion >= 450, use named-only nodes
-        return Node::Ref(node_id_str, 0, Node::Ref::REGULAR_STATE_IS_VALID | Node::Ref::REGULAR_STATE_IS_NAMED, m_current_line_number);
-    }
+
+    return Node::Ref(node_id_str, node_id_num, 0, 0);
+
 }
 
 void Parser::ParseDirectiveSetDefaultMinimass()
 {
     if (! this->CheckNumArguments(2)) { return; } // Directive name + parameter
 
-    m_user_minimass = std::shared_ptr<MinimassPreset>(new MinimassPreset(this->GetArgFloat(1)));
+    DefaultMinimass dm;
+    dm.min_mass = this->GetArgFloat(1);
+
+    m_document->default_minimass.push_back(dm);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_DEFAULT_MINIMASS, (int)m_document->default_minimass.size() - 1));
 }
 
 void Parser::ParseDirectiveSetInertiaDefaults()
@@ -2467,21 +2379,17 @@ void Parser::ParseDirectiveSetInertiaDefaults()
     float stop_delay = 0;
     if (m_num_args > 2) { stop_delay = this->GetArgFloat(2); }
 
-    if (start_delay < 0 || stop_delay < 0)
-    {
-        m_user_default_inertia = m_ror_default_inertia; // Reset and return
-        return;
-    }
-
     // Create
-    Inertia* i = new Inertia(*m_user_default_inertia.get());
-    i->start_delay_factor = start_delay;
-    i->stop_delay_factor = stop_delay;
+    Inertia inertia;
+    inertia._num_args = m_num_args;
+    inertia.start_delay_factor = start_delay;
+    inertia.stop_delay_factor = stop_delay;
     
-    if (m_num_args > 3) { i->start_function = this->GetArgStr(3); }
-    if (m_num_args > 4) { i->stop_function  = this->GetArgStr(4); }
+    if (m_num_args > 3) { inertia.start_function = this->GetArgStr(3); }
+    if (m_num_args > 4) { inertia.stop_function  = this->GetArgStr(4); }
     
-    m_user_default_inertia = std::shared_ptr<Inertia>(i);
+    m_document->inertia_defaults.push_back(inertia);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_INERTIA_DEFAULTS, (int)m_document->inertia_defaults.size() - 1));
 }
 
 void Parser::ParseScrewprops()
@@ -2495,7 +2403,8 @@ void Parser::ParseScrewprops()
     screwprop.top_node  = this->GetArgNodeRef(2);
     screwprop.power     = this->GetArgFloat  (3);
 
-    m_current_module->screwprops.push_back(screwprop);
+    m_document->screwprops.push_back(screwprop);
+    m_document->lines.emplace_back(Line(KEYWORD_SCREWPROPS, (int)m_document->screwprops.size() - 1));
 }
 
 void Parser::ParseRotatorsUnified()
@@ -2503,7 +2412,6 @@ void Parser::ParseRotatorsUnified()
     if (! this->CheckNumArguments(13)) { return; }
 
     Rotator2 rotator;
-    rotator.inertia_defaults = m_user_default_inertia;
     
     rotator.axis_nodes[0]           = this->GetArgNodeRef( 0);
     rotator.axis_nodes[1]           = this->GetArgNodeRef( 1);
@@ -2535,24 +2443,21 @@ void Parser::ParseRotatorsUnified()
     if (m_num_args > 17 + offset) { rotator.engine_coupling = this->GetArgFloat(17 + offset); }
     if (m_num_args > 18 + offset) { rotator.needs_engine    = this->GetArgBool (18 + offset); }
 
-        if (m_current_section == SECTION_ROTATORS_2)
-        {
-            m_current_module->rotators_2.push_back(rotator);
-        }
-        else
-        {
-            m_current_module->rotators.push_back(rotator);
-        }
+    if (m_current_section == SECTION_ROTATORS_2)
+    {
+        m_document->rotators_2.push_back(rotator);
+        m_document->lines.emplace_back(Line(KEYWORD_ROTATORS2, (int)m_document->rotators_2.size() - 1));
+    }
+    else
+    {
+        m_document->rotators.push_back(rotator);
+        m_document->lines.emplace_back(Line(KEYWORD_ROTATORS, (int)m_document->rotators.size() - 1));
+    }
 }
 
 void Parser::ParseFileinfo()
 {
     if (! this->CheckNumArguments(2)) { return; }
-
-    if (m_current_module != m_root_module)
-    {
-        this->AddMessage(Message::TYPE_WARNING, "Inline-section 'fileinfo' has global effect and should not appear in a module");
-    }
 
     Fileinfo fileinfo;
 
@@ -2562,9 +2467,10 @@ void Parser::ParseFileinfo()
     if (m_num_args > 2) { fileinfo.category_id  = this->GetArgInt(2); }
     if (m_num_args > 3) { fileinfo.file_version = this->GetArgInt(3); }
 
-    m_definition->file_info = std::shared_ptr<Fileinfo>( new Fileinfo(fileinfo) );
+    m_document->file_info.push_back(fileinfo);
+    m_document->lines.emplace_back(Line(KEYWORD_FILEINFO, (int)m_document->file_info.size() - 1));
 
-    this->ChangeSection(SECTION_NONE);
+    this->ChangeSection(KEYWORD_INVALID, SECTION_NONE);
 }
 
 void Parser::ParseRopes()
@@ -2572,14 +2478,13 @@ void Parser::ParseRopes()
     if (! this->CheckNumArguments(2)) { return; }
     
     Rope rope;
-    rope.beam_defaults  = m_user_beam_defaults;
-    rope.detacher_group = m_current_detacher_group;
     rope.root_node      = this->GetArgNodeRef(0);
     rope.end_node       = this->GetArgNodeRef(1);
     
     if (m_num_args > 2) { rope.invisible  = (this->GetArgChar(2) == 'i'); }
 
-    m_current_module->ropes.push_back(rope);
+    m_document->ropes.push_back(rope);
+    m_document->lines.emplace_back(Line(KEYWORD_ROPES, (int)m_document->ropes.size() - 1));
 }
 
 void Parser::ParseRopables()
@@ -2592,7 +2497,8 @@ void Parser::ParseRopables()
     if (m_num_args > 1) { ropable.group         =  this->GetArgInt(1); }
     if (m_num_args > 2) { ropable.has_multilock = (this->GetArgInt(2) == 1); }
 
-    m_current_module->ropables.push_back(ropable);
+    m_document->ropables.push_back(ropable);
+    m_document->lines.emplace_back(Line(KEYWORD_ROPABLES, (int)m_document->ropables.size() - 1));
 }
 
 void Parser::ParseRailGroups()
@@ -2612,7 +2518,7 @@ void Parser::ParseRailGroups()
         railgroup.node_list.push_back( this->_ParseNodeRef(*itor));
     }
 
-    m_current_module->railgroups.push_back(railgroup);
+    m_document->railgroups.push_back(railgroup);
 }
 
 void Parser::ParseProps()
@@ -2663,7 +2569,8 @@ void Parser::ParseProps()
         if (m_num_args > 14) prop.special_prop_dashboard.rotation_angle = this->GetArgFloat(14);
     }
 
-    m_current_module->props.push_back(prop);
+    m_document->props.push_back(prop);
+    m_document->lines.emplace_back(Line(KEYWORD_PROPS, (int)m_document->props.size() - 1));
 }
 
 void Parser::ParsePistonprops()
@@ -2682,7 +2589,8 @@ void Parser::ParsePistonprops()
     pistonprop.pitch              = this->GetArgFloat       (8);
     pistonprop.airfoil            = this->GetArgStr         (9);
 
-    m_current_module->pistonprops.push_back(pistonprop);
+    m_document->pistonprops.push_back(pistonprop);
+    m_document->lines.emplace_back(Line(KEYWORD_PISTONPROPS, (int)m_document->pistonprops.size() - 1));
 
 }
 
@@ -2695,7 +2603,8 @@ void Parser::ParseParticles()
     particle.reference_node       = this->GetArgNodeRef(1);
     particle.particle_system_name = this->GetArgStr    (2);
 
-    m_current_module->particles.push_back(particle);
+    m_document->particles.push_back(particle);
+    m_document->lines.emplace_back(Line(KEYWORD_PARTICLES, (int)m_document->particles.size() - 1));
 }
 
 // Static
@@ -2773,29 +2682,18 @@ void Parser::ParseNodesUnified()
     if (! this->CheckNumArguments(4)) { return; }
 
     Node node;
-    node.node_defaults = m_user_node_defaults;
-    node.beam_defaults = m_user_beam_defaults;
-    node.node_minimass = m_user_minimass;
-    node.detacher_group = m_current_detacher_group;
+    node._num_args = m_num_args;
+    Keyword keyword = KEYWORD_INVALID;
 
     if (m_current_section == SECTION_NODES_2)
     {
-        std::string node_name = this->GetArgStr(0);
-        node.id.setStr(node_name);
-        if (m_sequential_importer.IsEnabled())
-        {
-            m_sequential_importer.AddNamedNode(node_name);
-        }
-        m_any_named_node_defined = true; // For import logic
+        node.id.setStr(this->GetArgStr(0));
+        keyword = KEYWORD_NODES2;
     }
     else
     {
-        const unsigned int node_num = this->GetArgUint(0);
-        node.id.SetNum(node_num);
-        if (m_sequential_importer.IsEnabled())
-        {
-            m_sequential_importer.AddNumberedNode(node_num);
-        }
+        node.id.SetNum(this->GetArgUint(0));
+        keyword = KEYWORD_NODES;
     }
 
     node.position.x = this->GetArgFloat(1);
@@ -2803,23 +2701,17 @@ void Parser::ParseNodesUnified()
     node.position.z = this->GetArgFloat(3);
     if (m_num_args > 4)
     {
-        this->_ParseNodeOptions(node.options, this->GetArgStr(4));
+        node.options = this->GetArgNodeOptions(4);
     }
     if (m_num_args > 5)
     {
-        if (node.options & Node::OPTION_l_LOAD_WEIGHT)
-        {
-            node.load_weight_override = this->GetArgFloat(5);
-            node._has_load_weight_override = true;
-        }
-        else
-        {
-            this->AddMessage(Message::TYPE_WARNING, 
-                "Node has load-weight-override value specified, but option 'l' is not present. Ignoring value...");
-        }
+        // Only used on spawn if 'l' flag is present
+        node.load_weight_override = this->GetArgFloat(5);
     }
 
-    m_current_module->nodes.push_back(node);
+
+    m_document->nodes.push_back(node);
+    m_document->lines.emplace_back(Line(keyword, (int)m_document->nodes.size() - 1));
 }
 
 void Parser::ParseNodeCollision()
@@ -2830,12 +2722,13 @@ void Parser::ParseNodeCollision()
     node_collision.node   = this->GetArgNodeRef(0);
     node_collision.radius = this->GetArgFloat  (1);
     
-    m_current_module->node_collisions.push_back(node_collision);
+    m_document->node_collisions.push_back(node_collision);
 }
 
 void Parser::ParseMinimass()
 {
-    const float minimass = this->GetArgFloat(0);
+    Minimass minimass;
+    minimass.min_mass = this->GetArgFloat(0);
     if (m_num_args > 1)
     {
         const std::string options_str = this->GetArgStr(1);
@@ -2844,11 +2737,11 @@ void Parser::ParseMinimass()
             switch (c)
             {
             case '\0': // Terminator NULL character
-            case (MinimassPreset::OPTION_n_FILLER):
+            case (Minimass::OPTION_n_FILLER):
                 break;
 
-            case (MinimassPreset::OPTION_l_SKIP_LOADED):
-                m_definition->minimass_skip_loaded_nodes = true;
+            case (Minimass::OPTION_l_SKIP_LOADED):
+                minimass.option_l_skip_loaded = true;
                 break;
 
             default:
@@ -2858,9 +2751,10 @@ void Parser::ParseMinimass()
         }
     }
 
-    m_ror_minimass->min_mass = minimass;
+    m_document->minimass.push_back(minimass);
+    m_document->lines.emplace_back(Line(KEYWORD_MINIMASS, (int)m_document->minimass.size() - 1));
 
-    this->ChangeSection(SECTION_NONE);
+    this->ChangeSection(KEYWORD_INVALID, SECTION_NONE);
 }
 
 void Parser::ParseFlexBodyWheel()
@@ -2868,8 +2762,6 @@ void Parser::ParseFlexBodyWheel()
     if (! this->CheckNumArguments(16)) { return; }
 
     FlexBodyWheel flexbody_wheel;
-    flexbody_wheel.node_defaults = m_user_node_defaults;
-    flexbody_wheel.beam_defaults = m_user_beam_defaults;
 
     flexbody_wheel.tyre_radius        = this->GetArgFloat        ( 0);
     flexbody_wheel.rim_radius         = this->GetArgFloat        ( 1);
@@ -2891,12 +2783,8 @@ void Parser::ParseFlexBodyWheel()
     if (m_num_args > 16) { flexbody_wheel.rim_mesh_name  = this->GetArgStr(16); }
     if (m_num_args > 17) { flexbody_wheel.tyre_mesh_name = this->GetArgStr(17); }
 
-    if (m_sequential_importer.IsEnabled())
-    {
-        m_sequential_importer.GenerateNodesForWheel(KEYWORD_FLEXBODYWHEELS, flexbody_wheel.num_rays, flexbody_wheel.rigidity_node.IsValidAnyState());
-    }
-
-    m_current_module->flex_body_wheels.push_back(flexbody_wheel);
+    m_document->flex_body_wheels.push_back(flexbody_wheel);
+    m_document->lines.emplace_back(Line(KEYWORD_FLEXBODYWHEELS, (int)m_document->flex_body_wheels.size() - 1));
 }
 
 void Parser::ParseMaterialFlareBindings()
@@ -2907,7 +2795,8 @@ void Parser::ParseMaterialFlareBindings()
     binding.flare_number  = this->GetArgInt(0);
     binding.material_name = this->GetArgStr(1);
     
-    m_current_module->material_flare_bindings.push_back(binding);
+    m_document->material_flare_bindings.push_back(binding);
+    m_document->lines.emplace_back(Line(KEYWORD_MATERIALFLAREBINDINGS, (int)m_document->material_flare_bindings.size() - 1));
 }
 
 void Parser::ParseManagedMaterials()
@@ -2916,7 +2805,6 @@ void Parser::ParseManagedMaterials()
 
     ManagedMaterial managed_mat;
     
-    managed_mat.options = m_current_managed_material_options;
     managed_mat.name    = this->GetArgStr(0);
 
     const std::string type_str = this->GetArgStr(1);
@@ -2969,7 +2857,8 @@ void Parser::ParseManagedMaterials()
         managed_mat.specular_map = "-";
     }
 
-    m_current_module->managed_materials.push_back(managed_mat);
+    m_document->managed_materials.push_back(managed_mat);
+    m_document->lines.emplace_back(Line(KEYWORD_MANAGEDMATERIALS, (int)m_document->managed_materials.size() - 1));
 }
 
 void Parser::ParseLockgroups()
@@ -2984,7 +2873,8 @@ void Parser::ParseLockgroups()
         lockgroup.nodes.push_back(this->GetArgNodeRef(i));
     }
     
-    m_current_module->lockgroups.push_back(lockgroup);
+    m_document->lockgroups.push_back(lockgroup);
+    m_document->lines.emplace_back(Line(KEYWORD_LOCKGROUPS, (int)m_document->lockgroups.size() - 1));
 }
 
 void Parser::ParseHydros()
@@ -2992,9 +2882,6 @@ void Parser::ParseHydros()
     if (! this->CheckNumArguments(3)) { return; }
 
     Hydro hydro;
-    hydro.inertia_defaults   = m_user_default_inertia;
-    hydro.detacher_group     = m_current_detacher_group;
-    hydro.beam_defaults      = m_user_beam_defaults;
     
     hydro.nodes[0]           = this->GetArgNodeRef(0);
     hydro.nodes[1]           = this->GetArgNodeRef(1);
@@ -3004,7 +2891,8 @@ void Parser::ParseHydros()
     
     this->ParseOptionalInertia(hydro.inertia, 4);
 
-    m_current_module->hydros.push_back(hydro);
+    m_document->hydros.push_back(hydro);
+    m_document->lines.emplace_back(Line(KEYWORD_HYDROS, (int)m_document->hydros.size() - 1));
 }
 
 void Parser::ParseOptionalInertia(Inertia & inertia, int index)
@@ -3020,8 +2908,6 @@ void Parser::ParseBeams()
     if (! this->CheckNumArguments(2)) { return; }
     
     Beam beam;
-    beam.defaults       = m_user_beam_defaults;
-    beam.detacher_group = m_current_detacher_group;
     
     beam.nodes[0] = this->GetArgNodeRef(0);
     beam.nodes[1] = this->GetArgNodeRef(1);
@@ -3057,7 +2943,8 @@ void Parser::ParseBeams()
         beam._has_extension_break_limit = true;
     }
 
-    m_current_module->beams.push_back(beam);
+    m_document->beams.push_back(beam);
+    m_document->lines.emplace_back(Line(KEYWORD_BEAMS, (int)m_document->beams.size() - 1));
 }
 
 void Parser::ParseAnimator()
@@ -3066,9 +2953,6 @@ void Parser::ParseAnimator()
     if (args.size() < 4) { return; }
 
     Animator animator;
-    animator.inertia_defaults   = m_user_default_inertia;
-    animator.beam_defaults      = m_user_beam_defaults;
-    animator.detacher_group     = m_current_detacher_group;
 
     animator.nodes[0]           = this->_ParseNodeRef(args[0]);
     animator.nodes[1]           = this->_ParseNodeRef(args[1]);
@@ -3147,16 +3031,12 @@ void Parser::ParseAnimator()
         }
     }
 
-    m_current_module->animators.push_back(animator);
+    m_document->animators.push_back(animator);
+    m_document->lines.emplace_back(Line(KEYWORD_ANIMATORS, (int)m_document->animators.size() - 1));
 }
 
 void Parser::ParseAuthor()
 {
-    if (m_current_module != m_root_module)
-    {
-        this->AddMessage(Message::TYPE_WARNING, "Inline-section 'author' has global effect and should not appear in a module");
-    }
-
     if (! this->CheckNumArguments(2)) { return; }
 
     Author author;
@@ -3164,9 +3044,10 @@ void Parser::ParseAuthor()
     if (m_num_args > 2) { author.forum_account_id = this->GetArgInt(2); author._has_forum_account = true; }
     if (m_num_args > 3) { author.name             = this->GetArgStr(3); }
     if (m_num_args > 4) { author.email            = this->GetArgStr(4); }
-    m_definition->authors.push_back(author);
+    m_document->authors.push_back(author);
+    m_document->lines.emplace_back(Line(KEYWORD_AUTHOR, (int)m_document->authors.size() - 1));
 
-    this->ChangeSection(SECTION_NONE);
+    this->ChangeSection(KEYWORD_INVALID, SECTION_NONE);
 }
 
 // -------------------------------------------------------------------------- 
@@ -3177,9 +3058,9 @@ void Parser::AddMessage(std::string const & line, Message::Type type, std::strin
 {
     RoR::Str<4000> txt;
 
-    if (!m_definition->name.empty())
+    if (!m_document->name.empty())
     {
-        txt << m_definition->name;
+        txt << m_document->name;
     }
     else
     {
@@ -3195,11 +3076,6 @@ void Parser::AddMessage(std::string const & line, Message::Type type, std::strin
             txt << "/" << RigDef::File::SubsectionToString(m_current_subsection);
         }
         txt << "'";
-    }
-
-    if (m_current_module != m_root_module)
-    {
-        txt << ", module: " << m_current_module->name;
     }
 
     txt << "): " << message;
@@ -3276,54 +3152,15 @@ void Parser::Prepare()
     m_current_section = SECTION_TRUCK_NAME;
     m_current_subsection = SUBSECTION_NONE;
     m_current_line_number = 1;
-    m_definition = std::shared_ptr<File>(new File());
+    m_document = std::shared_ptr<File>(new File());
     m_in_block_comment = false;
     m_in_description_section = false;
-    m_any_named_node_defined = false;
-    m_last_flexbody.reset(); // Set to nullptr
-    m_current_detacher_group = 0; // Global detacher group 
-
-    m_user_default_inertia = m_ror_default_inertia;
-    m_user_node_defaults   = m_ror_node_defaults;
-    m_user_minimass        = m_ror_minimass;
-    m_current_managed_material_options = ManagedMaterialsOptions();
-
-    m_user_beam_defaults = std::shared_ptr<BeamDefaults>(new BeamDefaults);
-    m_user_beam_defaults->springiness           = DEFAULT_SPRING;
-    m_user_beam_defaults->damping_constant      = DEFAULT_DAMP;
-    m_user_beam_defaults->deformation_threshold = BEAM_DEFORM;
-    m_user_beam_defaults->breaking_threshold    = BEAM_BREAK;
-    m_user_beam_defaults->visual_beam_diameter  = DEFAULT_BEAM_DIAMETER;
-
-    m_root_module = m_definition->root_module;
-    m_current_module = m_definition->root_module;
-
-    m_sequential_importer.Init(true); // Enabled=true
 }
 
-void Parser::ChangeSection(RigDef::Section new_section)
+void Parser::ChangeSection(Keyword keyword, RigDef::Section new_section)
 {
     // ## Section-specific switch logic ##
 
-    if (m_current_submesh != nullptr)
-    {
-        m_current_module->submeshes.push_back(*m_current_submesh);
-        m_current_submesh.reset(); // Set to nullptr
-        m_current_subsection = SUBSECTION_NONE;
-    }
-
-    if (m_current_camera_rail != nullptr)
-    {
-        if (m_current_camera_rail->nodes.size() == 0)
-        {
-            this->AddMessage(Message::TYPE_WARNING, "Empty section 'camerarail', ignoring...");
-        }
-        else
-        {
-            m_current_module->camera_rails.push_back(*m_current_camera_rail);
-            m_current_camera_rail.reset();
-        }
-    }
 
     if (m_current_section == SECTION_FLEXBODIES)
     {
@@ -3332,86 +3169,22 @@ void Parser::ChangeSection(RigDef::Section new_section)
 
     // Enter sections
     m_current_section = new_section;
-    if (new_section == SECTION_SUBMESH)
-    {
-        m_current_submesh = std::shared_ptr<Submesh>( new Submesh() );
-    }
-    else if (new_section == SECTION_CAMERA_RAIL)
-    {
-        m_current_camera_rail = std::shared_ptr<CameraRail>( new CameraRail() );
-    }
-    else if (new_section == SECTION_FLEXBODIES)
+    if (new_section == SECTION_FLEXBODIES)
     {
         m_current_subsection = SUBSECTION__FLEXBODIES__PROPLIKE_LINE;
     }
-    else if (new_section == SECTION_GUI_SETTINGS)
-    {
-        if (m_current_module->gui_settings == nullptr)
-        {
-            m_current_module->gui_settings = std::shared_ptr<GuiSettings> ( new GuiSettings() );
-        }
-    }
-}
 
-void Parser::ProcessChangeModuleLine(Keyword keyword)
-{
-    // Determine and verify new module
-    std::string new_module_name;
-    if (keyword == KEYWORD_END_SECTION)
+    if (keyword != Keyword::KEYWORD_INVALID)
     {
-        if (m_current_module == m_root_module)
-        {
-            this->AddMessage(Message::TYPE_ERROR, "Misplaced keyword 'end_section' (already in root module), ignoring...");
-            return;
-        }
-        new_module_name = ROOT_MODULE_NAME;
-    }
-    else if (keyword == KEYWORD_SECTION)
-    {
-        if (!this->CheckNumArguments(3)) // Syntax: "section VERSION NAME"; VERSION is unused
-        {
-            return; // Error already reported
-        }
-
-        new_module_name = this->GetArgStr(2);
-        if (new_module_name == m_current_module->name)
-        {
-            this->AddMessage(Message::TYPE_ERROR, "Attempt to re-enter current module, ignoring...");
-            return;
-        }
-    }
-
-    // Perform the switch
-    this->ChangeSection(RigDef::SECTION_NONE);
-    m_last_flexbody.reset(); // Set to nullptr
-
-    if (new_module_name == ROOT_MODULE_NAME)
-    {
-        m_current_module = m_root_module;
-        return;
-    }
-
-    auto search_itor = m_definition->user_modules.find(new_module_name);
-    if (search_itor != m_definition->user_modules.end())
-    {
-        m_current_module = search_itor->second;
-    }
-    else
-    {
-        m_current_module = std::make_shared<File::Module>(new_module_name);
-        m_definition->user_modules.insert(std::make_pair(new_module_name, m_current_module));
+        Line line(keyword, -1);
+        line.begins_block = true;
+        m_document->lines.push_back(line);
     }
 }
 
 void Parser::Finalize()
 {
-    this->ChangeSection(SECTION_NONE);
-    m_definition->global_minimass = m_ror_minimass;
-
-    if (m_sequential_importer.IsEnabled())
-    {
-        m_sequential_importer.Process( m_definition );
-    }
+    this->ChangeSection(KEYWORD_INVALID, SECTION_NONE);
 }
 
 std::string Parser::GetArgStr(int index)
@@ -3510,6 +3283,15 @@ Wheels::Braking Parser::GetArgBraking(int index)
 Node::Ref Parser::GetArgNodeRef(int index)
 {
     return this->_ParseNodeRef(this->GetArgStr(index));
+}
+
+int Parser::GetArgNodeOptions(int index)
+{
+    ROR_ASSERT(index < m_num_args);
+
+    int options = 0;
+    this->_ParseNodeOptions(options, this->GetArgStr(index));
+    return options;
 }
 
 Node::Ref Parser::GetArgNullableNode(int index)
