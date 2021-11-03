@@ -686,12 +686,7 @@ void CacheSystem::FillTruckDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr str
 {
     /* LOAD AND PARSE THE VEHICLE */
     RigDef::Parser parser;
-    parser.Prepare();
     parser.ProcessOgreStream(stream.getPointer(), group);
-    parser.Finalize();
-
-    /* RETRIEVE DATA */
-
     std::shared_ptr<RigDef::File> def = parser.GetFile();
 
     /* Name */

@@ -22,6 +22,7 @@
 /// @file
 /// @author Petr Ohlidal
 /// @date   12/2013
+/// @brief Checks the rig-def file syntax and loads data to memory
 
 #pragma once
 
@@ -35,21 +36,6 @@
 namespace RigDef
 {
 
-///  @class  Parser
-///  @author Petr Ohlidal
-///
-///  @brief Checks the rig-def file syntax and pulls data to File object
-///
-///  For every section/directive, there is a data-container struct defined in File.h.
-///  The Parser should preferably only read data as-is, without validation.
-///
-///  Every time a line of a particular section is parsed, an instance of the struct
-///  is saved into an array container in struct RigDef::File. There are exceptions to this rule.
-///
-///  Keywords 'set_[node|beam|inertia]_defaults' are 'presets' and are managed by dyn. allocated
-///  objects. For every preset, there are 2 pointers:
-///      * 'ror_*' represents game defaults as specified in documentation. Needed for resetting.
-///      * 'user_*' represent the last defaults specified in the .truck file.
 class Parser
 {
 
@@ -78,8 +64,6 @@ public:
 
     Parser();
 
-    void Prepare();
-    void Finalize();
     void ProcessOgreStream(Ogre::DataStream* stream, Ogre::String resource_group);
     void ProcessRawLine(const char* line);
 
@@ -114,7 +98,6 @@ private:
 //  Section parsers
 // --------------------------------------------------------------------------
 
-    void ParseActorNameLine();
     void ParseAirbrakes();
     void ParseAnimator();
     void ParseAntiLockBrakes();
@@ -122,7 +105,7 @@ private:
     void ParseAxles();
     void ParseBeams();
     void ParseBrakes();
-    void ProcessKeywordCab();
+    void ParseCab();
     void ParseCameras();
     void ParseCameraRails();
     void ParseCinecam();
@@ -130,6 +113,7 @@ private:
     void ParseCommandsUnified();
     void ParseContacter();
     void ParseCruiseControl();
+    void ParseDescription();
     void ParseEngine();
     void ParseEngoption();
     void ParseEngturbo();
@@ -141,6 +125,7 @@ private:
     void ParseFlaresUnified();
     void ParseFlexbody();
     void ParseFlexBodyWheel();
+    void ParseForset();
     void ParseFusedrag();
     void ParseGlobals();
     void ParseGuid();
@@ -174,9 +159,8 @@ private:
     void ParseSoundsources();
     void ParseSoundsources2();
     void ParseSpeedLimiter();
-    void ParseSubmesh();
     void ParseSubmeshGroundModel();
-    void ProcessKeywordTexcoords();
+    void ParseTexcoords();
     void ParseTies();
     void ParseTorqueCurve();
     void ParseTractionControl();
@@ -197,7 +181,7 @@ private:
     void             ProcessCurrentLine();
     int              TokenizeCurrentLine();
     bool             CheckNumArguments(int num_required_args);
-    void             ChangeSection(RigDef::Keyword keyword, RigDef::Section new_section);
+    void             BeginBlock(RigDef::Keyword keyword);
 
     std::string        GetArgStr          (int index);
     int                GetArgInt          (int index);
@@ -259,19 +243,16 @@ private:
 // --------------------------------------------------------------------------
 
     // Parser state
-    unsigned int                         m_current_line_number;
-    char                                 m_current_line[LINE_BUFFER_LENGTH];
-    Token                                m_args[LINE_MAX_ARGS];    //!< Tokens of current line.
-    int                                  m_num_args;               //!< Number of tokens on current line.
-    Section                        m_current_section;        //!< Parser state.
-    Subsection                     m_current_subsection;     //!< Parser state.
-    bool                                 m_in_block_comment;       //!< Parser state.
-    bool                                 m_in_description_section; //!< Parser state.
+    unsigned int                         m_current_line_number = 1;
+    char                                 m_current_line[LINE_BUFFER_LENGTH] = {};
+    Token                                m_args[LINE_MAX_ARGS] = {};    //!< Tokens of current line.
+    int                                  m_num_args = 0;               //!< Number of tokens on current line.
+    Keyword                              m_current_block = KEYWORD_INVALID;
 
     Ogre::String                         m_filename; // Logging
     Ogre::String                         m_resource_group;
 
-    std::shared_ptr<RigDef::File>        m_document;
+    std::shared_ptr<RigDef::File>        m_document = std::shared_ptr<File>(new File());
 };
 
 } // namespace RigDef

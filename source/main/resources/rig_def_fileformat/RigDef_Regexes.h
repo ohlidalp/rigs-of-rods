@@ -206,6 +206,7 @@ namespace Regexes
     E_KEYWORD_BLOCK("collisionboxes")                             \
     E_KEYWORD_BLOCK("commands")                                   \
     E_KEYWORD_BLOCK("commands2")                                  \
+    E_KEYWORD_BLOCK("comment")                                    \
     E_KEYWORD_BLOCK("contacters")                                 \
     E_KEYWORD_INLINE("cruisecontrol")                             \
     E_KEYWORD_BLOCK("description")                                \
@@ -213,6 +214,8 @@ namespace Regexes
     E_KEYWORD_BLOCK("disabledefaultsounds")                       \
     E_KEYWORD_BLOCK("enable_advanced_deformation")                \
     E_KEYWORD_BLOCK("end")                                        \
+    E_KEYWORD_BLOCK("end_comment")                                \
+    E_KEYWORD_BLOCK("end_description")                            \
     E_KEYWORD_BLOCK("end_section")                                \
     E_KEYWORD_BLOCK("engine")                                     \
     E_KEYWORD_BLOCK("engoption")                                  \
