@@ -123,7 +123,7 @@ Actor *ActorSpawner::SpawnActor()
         case KEYWORD_ADD_ANIMATION:                 break;
         case KEYWORD_AIRBRAKES: this->ProcessAirbrake(m_document->airbrakes[cur_line->data_pos]); break;
         case KEYWORD_ANIMATORS:                     this->ProcessAnimator(m_document->animators[cur_line->data_pos]); break;
-        case KEYWORD_ANTI_LOCK_BRAKES:              this->ProcessAntiLockBrakes(m_document->anti_lock_brakes[cur_line->data_pos]); break;
+        case KEYWORD_ANTILOCKBRAKES:              this->ProcessAntiLockBrakes(m_document->anti_lock_brakes[cur_line->data_pos]); break;
         case KEYWORD_AXLES:                         this->ProcessAxle(m_document->axles[cur_line->data_pos]); break;
         case KEYWORD_AUTHOR:                   /*     this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
         case KEYWORD_BACKMESH:                 /*     this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
@@ -141,7 +141,7 @@ Actor *ActorSpawner::SpawnActor()
         case KEYWORD_DESCRIPTION:              /*     this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
         case KEYWORD_DETACHER_GROUP:           /*     this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
         case KEYWORD_DISABLEDEFAULTSOUNDS:     /*     this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
-        case KEYWORD_ENABLE_ADVANCED_DEFORM:   /*     this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
+        case KEYWORD_ENABLE_ADVANCED_DEFORMATION:   /*     this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
         case KEYWORD_END:                      end=true; break;
         case KEYWORD_END_SECTION:              /*     this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
         case KEYWORD_ENGINE:                        this->ProcessEngine(m_document->engine[cur_line->data_pos]); break;
@@ -165,7 +165,7 @@ Actor *ActorSpawner::SpawnActor()
         case KEYWORD_GUID:                     /*     this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
         case KEYWORD_GUISETTINGS:                   this->ProcessGuiSettings(m_document->gui_settings[cur_line->data_pos]); break;
         case KEYWORD_HELP:                     /*     this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
-        case KEYWORD_HIDE_IN_CHOOSER:          /*     this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
+        case KEYWORD_HIDEINCHOOSER:          /*     this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
         case KEYWORD_HOOKGROUP:  break;
         case KEYWORD_HOOKS:                         this->ProcessHook(m_document->hooks[cur_line->data_pos]); break;
         case KEYWORD_HYDROS:                        this->ProcessHydro(m_document->hydros[cur_line->data_pos]); break;
@@ -201,14 +201,14 @@ Actor *ActorSpawner::SpawnActor()
         case KEYWORD_SET_COLLISION_RANGE:           this->ProcessCollisionRange(cur_line->data_pos); break;
         case KEYWORD_SET_DEFAULT_MINIMASS:       /*   this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
         case KEYWORD_SET_INERTIA_DEFAULTS:          this->ProcessInertiaDefaults(cur_line->data_pos); break;
-        case KEYWORD_SET_MANAGEDMATS_OPTIONS:       this->ProcessManagedMatOptions(cur_line->data_pos); break;
+        case KEYWORD_SET_MANAGEDMATERIALS_OPTIONS:       this->ProcessManagedMatOptions(cur_line->data_pos); break;
         case KEYWORD_SET_NODE_DEFAULTS:             this->ProcessNodeDefaults(cur_line->data_pos); break;
         case KEYWORD_SET_SHADOWS:               /*    this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
         case KEYWORD_SET_SKELETON_SETTINGS:         this->ProcessSkeletonSettings(cur_line->data_pos); break;
         case KEYWORD_SHOCKS:                        this->ProcessShock(m_document->shocks[cur_line->data_pos]); break;
         case KEYWORD_SHOCKS2:                       this->ProcessShock2(m_document->shocks_2[cur_line->data_pos]); break;
         case KEYWORD_SHOCKS3:                       this->ProcessShock3(m_document->shocks_3[cur_line->data_pos]); break;
-        case KEYWORD_SLIDENODE_CONNECT_INSTANT:     this->ProcessSlidenodeConnectInstantly(); break;
+        case KEYWORD_SLIDENODE_CONNECT_INSTANTLY:     this->ProcessSlidenodeConnectInstantly(); break;
         case KEYWORD_SLIDENODES:                    this->ProcessSlidenode(m_document->slidenodes[cur_line->data_pos]); break;
         case KEYWORD_SLOPE_BRAKE:             /*      this->Process(m_document->xxxxxx[cur_line->data_pos]);*/ break;
         case KEYWORD_SOUNDSOURCES:                  this->ProcessSoundSource(m_document->soundsources[cur_line->data_pos]); break;
@@ -219,8 +219,8 @@ Actor *ActorSpawner::SpawnActor()
         case KEYWORD_TEXCOORDS:                     this->ProcessTexcoord(m_document->texcoords[cur_line->data_pos]); break;
         case KEYWORD_TIES:                          this->ProcessTie(m_document->ties[cur_line->data_pos]); break;
         case KEYWORD_TORQUECURVE:               /*    this->ProcessTorque(m_document->xxxxxx[cur_line->data_pos]);*/ break;
-        case KEYWORD_TRACTION_CONTROL:              this->ProcessTractionControl(m_document->traction_control[cur_line->data_pos]); break;
-        case KEYWORD_TRANSFER_CASE:                 this->ProcessTransferCase(m_document->transfer_case[cur_line->data_pos]); break;
+        case KEYWORD_TRACTIONCONTROL:              this->ProcessTractionControl(m_document->traction_control[cur_line->data_pos]); break;
+        case KEYWORD_TRANSFERCASE:                 this->ProcessTransferCase(m_document->transfer_case[cur_line->data_pos]); break;
         case KEYWORD_TRIGGERS:                      this->ProcessTrigger(m_document->triggers[cur_line->data_pos]); break;
         case KEYWORD_TURBOJETS:                     this->ProcessTurbojet(m_document->turbojets[cur_line->data_pos]); break;
         case KEYWORD_TURBOPROPS:                    this->ProcessTurboprop2(m_document->turboprops_2[cur_line->data_pos]); break;

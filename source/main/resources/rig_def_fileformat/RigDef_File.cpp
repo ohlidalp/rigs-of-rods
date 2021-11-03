@@ -28,9 +28,7 @@
 
 namespace RigDef
 {
-
-// Static
-const char* ROOT_MODULE_NAME = "_Root_";
+// Extern
 static const DataPos_t DATAPOS_INVALID = -1;
 
 #ifndef _WIN32
@@ -375,7 +373,7 @@ const char * File::KeywordToString(Keyword keyword)
     {
         case (KEYWORD_AIRBRAKES):            return "airbrakes";
         case (KEYWORD_ANIMATORS):            return "animators";
-        case (KEYWORD_ANTI_LOCK_BRAKES):     return "AntiLockBrakes";
+        case (KEYWORD_ANTILOCKBRAKES):     return "AntiLockBrakes";
         case (KEYWORD_AUTHOR):               return "author";
         case (KEYWORD_AXLES):                return "axles";
         case (KEYWORD_BEAMS):                return "beams";
@@ -435,8 +433,8 @@ const char * File::KeywordToString(Keyword keyword)
         case (KEYWORD_TEXCOORDS):            return "submesh >> texcoords";
         case (KEYWORD_TIES):                 return "ties";
         case (KEYWORD_TORQUECURVE):          return "torquecurve";
-        case (KEYWORD_TRACTION_CONTROL):     return "TractionControl";
-        case (KEYWORD_TRANSFER_CASE):        return "transfercase";
+        case (KEYWORD_TRACTIONCONTROL):     return "TractionControl";
+        case (KEYWORD_TRANSFERCASE):        return "transfercase";
         case (KEYWORD_TRIGGERS):             return "triggers";
         case (KEYWORD_TURBOJETS):            return "turbojets";
         case (KEYWORD_TURBOPROPS):           return "turboprops";
