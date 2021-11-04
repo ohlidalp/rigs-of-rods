@@ -62,8 +62,6 @@ public:
         int         length;
     };
 
-    Parser();
-
     void ProcessOgreStream(Ogre::DataStream* stream, Ogre::String resource_group);
     void ProcessRawLine(const char* line);
 
@@ -78,7 +76,6 @@ private:
 //  Directive parsers
 // --------------------------------------------------------------------------
 
-    void ProcessGlobalDirective(Keyword keyword); //!< Directives that should only appear in root module
     void ParseDirectiveAddAnimation();
     void ParseDirectiveBackmesh();
     void ParseDirectiveDetacherGroup();
@@ -182,6 +179,7 @@ private:
     int              TokenizeCurrentLine();
     bool             CheckNumArguments(int num_required_args);
     void             BeginBlock(RigDef::Keyword keyword);
+    void             EndBlock(RigDef::Keyword keyword);
 
     std::string        GetArgStr          (int index);
     int                GetArgInt          (int index);
