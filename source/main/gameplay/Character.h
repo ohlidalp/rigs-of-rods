@@ -84,6 +84,22 @@ private:
     Ogre::Timer      m_net_timer;
     unsigned long    m_net_last_update_time;
     GfxCharacter*    m_gfx_character;
+
+    // Collision with actor:
+    float x = 0.f;
+    float y = 0.f;
+    float z = 0.f;
+    Ogre::Radian rot;
+    float lx = 0.f;
+    float ly = 0.f;
+    float lz = 0.f;
+    Ogre::Radian lrot;
+    bool inertia = false;
+    float inertia_x = 0.f;
+    float inertia_y = 0.f;
+    float inertia_z = 0.f;
+    Ogre::Radian inertia_rot;
+    Actor* contacting_actor = nullptr;
 };
 
 struct GfxCharacter
@@ -113,4 +129,3 @@ struct GfxCharacter
 };
 
 } // namespace RoR
-

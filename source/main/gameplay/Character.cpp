@@ -145,15 +145,19 @@ void Character::update(float dt)
 
         // Trigger script events and handle mesh (ground) collision
         Vector3 query = position;
-        App::GetSimTerrain()->GetCollisions()->collisionCorrect(&query);
+        if (App::GetSimTerrain()->GetCollisions()->collisionCorrect(&query))
+        {
+            inertia = false;
+        }
 
         // Auto compensate minor height differences
-        float depth = calculate_collision_depth(position);
-        if (depth > 0.0f)
+        float terrain_depth = calculate_collision_depth(position);
+        if (terrain_depth > 0.0f)
         {
             m_can_jump = true;
             m_character_v_speed = std::max(0.0f, m_character_v_speed);
-            position.y += std::min(depth, 2.0f * dt);
+            position.y += std::min(terrain_depth, 2.0f * dt);
+            inertia = false;
         }
 
         // Submesh "collision"
@@ -163,6 +167,11 @@ void Character::update(float dt)
             {
                 if (actor->ar_bounding_box.contains(position))
                 {
+                    x = actor->getPosition().x;
+                    y = actor->getPosition().y;
+                    z = actor->getPosition().z;
+                    rot = Ogre::Radian(actor->getRotation());
+
                     for (int i = 0; i < actor->ar_num_collcabs; i++)
                     {
                         int tmpv = actor->ar_collcabs[i] * 3;
@@ -173,16 +182,52 @@ void Character::update(float dt)
                         if (result.first && result.second < 1.8f)
                         {
                             depth = std::max(depth, result.second);
+                            if (depth > 0 && contacting_actor == nullptr) { contacting_actor = actor; }
                         }
                     }
+
+                    if (depth > 0)
+                    {
+                        m_can_jump = true;
+                        m_character_v_speed = std::max(0.0f, m_character_v_speed);
+                        position.y += std::min(depth, 0.05f);
+                    }
+
+                    if (contacting_actor != nullptr)
+                    {
+                        x = contacting_actor->getPosition().x;
+                        y = contacting_actor->getPosition().y;
+                        z = contacting_actor->getPosition().z;
+                        rot = Ogre::Radian(contacting_actor->getRotation());
+
+                        position.x += (x - lx);
+                        position.y += (y - ly);
+                        position.z += (z - lz);
+                        this->setRotation(m_character_rotation + (rot - lrot));
+
+                        inertia = true;
+                        inertia_x = (x - lx);
+                        inertia_y = (y - ly);
+                        inertia_z = (z - lz);
+                        inertia_rot = (rot - lrot);
+                    }
+                    else if (inertia)
+                    {
+                        position.x += inertia_x;
+                        position.y += inertia_y;
+                        position.z += inertia_z;
+                        this->setRotation(m_character_rotation + inertia_rot);
+                    }
+                }
+                else if (contacting_actor != nullptr && !contacting_actor->ar_bounding_box.contains(position))
+                {
+                    contacting_actor = nullptr;
                 }
             }
-            if (depth > 0.0f)
-            {
-                m_can_jump = true;
-                m_character_v_speed = std::max(0.0f, m_character_v_speed);
-                position.y += std::min(depth, 0.05f);
-            }
+            lx = x;
+            ly = y;
+            lz = z;
+            lrot = rot;
         }
 
         // Obstacle detection
@@ -214,6 +259,7 @@ void Character::update(float dt)
             position.y = pheight;
             m_character_v_speed = 0.0f;
             m_can_jump = true;
+            inertia = false;
         }
 
         // water stuff
@@ -373,6 +419,22 @@ void Character::update(float dt)
     }
     else if (m_actor_coupling) // The character occupies a vehicle or machine
     {
+        Vector3 pos = m_character_position;
+        for (auto actor : App::GetGameContext()->GetActorManager()->GetActors())
+        {
+            if (actor->ar_bounding_box.contains(pos))
+            {
+                lx = actor->getPosition().x;
+                ly = actor->getPosition().y;
+                lz = actor->getPosition().z;
+                lrot = Ogre::Radian(actor->getRotation());
+            }
+        }
+        if (contacting_actor != nullptr)
+        {
+            contacting_actor = nullptr;
+        }
+
         // Animation
         float angle = m_actor_coupling->ar_hydro_dir_wheel_display * -1.0f; // not getSteeringAngle(), but this, as its smoothed
         float anim_time_pos = ((angle + 1.0f) * 0.5f) * m_driving_anim_length;
