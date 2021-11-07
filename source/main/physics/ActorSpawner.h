@@ -151,7 +151,7 @@ public:
     * @return Index of existing node
     * @throws Exception If the node isn't found.
     */
-    NodeIdx_t GetNodeIndexOrThrow(RigDef::Node::Ref const & id);
+    NodeNum_t GetNodeIndexOrThrow(RigDef::Node::Ref const & id);
 
     std::string GetSubmeshGroundmodelName() { return m_state.submeshes_ground_model_name; }
 
@@ -234,9 +234,9 @@ private:
         RigDef::FlexBodyWheel* flexbodywheel_def;
 
         uint16_t               wheel_index;
-        NodeIdx_t              base_node_index;
-        NodeIdx_t              axis_node_1;
-        NodeIdx_t              axis_node_2;
+        NodeNum_t              base_node_index;
+        NodeNum_t              axis_node_1;
+        NodeNum_t              axis_node_2;
     };
 
     struct FlexbodyTicket
@@ -576,13 +576,13 @@ private:
 /* -------------------------------------------------------------------------- */
 
     void BuildAeroEngine(
-        NodeIdx_t ref_node_index,
-        NodeIdx_t back_node_index,
-        NodeIdx_t blade_1_node_index,
-        NodeIdx_t blade_2_node_index,
-        NodeIdx_t blade_3_node_index,
-        NodeIdx_t blade_4_node_index,
-        NodeIdx_t couplenode_index,
+        NodeNum_t ref_node_index,
+        NodeNum_t back_node_index,
+        NodeNum_t blade_1_node_index,
+        NodeNum_t blade_2_node_index,
+        NodeNum_t blade_3_node_index,
+        NodeNum_t blade_4_node_index,
+        NodeNum_t couplenode_index,
         bool is_turboprops,
         Ogre::String const & airfoil,
         float power,
@@ -614,7 +614,7 @@ private:
 
     RailGroup *CreateRail(std::vector<RigDef::Node::Range> & node_ranges);
 
-    static void AddSoundSource(Actor *vehicle, SoundScriptInstance *sound_script, NodeIdx_t node_index, int type = -2);
+    static void AddSoundSource(Actor *vehicle, SoundScriptInstance *sound_script, NodeNum_t node_index, int type = -2);
 
     static void AddSoundSourceInstance(Actor *vehicle, Ogre::String const & sound_script_name, int node_index, int type = -2);
 
@@ -685,7 +685,7 @@ private:
     * Seeks node in both RigDef::File definition and rig_t generated rig.
     * @return Node index or -1 if the node was not found.
     */
-    NodeIdx_t FindNodeIndex(RigDef::Node::Ref & node_ref, bool silent = false);
+    NodeNum_t FindNodeIndex(RigDef::Node::Ref & node_ref, bool silent = false);
 
     /**
     * Finds wheel with given axle nodes and returns it's index.
@@ -711,13 +711,13 @@ private:
         unsigned int direction_node_idx
     );
 
-    NodeIdx_t ResolveNodeRef(RigDef::Node::Ref const & node_ref);
+    NodeNum_t ResolveNodeRef(RigDef::Node::Ref const & node_ref);
 
     /**
     * Finds existing node by Node::Ref
     * @return First: Index of existing node; Second: true if node was found.
     */
-    std::pair<NodeIdx_t, bool> GetNodeIndex(RigDef::Node::Ref const & node_ref, bool quiet = false);
+    std::pair<NodeNum_t, bool> GetNodeIndex(RigDef::Node::Ref const & node_ref, bool quiet = false);
 
     /**
     * Finds existing node by Node::Ref
@@ -757,7 +757,7 @@ private:
     * Finds existing node by index.
     * @return Pointer to node or nullptr if not found.
     */
-    node_t & GetNode(NodeIdx_t node_index);
+    node_t & GetNode(NodeNum_t node_index);
 
     /**
     * Sets up defaults & position of a node.
@@ -794,7 +794,7 @@ private:
     */
     bool CollectNodesFromRanges(
         std::vector<RigDef::Node::Range> & node_ranges,
-        std::vector<NodeIdx_t> & out_node_indices
+        std::vector<NodeNum_t> & out_node_indices
     );
 
     /**
@@ -836,7 +836,7 @@ private:
 
     void SetBeamDamping(beam_t & beam, float damping);
 
-    beam_t *FindBeamInRig(NodeIdx_t node_a, NodeIdx_t node_b);
+    beam_t *FindBeamInRig(NodeNum_t node_a, NodeNum_t node_b);
 
     void UpdateCollcabContacterNodes();
 
@@ -901,7 +901,7 @@ private:
     /**
     * Validator for the rotator reference structure
     */
-    void ValidateRotator(int id, int axis1, int axis2, NodeIdx_t *nodes1, NodeIdx_t *nodes2);
+    void ValidateRotator(int id, int axis1, int axis2, NodeNum_t *nodes1, NodeNum_t *nodes2);
 
     /**
     * Helper for 'SetupNewEntity()' - see it's doc.
@@ -1099,7 +1099,7 @@ private:
         std::string speedomat;
 
     };
-    std::map<std::string, NodeIdx_t> m_node_names;
+    std::map<std::string, NodeNum_t> m_node_names;
     RigDef::DataPos_t                m_pending_flexbody = RigDef::DATAPOS_INVALID; //!< set by 'flexbody', reset by 'forset'
     FlexBody*                        m_last_flexbody = nullptr;
     std::vector<RoR::Prop>           m_props;              //!< 'props', 'prop_camera_mode'

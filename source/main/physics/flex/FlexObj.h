@@ -31,7 +31,7 @@ namespace RoR {
 /// Texture coordinates for old-style actor body (the "cab")
 struct CabTexcoord
 {
-    NodeIdx_t    node_id;
+    NodeNum_t    node_id;
     float  texcoord_u;
     float  texcoord_v;
 };

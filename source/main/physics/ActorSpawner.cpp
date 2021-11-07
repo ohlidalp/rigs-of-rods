@@ -452,9 +452,9 @@ void ActorSpawner::InitializeRig()
     m_actor->ar_num_cameras=0;
     for (int i = 0; i < MAX_CAMERAS; ++i)
     {
-        m_actor->ar_camera_node_pos [i] = node_t::INVALID_IDX;
-        m_actor->ar_camera_node_dir [i] = node_t::INVALID_IDX;
-        m_actor->ar_camera_node_roll[i] = node_t::INVALID_IDX;
+        m_actor->ar_camera_node_pos [i] = NODENUM_INVALID;
+        m_actor->ar_camera_node_dir [i] = NODENUM_INVALID;
+        m_actor->ar_camera_node_roll[i] = NODENUM_INVALID;
     }
 
 #ifdef USE_ANGELSCRIPT
@@ -687,19 +687,19 @@ void ActorSpawner::FinalizeRig()
         m_actor->m_axle_diffs[m_actor->m_num_axle_diffs] = diff;
     }
 
-    if (m_actor->ar_main_camera_node_dir == 0 || m_actor->ar_main_camera_node_dir == node_t::INVALID_IDX)
+    if (m_actor->ar_main_camera_node_dir == 0 || m_actor->ar_main_camera_node_dir == NODENUM_INVALID)
     {
         Ogre::Vector3 ref = m_actor->ar_nodes[m_actor->ar_main_camera_node_pos].RelPosition;
         // Step 1: Find a suitable camera node dir
         float max_dist = 0.0f;
-        NodeIdx_t furthest_node = 0;
+        NodeNum_t furthest_node = 0;
         for (int i = 0; i < m_actor->ar_num_nodes; i++)
         {
             float dist = m_actor->ar_nodes[i].RelPosition.squaredDistance(ref);
             if (dist > max_dist)
             {
                 max_dist = dist;
-                furthest_node = (NodeIdx_t)i;
+                furthest_node = (NodeNum_t)i;
             }
         }
         m_actor->ar_main_camera_node_dir = furthest_node;
@@ -709,7 +709,7 @@ void ActorSpawner::FinalizeRig()
         m_actor->ar_main_camera_dir_corr = Ogre::Quaternion(Ogre::Radian(offset), Ogre::Vector3::UNIT_Y);
     }
 
-    if (m_actor->ar_camera_node_pos[0] != node_t::INVALID_IDX)
+    if (m_actor->ar_camera_node_pos[0] != NODENUM_INVALID)
     {
         // store the y-difference between the trucks lowest node and the campos-node for the gwps system
         m_actor->ar_posnode_spawn_height = m_actor->ar_nodes[m_actor->ar_camera_node_pos[0]].RelPosition.y - m_actor->ar_posnode_spawn_height;
@@ -813,7 +813,7 @@ void ActorSpawner::WashCalculator()
 
 void ActorSpawner::ProcessTurbojet(RigDef::Turbojet & def)
 {
-    NodeIdx_t front,back,ref;
+    NodeNum_t front,back,ref;
     front = GetNodeIndexOrThrow(def.front_node);
     back  = GetNodeIndexOrThrow(def.back_node);
     ref   = GetNodeIndexOrThrow(def.side_node);
@@ -882,7 +882,7 @@ void ActorSpawner::ProcessScrewprop(RigDef::Screwprop & def)
 void ActorSpawner::ProcessFusedrag(RigDef::Fusedrag & def)
 {
     //parse fusedrag
-    NodeIdx_t front_node_idx = GetNodeIndexOrThrow(def.front_node);
+    NodeNum_t front_node_idx = GetNodeIndexOrThrow(def.front_node);
     float width = 1.f;
     float factor = 1.f;
     char fusefoil[256];
@@ -918,13 +918,13 @@ void ActorSpawner::ProcessFusedrag(RigDef::Fusedrag & def)
 }
 
 void ActorSpawner::BuildAeroEngine(
-    NodeIdx_t ref_node_index,
-    NodeIdx_t back_node_index,
-    NodeIdx_t blade_1_node_index,
-    NodeIdx_t blade_2_node_index,
-    NodeIdx_t blade_3_node_index,
-    NodeIdx_t blade_4_node_index,
-    NodeIdx_t couplenode_index,
+    NodeNum_t ref_node_index,
+    NodeNum_t back_node_index,
+    NodeNum_t blade_1_node_index,
+    NodeNum_t blade_2_node_index,
+    NodeNum_t blade_3_node_index,
+    NodeNum_t blade_4_node_index,
+    NodeNum_t couplenode_index,
     bool is_turboprops,
     Ogre::String const & airfoil,
     float power,
@@ -976,9 +976,9 @@ void ActorSpawner::BuildAeroEngine(
 
 void ActorSpawner::ProcessTurboprop2(RigDef::Turboprop2 & def)
 {
-    const NodeIdx_t p3_node_index = (def.blade_tip_nodes[2].IsValidAnyState()) ? GetNodeIndexOrThrow(def.blade_tip_nodes[2]) : -1;
-    const NodeIdx_t p4_node_index = (def.blade_tip_nodes[3].IsValidAnyState()) ? GetNodeIndexOrThrow(def.blade_tip_nodes[3]) : -1;
-    const NodeIdx_t couple_node_index = (def.couple_node.IsValidAnyState()) ? GetNodeIndexOrThrow(def.couple_node) : -1;
+    const NodeNum_t p3_node_index = (def.blade_tip_nodes[2].IsValidAnyState()) ? GetNodeIndexOrThrow(def.blade_tip_nodes[2]) : -1;
+    const NodeNum_t p4_node_index = (def.blade_tip_nodes[3].IsValidAnyState()) ? GetNodeIndexOrThrow(def.blade_tip_nodes[3]) : -1;
+    const NodeNum_t couple_node_index = (def.couple_node.IsValidAnyState()) ? GetNodeIndexOrThrow(def.couple_node) : -1;
 
     BuildAeroEngine(
         GetNodeIndexOrThrow(def.reference_node),
@@ -997,9 +997,9 @@ void ActorSpawner::ProcessTurboprop2(RigDef::Turboprop2 & def)
 
 void ActorSpawner::ProcessPistonprop(RigDef::Pistonprop & def)
 {
-    const NodeIdx_t p3_node_index = (def.blade_tip_nodes[2].IsValidAnyState()) ? GetNodeIndexOrThrow(def.blade_tip_nodes[2]) : -1;
-    const NodeIdx_t p4_node_index = (def.blade_tip_nodes[3].IsValidAnyState()) ? GetNodeIndexOrThrow(def.blade_tip_nodes[3]) : -1;
-    const NodeIdx_t couple_node_index = (def.couple_node.IsValidAnyState()) ? GetNodeIndexOrThrow(def.couple_node) : -1;
+    const NodeNum_t p3_node_index = (def.blade_tip_nodes[2].IsValidAnyState()) ? GetNodeIndexOrThrow(def.blade_tip_nodes[2]) : -1;
+    const NodeNum_t p4_node_index = (def.blade_tip_nodes[3].IsValidAnyState()) ? GetNodeIndexOrThrow(def.blade_tip_nodes[3]) : -1;
+    const NodeNum_t couple_node_index = (def.couple_node.IsValidAnyState()) ? GetNodeIndexOrThrow(def.couple_node) : -1;
 
     BuildAeroEngine(
         GetNodeIndexOrThrow(def.reference_node),
@@ -1054,7 +1054,7 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
         return;
     }
 
-    NodeIdx_t node1 = this->GetNodeIndexOrThrow(def.nodes[1]);
+    NodeNum_t node1 = this->GetNodeIndexOrThrow(def.nodes[1]);
 
     const std::string wing_name = this->ComposeName("Wing", m_actor->ar_num_wings);
     auto flex_airfoil = new FlexAirfoil(
@@ -1286,7 +1286,7 @@ void ActorSpawner::ProcessSoundSource2(RigDef::SoundSource2 & def)
 {
 #ifdef USE_OPENAL
     int mode = (def.mode == RigDef::SoundSource2::MODE_CINECAM) ? def.cinecam_index : def.mode;
-    NodeIdx_t node_index = FindNodeIndex(def.node);
+    NodeNum_t node_index = FindNodeIndex(def.node);
     if (node_index == -1)
     {
         return;
@@ -1303,11 +1303,11 @@ void ActorSpawner::ProcessSoundSource2(RigDef::SoundSource2 & def)
 void ActorSpawner::AddSoundSourceInstance(Actor *vehicle, Ogre::String const & sound_script_name, int node_index, int type)
 {
 #ifdef USE_OPENAL
-    AddSoundSource(vehicle, App::GetSoundScriptManager()->createInstance(sound_script_name, vehicle->ar_instance_id, nullptr), (NodeIdx_t)node_index);
+    AddSoundSource(vehicle, App::GetSoundScriptManager()->createInstance(sound_script_name, vehicle->ar_instance_id, nullptr), (NodeNum_t)node_index);
 #endif // USE_OPENAL
 }
 
-void ActorSpawner::AddSoundSource(Actor *vehicle, SoundScriptInstance *sound_script, NodeIdx_t node_index, int type)
+void ActorSpawner::AddSoundSource(Actor *vehicle, SoundScriptInstance *sound_script, NodeNum_t node_index, int type)
 {
     if (! CheckSoundScriptLimit(vehicle, 1))
     {
@@ -1535,7 +1535,7 @@ void ActorSpawner::ProcessProp(RigDef::Prop & def)
     prop.pp_node_ref         = GetNodeIndexOrThrow(def.reference_node);
     prop.pp_node_x           = FindNodeIndex(def.x_axis_node);
     prop.pp_node_y           = FindNodeIndex(def.y_axis_node);
-    if (prop.pp_node_x == node_t::INVALID_IDX || prop.pp_node_y == node_t::INVALID_IDX)
+    if (prop.pp_node_x == NODENUM_INVALID || prop.pp_node_y == NODENUM_INVALID)
     {
         return; // Error alredy logged by `FindNodeIndex()`
     }
@@ -2794,12 +2794,12 @@ void ActorSpawner::ProcessSlidenode(RigDef::SlideNode & def)
     m_actor->m_slidenodes.push_back(slide_node);
 }
 
-NodeIdx_t ActorSpawner::FindNodeIndex(RigDef::Node::Ref & node_ref, bool silent /* = false */)
+NodeNum_t ActorSpawner::FindNodeIndex(RigDef::Node::Ref & node_ref, bool silent /* = false */)
 {
     std::pair<unsigned int, bool> result = GetNodeIndex(node_ref, /* quiet= */ true);
     if (result.second)
     {
-        return static_cast<NodeIdx_t>(result.first);
+        return static_cast<NodeNum_t>(result.first);
     }
     else
     {
@@ -2809,13 +2809,13 @@ NodeIdx_t ActorSpawner::FindNodeIndex(RigDef::Node::Ref & node_ref, bool silent 
             msg << "Failed to find node by reference: " << node_ref.ToString();
             AddMessage(Message::TYPE_ERROR, msg.str());
         }
-        return node_t::INVALID_IDX;
+        return NODENUM_INVALID;
     }
 }
 
 bool ActorSpawner::CollectNodesFromRanges(
     std::vector<RigDef::Node::Range> & node_ranges,
-    std::vector<NodeIdx_t> & out_node_indices
+    std::vector<NodeNum_t> & out_node_indices
     )
 {
     std::vector<RigDef::Node::Range>::iterator itor = node_ranges.begin();
@@ -2824,16 +2824,16 @@ bool ActorSpawner::CollectNodesFromRanges(
         if (itor->IsRange())
         {
 
-            NodeIdx_t start = FindNodeIndex(itor->start, /* silent= */ false);
-            if (start == node_t::INVALID_IDX)
+            NodeNum_t start = FindNodeIndex(itor->start, /* silent= */ false);
+            if (start == NODENUM_INVALID)
             {
                 AddMessage(Message::TYPE_WARNING, fmt::format("Invalid start node in range: {}", itor->start.ToString()));
                 return false;
             }
 
-            NodeIdx_t end = FindNodeIndex(itor->end,   /* silent= */ true);
+            NodeNum_t end = FindNodeIndex(itor->end,   /* silent= */ true);
 
-            if (end == node_t::INVALID_IDX)
+            if (end == NODENUM_INVALID)
             {
                 std::stringstream msg;
                 msg << "Encountered non-existent node '" << itor->end.ToString() << "' in range [" << itor->start.ToString() << " - " << itor->end.ToString() << "], "
@@ -2855,12 +2855,12 @@ bool ActorSpawner::CollectNodesFromRanges(
 
             if (end < start)
             {
-                NodeIdx_t swap = start;
+                NodeNum_t swap = start;
                 start = end;
                 end = swap;
             }
 
-            for (NodeIdx_t i = start; i <= end; i++)
+            for (NodeNum_t i = start; i <= end; i++)
             {
                 out_node_indices.push_back(i);
             }
@@ -2876,7 +2876,7 @@ bool ActorSpawner::CollectNodesFromRanges(
 RoR::RailGroup *ActorSpawner::CreateRail(std::vector<RigDef::Node::Range> & node_ranges)
 {
     // Collect nodes
-    std::vector<NodeIdx_t> node_indices;
+    std::vector<NodeNum_t> node_indices;
     this->CollectNodesFromRanges(node_ranges, node_indices);
 
     // Build the rail
@@ -2919,7 +2919,7 @@ RoR::RailGroup *ActorSpawner::CreateRail(std::vector<RigDef::Node::Range> & node
     return rg; // Transfers memory ownership
 }
 
-beam_t *ActorSpawner::FindBeamInRig(NodeIdx_t node_a_index, NodeIdx_t node_b_index)
+beam_t *ActorSpawner::FindBeamInRig(NodeNum_t node_a_index, NodeNum_t node_b_index)
 {
     node_t *node_a = & m_actor->ar_nodes[node_a_index];
     node_t *node_b = & m_actor->ar_nodes[node_b_index];
@@ -3107,9 +3107,9 @@ void ActorSpawner::ProcessTrigger(RigDef::Trigger & def)
         }
     }
 
-    const NodeIdx_t node_1_index = FindNodeIndex(def.nodes[0]);
-    const NodeIdx_t node_2_index = FindNodeIndex(def.nodes[1]);
-    if (node_1_index == node_t::INVALID_IDX || node_2_index == node_t::INVALID_IDX)
+    const NodeNum_t node_1_index = FindNodeIndex(def.nodes[0]);
+    const NodeNum_t node_2_index = FindNodeIndex(def.nodes[1]);
+    if (node_1_index == NODENUM_INVALID || node_2_index == NODENUM_INVALID)
     {
         this->AddMessage(Message::TYPE_WARNING, "Skipping trigger, some nodes not found");
         return;
@@ -5103,7 +5103,7 @@ void ActorSpawner::ProcessEngine(RigDef::Engine & def)
 
 
 
-NodeIdx_t ActorSpawner::GetNodeIndexOrThrow(RigDef::Node::Ref const & node_ref)
+NodeNum_t ActorSpawner::GetNodeIndexOrThrow(RigDef::Node::Ref const & node_ref)
 {
     std::pair<unsigned int, bool> result = GetNodeIndex(node_ref);
     if (! result.second)
@@ -5322,14 +5322,14 @@ void ActorSpawner::AddMessage(ActorSpawner::Message::Type type,	Ogre::String con
     RoR::App::GetConsole()->putMessage(RoR::Console::CONSOLE_MSGTYPE_ACTOR, cm_type, txt.ToCStr());
 }
 
-NodeIdx_t ActorSpawner::ResolveNodeRef(RigDef::Node::Ref const & node_ref)
+NodeNum_t ActorSpawner::ResolveNodeRef(RigDef::Node::Ref const & node_ref)
 {
     // Equivalent of `SerializedRig::parse_node_number()`, see https://github.com/only-a-ptr/ror-legacy-svn-trunk
 
     return GetNodeIndexOrThrow(node_ref);
 }
 
-std::pair<NodeIdx_t, bool> ActorSpawner::GetNodeIndex(RigDef::Node::Ref const & node_ref, bool quiet /* = false */)
+std::pair<NodeNum_t, bool> ActorSpawner::GetNodeIndex(RigDef::Node::Ref const & node_ref, bool quiet /* = false */)
 {
     // HACKED - temporary while remaking parser, 2021-11
     return std::make_pair(node_ref.Num(), true);
@@ -5669,7 +5669,7 @@ bool ActorSpawner::CheckScrewpropLimit(unsigned int count)
     return true;
 }
 
-node_t &ActorSpawner:: GetNode(NodeIdx_t node_index)
+node_t &ActorSpawner:: GetNode(NodeNum_t node_index)
 {
     return m_actor->ar_nodes[node_index];
 }
@@ -5686,11 +5686,11 @@ beam_t & ActorSpawner::GetBeam(unsigned int index)
 
 node_t & ActorSpawner::GetFreeNode()
 {
-    if (m_actor->ar_num_nodes == node_t::INVALID_IDX)
+    if (m_actor->ar_num_nodes == NODENUM_INVALID)
     {
         this->AddMessage(Message::TYPE_ERROR,
             fmt::format("Fatal: actor can't have more than {} nodes.",
-                node_t::INVALID_IDX));
+                NODENUM_INVALID));
         throw Exception("");
     }
 
@@ -6588,7 +6588,7 @@ void ActorSpawner::FinalizeGfxSetup()
     m_actor->GetGfxActor()->SortFlexbodies();
 }
 
-void ActorSpawner::ValidateRotator(int id, int axis1, int axis2, NodeIdx_t *nodes1, NodeIdx_t *nodes2)
+void ActorSpawner::ValidateRotator(int id, int axis1, int axis2, NodeNum_t *nodes1, NodeNum_t *nodes2)
 {
     const float eps = 0.001f;
     const Ogre::Vector3 ax1 = m_actor->ar_nodes[axis1].AbsPosition;

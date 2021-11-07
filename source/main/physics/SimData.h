@@ -225,15 +225,15 @@ enum class ActorState
 // --------------------------------
 // Soft body physics
 
-typedef uint16_t NodeIdx_t;
+    // REFACTOR IN PROGRESS: Historically nodes were adressed mostly by pointers or int32_t indices,
+    //     although there was always a hidden soft limit of 2^16 nodes (because of `short node_t::pos`).
+typedef uint16_t NodeNum_t; // ALWAYS use this when referencing nodes.
+static const NodeNum_t NODENUM_INVALID = std::numeric_limits<NodeNum_t>::max();
 
 /// Physics: A vertex in the softbody structure
 struct node_t
 {
-    // REFACTOR IN PROGRESS: Currently nodes are adressed mostly by pointers or int32_t indices,
-    //     although there was always a hidden soft limit of 2^16 nodes (because of `short node_t::pos`).
-    //     Let's use `uint16_t` indices everywhere to be clear.      ~ only_a_ptr, 04/2018
-    static const uint16_t INVALID_IDX = std::numeric_limits<uint16_t>::max();
+
     static const int8_t   INVALID_BBOX = -1;
 
     node_t()               { memset(this, 0, sizeof(node_t)); nd_coll_bbox_id = INVALID_BBOX; }
@@ -530,8 +530,8 @@ struct hydrobeam_t
 struct rotator_t
 {
     bool needs_engine;
-    NodeIdx_t nodes1[4];
-    NodeIdx_t nodes2[4];
+    NodeNum_t nodes1[4];
+    NodeNum_t nodes2[4];
     int axis1; //!< rot axis
     int axis2;
     float angle;
