@@ -183,6 +183,7 @@ void Character::update(float dt)
                         {
                             depth = std::max(depth, result.second);
                             if (depth > 0 && contacting_actor == nullptr) { contacting_actor = actor; }
+                            contacting_cab = i;
                         }
                     }
 
@@ -195,9 +196,20 @@ void Character::update(float dt)
 
                     if (contacting_actor != nullptr)
                     {
-                        x = contacting_actor->getPosition().x;
-                        y = contacting_actor->getPosition().y;
-                        z = contacting_actor->getPosition().z;
+                        int motion_cab = -1;
+                        if (contacting_cab == last_contacting_cab) // we're on the same cab - just get it's current pos.
+                        {   
+                            motion_cab = contacting_cab;
+                        }
+                        else // we're on different cab - use current position of the previous cab.
+                         {
+                             motion_cab = last_contacting_cab;
+                         }
+                         Vector3 cab_position = CalcCabAveragePos(contacting_actor, motion_cab);
+                         x = cab_position.x;
+                         y = cab_position.y;
+                         z = cab_position.z;
+
                         rot = Ogre::Radian(contacting_actor->getRotation());
 
                         position.x += (x - lx);
@@ -224,9 +236,20 @@ void Character::update(float dt)
                     contacting_actor = nullptr;
                 }
             }
-            lx = x;
-            ly = y;
-            lz = z;
+            if (contacting_cab == last_contacting_cab)
+            {
+                lx = x;
+                ly = y;
+                lz = z;
+            }
+            else if (contacting_actor != nullptr) // we used last_contacting_cab's position for the motion, but we'll need contacting_cab's position next frame.
+            {
+                Vector3 cab_position = CalcCabAveragePos(contacting_actor, contacting_cab);
+                lx = cab_position.x;
+                ly = cab_position.y;
+                lz = cab_position.z;
+            }
+            last_contacting_cab = contacting_cab;
             lrot = rot;
         }
 
@@ -458,6 +481,19 @@ void Character::update(float dt)
         this->SendStreamData();
     }
 #endif // USE_SOCKETW
+}
+
+Ogre::Vector3 Character::CalcCabAveragePos(Actor* actor, int cab_index)
+{
+    int tmpv = actor->ar_collcabs[cab_index] * 3;
+    Vector3 a = actor->ar_nodes[actor->ar_cabs[tmpv + 0]].AbsPosition;
+    Vector3 b = actor->ar_nodes[actor->ar_cabs[tmpv + 1]].AbsPosition;
+    Vector3 c = actor->ar_nodes[actor->ar_cabs[tmpv + 2]].AbsPosition;
+    Vector3 result;
+    result.x = (a.x + b.x + c.x) / 3;
+    result.y = (a.y + b.y + c.y) / 3;
+    result.z = (a.z + b.z + c.z) / 3;
+    return result;
 }
 
 void Character::move(Vector3 offset)

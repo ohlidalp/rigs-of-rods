@@ -100,6 +100,10 @@ private:
     float inertia_z = 0.f;
     Ogre::Radian inertia_rot;
     Actor* contacting_actor = nullptr;
+
+    int contacting_cab;
+    int last_contacting_cab;
+    Ogre::Vector3 CalcCabAveragePos(Actor* actor, int cab_index);
 };
 
 struct GfxCharacter
