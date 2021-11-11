@@ -167,9 +167,9 @@ void Character::update(float dt)
             {
                 if (actor->ar_bounding_box.contains(position))
                 {
-                    x = actor->getPosition().x;
-                    y = actor->getPosition().y;
-                    z = actor->getPosition().z;
+                  //  x = actor->getPosition().x;
+                  //  y = actor->getPosition().y;
+                  //  z = actor->getPosition().z;
                     rot = Ogre::Radian(actor->getRotation());
 
                     for (int i = 0; i < actor->ar_num_collcabs; i++)
@@ -182,7 +182,19 @@ void Character::update(float dt)
                         if (result.first && result.second < 1.8f)
                         {
                             depth = std::max(depth, result.second);
-                            if (depth > 0 && contacting_actor == nullptr) { contacting_actor = actor; }
+                            if (depth > 0)
+                            {
+                                if (contacting_actor == nullptr)
+                                {
+                                    // first contact - initialize 'last' values to avoid big knockbacks
+                                    Vector3 cab_position = CalcCabAveragePos(actor, i);
+                                    lx = cab_position.x;
+                                    ly = cab_position.y;
+                                    lz = cab_position.z;
+                                    last_contacting_cab = i;
+                                }
+                                contacting_actor = actor;
+                            }
                             contacting_cab = i;
                         }
                     }
