@@ -35,15 +35,15 @@ using namespace Ogre;
 using namespace RoR;
 
 FlexBody::FlexBody(
-    RigDef::Flexbody* def,
+    RigDef::FlexbodiesLine* def,
     RoR::FlexBodyCacheData* preloaded_from_cache,
     RoR::GfxActor* gfx_actor,
     Ogre::Entity* ent,
-    int ref,
-    int nx,
-    int ny,
+    NodeNum_t ref,
+    NodeNum_t nx,
+    NodeNum_t ny,
     Ogre::Quaternion const & rot,
-    std::vector<unsigned int> & node_indices
+    std::vector<NodeNum_t> & node_indices
 ):
       m_camera_mode(-2)
     , m_center_offset(def->offset)

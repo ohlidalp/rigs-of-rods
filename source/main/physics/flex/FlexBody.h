@@ -21,9 +21,10 @@
 
 #pragma once
 
-#include "RigDef_Prerequisites.h"
+
 #include "Application.h"
 #include "Locator_t.h"
+#include "SimData.h"
 
 #include <OgreVector3.h>
 #include <OgreQuaternion.h>
@@ -39,15 +40,15 @@ class FlexBody
     friend class RoR::FlexBodyFileIO;
 
     FlexBody( // Private, for FlexFactory
-        RigDef::Flexbody* def,
+        RigDef::FlexbodiesLine* def,
         RoR::FlexBodyCacheData* preloaded_from_cache,
         RoR::GfxActor* gfx_actor,
         Ogre::Entity* entity,
-        int ref, 
-        int nx, 
-        int ny,
+        NodeNum_t ref, 
+        NodeNum_t nx, 
+        NodeNum_t ny,
         Ogre::Quaternion const & rot, 
-        std::vector<unsigned int> & node_indices
+        std::vector<NodeNum_t> & node_indices
     );
 
 public:

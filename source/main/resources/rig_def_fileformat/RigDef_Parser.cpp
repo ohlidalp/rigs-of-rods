@@ -207,26 +207,26 @@ void Parser::ProcessCurrentLine()
     switch (m_current_block)
     {
         case KEYWORD_AIRBRAKES:            this->ParseAirbrakes();               return;
-        case KEYWORD_ANIMATORS:            this->ParseAnimator();                return;
+        case KEYWORD_ANIMATORS:            this->ParseAnimators();               return;
         case KEYWORD_AXLES:                this->ParseAxles();                   return;
         case KEYWORD_BEAMS:                this->ParseBeams();                   return;
         case KEYWORD_BRAKES:               this->ParseBrakes();                  return;
         case KEYWORD_CAMERAS:              this->ParseCameras();                 return;
-        case KEYWORD_CAMERARAIL:           this->ParseCameraRails();             return;
+        case KEYWORD_CAMERARAIL:           this->ParseCamerarails();             return;
         case KEYWORD_CINECAM:              this->ParseCinecam();                 return;
-        case KEYWORD_COMMANDS:
-        case KEYWORD_COMMANDS2:            this->ParseCommandsUnified();         return;
-        case KEYWORD_COLLISIONBOXES:       this->ParseCollisionBox();            return;
-        case KEYWORD_CONTACTERS:           this->ParseContacter();               return;
+        case KEYWORD_COMMANDS:             this->ParseCommands();                return;
+        case KEYWORD_COMMANDS2:            this->ParseCommands2();               return;
+        case KEYWORD_COLLISIONBOXES:       this->ParseCollisionboxes();          return;
+        case KEYWORD_CONTACTERS:           this->ParseContacters();              return;
         case KEYWORD_ENGINE:               this->ParseEngine();                  return;
         case KEYWORD_ENGOPTION:            this->ParseEngoption();               return;
         case KEYWORD_ENGTURBO:             this->ParseEngturbo();                return;
-        case KEYWORD_EXHAUSTS:             this->ParseExhaust();                 return;
+        case KEYWORD_EXHAUSTS:             this->ParseExhausts();                return;
         case KEYWORD_FIXES:                this->ParseFixes();                   return;
-        case KEYWORD_FLARES:
-        case KEYWORD_FLARES2:              this->ParseFlaresUnified();           return;
-        case KEYWORD_FLEXBODIES:           this->ParseFlexbody();                return;
-        case KEYWORD_FLEXBODYWHEELS:       this->ParseFlexBodyWheel();           return;
+        case KEYWORD_FLARES:               this->ParseFlares();                  return;
+        case KEYWORD_FLARES2:              this->ParseFlares2();                 return;
+        case KEYWORD_FLEXBODIES:           this->ParseFlexbodies();              return;
+        case KEYWORD_FLEXBODYWHEELS:       this->ParseFlexbodywheels();          return;
         case KEYWORD_FUSEDRAG:             this->ParseFusedrag();                return;
         case KEYWORD_GLOBALS:              this->ParseGlobals();                 return;
         case KEYWORD_GUISETTINGS:          this->ParseGuiSettings();             return;
@@ -237,20 +237,20 @@ void Parser::ProcessCurrentLine()
         case KEYWORD_LOCKGROUPS:           this->ParseLockgroups();              return;
         case KEYWORD_MANAGEDMATERIALS:     this->ParseManagedMaterials();        return;
         case KEYWORD_MATERIALFLAREBINDINGS:this->ParseMaterialFlareBindings();   return;
-        case KEYWORD_MESHWHEELS:
-        case KEYWORD_MESHWHEELS2:          this->ParseMeshWheelUnified();        return;
+        case KEYWORD_MESHWHEELS:           this->ParseMeshwheels();              return;
+        case KEYWORD_MESHWHEELS2:          this->ParseMeshwheels2();             return;
         case KEYWORD_MINIMASS:             this->ParseMinimass();                return;
         case KEYWORD_NODECOLLISION:        this->ParseNodeCollision();           return;
-        case KEYWORD_NODES:
-        case KEYWORD_NODES2:               this->ParseNodesUnified();            return;
+        case KEYWORD_NODES:                this->ParseNodes();                   return;
+        case KEYWORD_NODES2:               this->ParseNodes2();                  return;
         case KEYWORD_PARTICLES:            this->ParseParticles();               return;
         case KEYWORD_PISTONPROPS:          this->ParsePistonprops();             return;
         case KEYWORD_PROPS:                this->ParseProps();                   return;
         case KEYWORD_RAILGROUPS:           this->ParseRailGroups();              return;
         case KEYWORD_ROPABLES:             this->ParseRopables();                return;
         case KEYWORD_ROPES:                this->ParseRopes();                   return;
-        case KEYWORD_ROTATORS:
-        case KEYWORD_ROTATORS2:            this->ParseRotatorsUnified();         return;
+        case KEYWORD_ROTATORS:             this->ParseRotators();                return;
+        case KEYWORD_ROTATORS2:            this->ParseRotators2();               return;
         case KEYWORD_SCREWPROPS:           this->ParseScrewprops();              return;
         case KEYWORD_SHOCKS:               this->ParseShock();                   return;
         case KEYWORD_SHOCKS2:              this->ParseShock2();                  return;
@@ -264,8 +264,8 @@ void Parser::ProcessCurrentLine()
         case KEYWORD_TRANSFERCASE:         this->ParseTransferCase();            return;
         case KEYWORD_TRIGGERS:             this->ParseTriggers();                return;
         case KEYWORD_TURBOJETS:            this->ParseTurbojets();               return;
-        case KEYWORD_TURBOPROPS:           
-        case KEYWORD_TURBOPROPS2:          this->ParseTurbopropsUnified();       return;
+        case KEYWORD_TURBOPROPS:           this->ParseTurboprops();              return;
+        case KEYWORD_TURBOPROPS2:          this->ParseTurboprops2();             return;
         case KEYWORD_VIDEOCAMERA:          this->ParseVideoCamera();             return;
         case KEYWORD_WHEELDETACHERS:       this->ParseWheelDetachers();          return;
         case KEYWORD_WHEELS:               this->ParseWheel();                   return;
@@ -296,7 +296,7 @@ void Parser::ParseWing()
 {
     if (!this->CheckNumArguments(16)) { return; }
 
-    Wing wing;
+    WingsLine wing;
 
     for (int i = 0; i <  8; i++) { wing.nodes[i]        = this->GetArgNodeRef     (i);  }
     for (int i = 8; i < 16; i++) { wing.tex_coords[i-8] = this->GetArgFloat       (i);  }
@@ -318,15 +318,15 @@ void Parser::ParseSetCollisionRange()
 
     float value = this->GetArgFloat(1);
 
-    m_document->collision_range.push_back(value);
-    m_document->lines.emplace_back(Line(KEYWORD_SET_COLLISION_RANGE, (int)m_document->collision_range.size() - 1));
+    m_document->set_collision_range.push_back(value);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_COLLISION_RANGE, (int)m_document->set_collision_range.size() - 1));
 }
 
 void Parser::ParseWheel2()
 {
     if (!this->CheckNumArguments(17)) { return; }
 
-    Wheel2 wheel_2;
+    Wheels2Line wheel_2;
 
     wheel_2.rim_radius         = this->GetArgFloat        ( 0);
     wheel_2.tyre_radius        = this->GetArgFloat        ( 1);
@@ -346,15 +346,15 @@ void Parser::ParseWheel2()
     wheel_2.face_material_name = this->GetArgStr          (15);
     wheel_2.band_material_name = this->GetArgStr          (16);
 
-    m_document->wheels_2.push_back(wheel_2);
-    m_document->lines.emplace_back(Line(KEYWORD_WHEELS2, (int)m_document->wheels_2.size() - 1));
+    m_document->wheels2.push_back(wheel_2);
+    m_document->lines.emplace_back(Line(KEYWORD_WHEELS2, (int)m_document->wheels2.size() - 1));
 }
 
 void Parser::ParseWheel()
 {
     if (! this->CheckNumArguments(14)) { return; }
 
-    Wheel wheel;
+    WheelsLine wheel;
 
     wheel.radius             = this->GetArgFloat        ( 0);
     wheel.width              = this->GetArgFloat        ( 1);
@@ -379,7 +379,7 @@ void Parser::ParseWheelDetachers()
 {
     if (! this->CheckNumArguments(2)) { return; }
 
-    WheelDetacher wheeldetacher;
+    WheeldetachersLine wheeldetacher;
 
     wheeldetacher.wheel_id       = this->GetArgInt(0);
     wheeldetacher.detacher_group = this->GetArgInt(1);
@@ -396,7 +396,7 @@ void Parser::ParseTractionControl()
         return;
     }
 
-    TractionControl tc;
+    TractionControlLine tc;
                              tc.regulation_force = this->ParseArgFloat(tokens[0].c_str());
                              tc.wheel_slip       = this->ParseArgFloat(tokens[1].c_str());
     if (tokens.size() > 2) { tc.fade_speed       = this->ParseArgFloat(tokens[2].c_str()); }
@@ -433,15 +433,15 @@ void Parser::ParseTractionControl()
         }
     }
 
-    m_document->traction_control.push_back(tc);
-    m_document->lines.emplace_back(Line(KEYWORD_TRACTIONCONTROL, (int)m_document->traction_control.size() - 1));
+    m_document->tractioncontrol.push_back(tc);
+    m_document->lines.emplace_back(Line(KEYWORD_TRACTIONCONTROL, (int)m_document->tractioncontrol.size() - 1));
 }
 
 void Parser::ParseTransferCase()
 {
     if (! this->CheckNumArguments(2)) { return; }
 
-    TransferCase tc;
+    TransfercaseLine tc;
 
     tc.a1 = this->GetArgInt(0) - 1;
     tc.a2 = this->GetArgInt(1) - 1;
@@ -449,23 +449,23 @@ void Parser::ParseTransferCase()
     if (m_num_args > 3) { tc.has_2wd_lo = this->GetArgInt(3); }
     for (int i = 4; i < m_num_args; i++) { tc.gear_ratios.push_back(this->GetArgFloat(i)); }
 
-    m_document->transfer_case.push_back(tc);
-    m_document->lines.emplace_back(Line(KEYWORD_TRANSFERCASE, (int)m_document->transfer_case.size() - 1));
+    m_document->transfercase.push_back(tc);
+    m_document->lines.emplace_back(Line(KEYWORD_TRANSFERCASE, (int)m_document->transfercase.size() - 1));
 }
 
 void Parser::ParseSubmeshGroundModel()
 {
     if (!this->CheckNumArguments(2)) { return; } // Items: keyword, arg
 
-    m_document->submeshes_ground_model_name.push_back(this->GetArgStr(1));
-    m_document->lines.emplace_back(Line(KEYWORD_SUBMESH_GROUNDMODEL, (int)m_document->submeshes_ground_model_name.size() - 1));
+    m_document->submesh_groundmodel.push_back(this->GetArgStr(1));
+    m_document->lines.emplace_back(Line(KEYWORD_SUBMESH_GROUNDMODEL, (int)m_document->submesh_groundmodel.size() - 1));
 }
 
 void Parser::ParseSpeedLimiter()
 {
     if (! this->CheckNumArguments(2)) { return; } // 2 items: keyword, arg
 
-    SpeedLimiter sl;
+    SpeedlimiterLine sl;
 
     sl.max_speed = this->GetArgFloat(1);
     if (sl.max_speed <= 0.f)
@@ -475,8 +475,8 @@ void Parser::ParseSpeedLimiter()
         this->AddMessage(Message::TYPE_WARNING, msg);
     }
 
-    m_document->speed_limiter.push_back(sl);
-    m_document->lines.emplace_back(Line(KEYWORD_SPEEDLIMITER, (int)m_document->speed_limiter.size() - 1));
+    m_document->speedlimiter.push_back(sl);
+    m_document->lines.emplace_back(Line(KEYWORD_SPEEDLIMITER, (int)m_document->speedlimiter.size() - 1));
 }
 
 void Parser::ParseSlopeBrake()
@@ -488,7 +488,7 @@ void Parser::ParseSetSkeletonSettings()
 {
     if (! this->CheckNumArguments(2)) { return; }
     
-    SkeletonSettings skel;
+    SetSkeletonSettingsLine skel;
     skel.visibility_range_meters = this->GetArgFloat(1);
     if (m_num_args > 2) { skel.beam_thickness_meters = this->GetArgFloat(2); }
     
@@ -496,113 +496,32 @@ void Parser::ParseSetSkeletonSettings()
     if (skel.visibility_range_meters < 0.f) { skel.visibility_range_meters = 150.f; }
     if (skel.beam_thickness_meters   < 0.f) { skel.beam_thickness_meters   = BEAM_SKELETON_DIAMETER; }
 
-    m_document->skeleton_settings.push_back(skel);
-    m_document->lines.emplace_back(Line(KEYWORD_SET_SKELETON_SETTINGS, (int)m_document->skeleton_settings.size() - 1));
-}
-
-void Parser::LogParsedDirectiveSetNodeDefaultsData(float load_weight, float friction, float volume, float surface, unsigned int options)
-{
-    std::stringstream msg;
-    msg << "Parsed data for verification:"
-        << "\n\tLoadWeight: " << load_weight
-        << "\n\t  Friction: " << friction
-        << "\n\t    Volume: " << volume
-        << "\n\t   Surface: " << surface
-        << "\n\t   Options: ";
-        
-    if (BITMASK_IS_1(options, Node::OPTION_l_LOAD_WEIGHT)       )  { msg << " l_LOAD_WEIGHT"; }
-    if (BITMASK_IS_1(options, Node::OPTION_n_MOUSE_GRAB)        )  { msg << " n_MOUSE_GRAB"; }
-    if (BITMASK_IS_1(options, Node::OPTION_m_NO_MOUSE_GRAB)     )  { msg << " m_NO_MOUSE_GRAB"; }
-    if (BITMASK_IS_1(options, Node::OPTION_f_NO_SPARKS)         )  { msg << " f_NO_SPARKS"; }
-    if (BITMASK_IS_1(options, Node::OPTION_x_EXHAUST_POINT)     )  { msg << " x_EXHAUST_POINT"; }
-    if (BITMASK_IS_1(options, Node::OPTION_y_EXHAUST_DIRECTION) )  { msg << " y_EXHAUST_DIRECTION"; }
-    if (BITMASK_IS_1(options, Node::OPTION_c_NO_GROUND_CONTACT) )  { msg << " c_NO_GROUND_CONTACT"; }
-    if (BITMASK_IS_1(options, Node::OPTION_h_HOOK_POINT)        )  { msg << " h_HOOK_POINT"; }
-    if (BITMASK_IS_1(options, Node::OPTION_e_TERRAIN_EDIT_POINT))  { msg << " e_TERRAIN_EDIT_POINT"; }
-    if (BITMASK_IS_1(options, Node::OPTION_b_EXTRA_BUOYANCY)    )  { msg << " b_EXTRA_BUOYANCY"; }
-    if (BITMASK_IS_1(options, Node::OPTION_p_NO_PARTICLES)      )  { msg << " p_NO_PARTICLES"; }
-    if (BITMASK_IS_1(options, Node::OPTION_L_LOG)               )  { msg << " L_LOG"; }
-
-    this->AddMessage(m_current_line, Message::TYPE_WARNING, msg.str());
+    m_document->set_skeleton_settings.push_back(skel);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_SKELETON_SETTINGS, (int)m_document->set_skeleton_settings.size() - 1));
 }
 
 void Parser::ParseDirectiveSetNodeDefaults()
 {
     if (!this->CheckNumArguments(2)) { return; }
 
-    NodeDefaults def;
+    SetNodeDefaultsLine def;
     def._num_args = m_num_args;
 
                         def.loadweight = this->GetArgFloat(1);
     if (m_num_args > 2) def.friction   = this->GetArgFloat(2);
     if (m_num_args > 3) def.volume     = this->GetArgFloat(3);
     if (m_num_args > 4) def.surface    = this->GetArgFloat(4);
-    if (m_num_args > 5) def.options    = this->GetArgNodeOptions(5);
+    if (m_num_args > 5) def.options    = this->GetArgStr(5);
 
-    m_document->node_defaults.push_back(def);
-    m_document->lines.emplace_back(Line(KEYWORD_SET_NODE_DEFAULTS, (int)m_document->node_defaults.size() - 1));
-}
-
-void Parser::_ParseNodeOptions(int & options, const std::string & options_str)
-{
-    options = 0;
-
-    for (unsigned int i = 0; i < options_str.length(); i++)
-    {
-        const char c = options_str.at(i);
-        switch(c)
-        {
-            case 'l':
-                BITMASK_SET_1(options, Node::OPTION_l_LOAD_WEIGHT);
-                break;
-            case 'n':
-                BITMASK_SET_1(options, Node::OPTION_n_MOUSE_GRAB);
-                BITMASK_SET_0(options, Node::OPTION_m_NO_MOUSE_GRAB);
-                break;
-            case 'm':
-                BITMASK_SET_1(options, Node::OPTION_m_NO_MOUSE_GRAB);
-                BITMASK_SET_0(options, Node::OPTION_n_MOUSE_GRAB);
-                break;
-            case 'f':
-                BITMASK_SET_1(options, Node::OPTION_f_NO_SPARKS);
-                break;
-            case 'x':
-                BITMASK_SET_1(options, Node::OPTION_x_EXHAUST_POINT);
-                break;
-            case 'y':
-                BITMASK_SET_1(options, Node::OPTION_y_EXHAUST_DIRECTION);
-                break;
-            case 'c':
-                BITMASK_SET_1(options, Node::OPTION_c_NO_GROUND_CONTACT);
-                break;
-            case 'h':
-                BITMASK_SET_1(options, Node::OPTION_h_HOOK_POINT);
-                break;
-            case 'e':
-                BITMASK_SET_1(options, Node::OPTION_e_TERRAIN_EDIT_POINT);
-                break;
-            case 'b':
-                BITMASK_SET_1(options, Node::OPTION_b_EXTRA_BUOYANCY);
-                break;
-            case 'p':
-                BITMASK_SET_1(options, Node::OPTION_p_NO_PARTICLES);
-                break;
-            case 'L':
-                BITMASK_SET_1(options, Node::OPTION_L_LOG);
-                break;
-
-            default:
-                this->AddMessage(options_str, Message::TYPE_WARNING, std::string("Ignoring invalid option: ") + c);
-                break;
-        }
-    }
+    m_document->set_node_defaults.push_back(def);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_NODE_DEFAULTS, (int)m_document->set_node_defaults.size() - 1));
 }
 
 void Parser::ParseDirectiveSetManagedMaterialsOptions()
 {
     if (! this->CheckNumArguments(2)) { return; } // 2 items: keyword, arg
 
-    ManagedMaterialsOptions mmo;
+    SetManagedmaterialsOptionsLine mmo;
 
     // This is what v0.3x's parser did.
     char c = this->GetArgChar(1);
@@ -614,15 +533,15 @@ void Parser::ParseDirectiveSetManagedMaterialsOptions()
             "Param 'doublesided' should be only 1 or 0, got '" + this->GetArgStr(1) + "', parsing as 0");
     }
 
-    m_document->managed_materials_options.push_back(mmo);
-    m_document->lines.emplace_back(Line(KEYWORD_SET_MANAGEDMATERIALS_OPTIONS, (int)m_document->managed_materials_options.size() - 1));
+    m_document->set_managedmaterials_options.push_back(mmo);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_MANAGEDMATERIALS_OPTIONS, (int)m_document->set_managedmaterials_options.size() - 1));
 }
 
 void Parser::ParseDirectiveSetBeamDefaultsScale()
 {
     if (! this->CheckNumArguments(5)) { return; }
 
-    BeamDefaultsScale scale;
+    SetBeamDefaultsScaleLine scale;
     scale._num_args = m_num_args;
 
     scale.springiness = this->GetArgFloat(1);
@@ -630,15 +549,15 @@ void Parser::ParseDirectiveSetBeamDefaultsScale()
     if (m_num_args > 3) { scale.deformation_threshold_constant = this->GetArgFloat(3); }
     if (m_num_args > 4) { scale.breaking_threshold_constant = this->GetArgFloat(4); }
 
-    m_document->beam_defaults_scale.push_back(scale);
-    m_document->lines.emplace_back(Line(KEYWORD_SET_BEAM_DEFAULTS_SCALE, (int)m_document->beam_defaults_scale.size() - 1));
+    m_document->set_beam_defaults_scale.push_back(scale);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_BEAM_DEFAULTS_SCALE, (int)m_document->set_beam_defaults_scale.size() - 1));
 }
 
 void Parser::ParseDirectiveSetBeamDefaults()
 {
     if (! this->CheckNumArguments(2)) { return; } // 2 items: keyword, arg
 
-    BeamDefaults d;
+    SetBeamDefaultsLine d;
     d._num_args = m_num_args;
 
     d.springiness = this->GetArgFloat(1);
@@ -649,20 +568,24 @@ void Parser::ParseDirectiveSetBeamDefaults()
     if (m_num_args > 6) d.beam_material_name = this->GetArgStr(6);
     if (m_num_args > 7) d.plastic_deform_coef = this->GetArgFloat(7);
 
-    m_document->beam_defaults.push_back(d);
-    m_document->lines.emplace_back(Line(KEYWORD_SET_BEAM_DEFAULTS, (int)m_document->beam_defaults.size() - 1));
+    m_document->set_beam_defaults.push_back(d);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_BEAM_DEFAULTS, (int)m_document->set_beam_defaults.size() - 1));
 }
 
 void Parser::ParseDirectivePropCameraMode()
 {
     if (! this->CheckNumArguments(2)) { return; } // 2 items: keyword, arg
 
-    this->_ParseCameraSettings(m_document->props.back().camera_settings, this->GetArgStr(1));
+    PropCameraModeLine line;
+    this->_ParseCameraSettings(line, this->GetArgStr(1));
+
+    m_document->prop_camera_mode.push_back(line);
+    m_document->lines.emplace_back(Line(KEYWORD_PROP_CAMERA_MODE, (int)m_document->prop_camera_mode.size() - 1));
 }
 
 void Parser::ParseDirectiveSection()
 {
-    SectionTag def;
+    SectionLine def;
 
     // arg 0: 'section'
     // arg 1: version (unused)
@@ -677,10 +600,13 @@ void Parser::ParseDirectiveSection()
 
 void Parser::ParseDirectiveSectionConfig()
 {
+    SectionconfigLine line;
     // arg 0 is the keyword 'sectionconfig'
-    // arg 1 is ignored arg 'version'
-    m_document->section_config.push_back(this->GetArgStr(2));
-    m_document->lines.emplace_back(Line(KEYWORD_SECTIONCONFIG, (int)m_document->section_config.size() - 1));
+    line.number = this->GetArgInt(1);
+    line.name = this->GetArgStr(2);
+
+    m_document->sectionconfig.push_back(line);
+    m_document->lines.emplace_back(Line(KEYWORD_SECTIONCONFIG, (int)m_document->sectionconfig.size() - 1));
 }
 
 void Parser::ParseDirectiveBackmesh()
@@ -688,12 +614,11 @@ void Parser::ParseDirectiveBackmesh()
     m_document->lines.emplace_back(Line(KEYWORD_BACKMESH, -1));
 }
 
-void Parser::ParseMeshWheelUnified()
+void Parser::ParseMeshwheels()
 {
     if (! this->CheckNumArguments(16)) { return; }
 
-    MeshWheel mesh_wheel;
-    mesh_wheel._is_meshwheel2     = (m_current_block == KEYWORD_MESHWHEELS2);
+    MeshwheelsLine mesh_wheel;
 
     mesh_wheel.tyre_radius        = this->GetArgFloat        ( 0);
     mesh_wheel.rim_radius         = this->GetArgFloat        ( 1);
@@ -712,23 +637,42 @@ void Parser::ParseMeshWheelUnified()
     mesh_wheel.mesh_name          = this->GetArgStr          (14);
     mesh_wheel.material_name      = this->GetArgStr          (15);
 
-    if (mesh_wheel._is_meshwheel2)
-    {
-        m_document->mesh_wheels_2.push_back(mesh_wheel);
-        m_document->lines.emplace_back(Line(KEYWORD_MESHWHEELS2, (int)m_document->mesh_wheels_2.size() - 1));
-    }
-    else
-    {
-        m_document->mesh_wheels.push_back(mesh_wheel);
-        m_document->lines.emplace_back(Line(KEYWORD_MESHWHEELS, (int)m_document->mesh_wheels.size() - 1));
-    }
+    m_document->meshwheels.push_back(mesh_wheel);
+    m_document->lines.emplace_back(Line(KEYWORD_MESHWHEELS, (int)m_document->meshwheels.size() - 1));
+}
+
+void Parser::ParseMeshwheels2()
+{
+    if (! this->CheckNumArguments(16)) { return; }
+
+    Meshwheels2Line mesh_wheel;
+
+    mesh_wheel.tyre_radius        = this->GetArgFloat        ( 0);
+    mesh_wheel.rim_radius         = this->GetArgFloat        ( 1);
+    mesh_wheel.width              = this->GetArgFloat        ( 2);
+    mesh_wheel.num_rays           = this->GetArgInt          ( 3);
+    mesh_wheel.nodes[0]           = this->GetArgNodeRef      ( 4);
+    mesh_wheel.nodes[1]           = this->GetArgNodeRef      ( 5);
+    mesh_wheel.rigidity_node      = this->GetArgRigidityNode ( 6);
+    mesh_wheel.braking            = this->GetArgBraking      ( 7);
+    mesh_wheel.propulsion         = this->GetArgPropulsion   ( 8);
+    mesh_wheel.reference_arm_node = this->GetArgNodeRef      ( 9);
+    mesh_wheel.mass               = this->GetArgFloat        (10);
+    mesh_wheel.spring             = this->GetArgFloat        (11);
+    mesh_wheel.damping            = this->GetArgFloat        (12);
+    mesh_wheel.side               = this->GetArgWheelSide    (13);
+    mesh_wheel.mesh_name          = this->GetArgStr          (14);
+    mesh_wheel.material_name      = this->GetArgStr          (15);
+
+    m_document->meshwheels2.push_back(mesh_wheel);
+    m_document->lines.emplace_back(Line(KEYWORD_MESHWHEELS2, (int)m_document->meshwheels2.size() - 1));
 }
 
 void Parser::ParseHook()
 {
     if (! this->CheckNumArguments(1)) { return; }
 
-    Hook hook;
+    HooksLine hook;
     hook.node = this->GetArgNodeRef(0);
 
     int i = 1;
@@ -761,27 +705,25 @@ void Parser::ParseHook()
     }
 
     m_document->hooks.push_back(hook);
+    m_document->lines.emplace_back(Line(KEYWORD_HOOKS, (int)m_document->hooks.size() - 1));
 }
 
 void Parser::ParseHelp()
 {
-
-    std::string helpmat = m_current_line;
-    Ogre::StringUtil::trim(helpmat);
-    m_document->help_panel_material_name.push_back(helpmat);
-    m_document->lines.emplace_back(Line(KEYWORD_HELP, (int)m_document->help_panel_material_name.size() - 1));
+    m_document->help.push_back(m_current_line); // already trimmed
+    m_document->lines.emplace_back(Line(KEYWORD_HELP, (int)m_document->help.size() - 1));
 }
 
 void Parser::ParseGuiSettings()
 {
     if (! this->CheckNumArguments(2)) { return; }
    
-    GuiSettings gs;
+    GuiSettingsLine gs;
     gs.key = this->GetArgStr(0);
     gs.value = this->GetArgStr(1);
 
-    m_document->gui_settings.push_back(gs);
-    m_document->lines.emplace_back(Line(KEYWORD_GUISETTINGS, (int)m_document->gui_settings.size() - 1));
+    m_document->guisettings.push_back(gs);
+    m_document->lines.emplace_back(Line(KEYWORD_GUISETTINGS, (int)m_document->guisettings.size() - 1));
 }
 
 void Parser::ParseGuid()
@@ -796,7 +738,7 @@ void Parser::ParseGlobals()
 {
     if (! this->CheckNumArguments(2)) { return; }
 
-    Globals globals;
+    GlobalsLine globals;
     globals.dry_mass   = this->GetArgFloat(0);
     globals.cargo_mass = this->GetArgFloat(1);
 
@@ -810,7 +752,7 @@ void Parser::ParseFusedrag()
 {
     if (! this->CheckNumArguments(3)) { return; }
 
-    Fusedrag fusedrag;
+    FusedragLine fusedrag;
     fusedrag.front_node = this->GetArgNodeRef(0);
     fusedrag.rear_node  = this->GetArgNodeRef(1);
 
@@ -833,17 +775,17 @@ void Parser::ParseFusedrag()
     m_document->fusedrag.push_back(fusedrag);
 }
 
-void Parser::_ParseCameraSettings(CameraSettings & camera_settings, Ogre::String input_str)
+void Parser::_ParseCameraSettings(CameraModeCommon & camera_settings, Ogre::String input_str)
 {
     int input = PARSEINT(input_str);
     if (input >= 0)
     {
-        camera_settings.mode = CameraSettings::MODE_CINECAM;
+        camera_settings.mode = CameraModeCommon::MODE_CINECAM;
         camera_settings.cinecam_index = input;
     }
     else if (input >= -2)
     {
-        camera_settings.mode = CameraSettings::Mode(input);
+        camera_settings.mode = CameraModeCommon::Mode(input);
     }
     else
     {
@@ -856,9 +798,10 @@ void Parser::ParseDirectiveFlexbodyCameraMode()
 {
     if (! this->CheckNumArguments(2)) { return; } // 2 items: keyword, arg
 
-    CameraSettings cam;
-    this->_ParseCameraSettings(cam, this->GetArgStr(1));
-    m_document->flexbody_camera_mode.push_back(cam);
+    FlexbodyCameraModeLine line;
+    this->_ParseCameraSettings(line, this->GetArgStr(1));
+
+    m_document->flexbody_camera_mode.push_back(line);
     m_document->lines.emplace_back(Line(KEYWORD_FLEXBODY_CAMERA_MODE, (int)m_document->flexbody_camera_mode.size() - 1));
 }
 
@@ -866,7 +809,7 @@ void Parser::ParseCab()
 {
     if (! this->CheckNumArguments(3)) { return; }
 
-    Cab cab;
+    CabLine cab;
     cab.nodes[0] = this->GetArgNodeRef(0);
     cab.nodes[1] = this->GetArgNodeRef(1);
     cab.nodes[2] = this->GetArgNodeRef(2);
@@ -878,13 +821,13 @@ void Parser::ParseCab()
         {
             switch (options_str.at(i))
             {
-            case 'c': cab.options |=  Cab::OPTION_c_CONTACT;                               break;
-            case 'b': cab.options |=  Cab::OPTION_b_BUOYANT;                               break;
-            case 'D': cab.options |= (Cab::OPTION_c_CONTACT      | Cab::OPTION_b_BUOYANT); break;
-            case 'p': cab.options |=  Cab::OPTION_p_10xTOUGHER;                            break;
-            case 'u': cab.options |=  Cab::OPTION_u_INVULNERABLE;                          break;
-            case 'F': cab.options |= (Cab::OPTION_p_10xTOUGHER   | Cab::OPTION_b_BUOYANT); break;
-            case 'S': cab.options |= (Cab::OPTION_u_INVULNERABLE | Cab::OPTION_b_BUOYANT); break; 
+            case 'c': cab.options |=  CabLine::OPTION_c_CONTACT;                               break;
+            case 'b': cab.options |=  CabLine::OPTION_b_BUOYANT;                               break;
+            case 'D': cab.options |= (CabLine::OPTION_c_CONTACT      | CabLine::OPTION_b_BUOYANT); break;
+            case 'p': cab.options |=  CabLine::OPTION_p_10xTOUGHER;                            break;
+            case 'u': cab.options |=  CabLine::OPTION_u_INVULNERABLE;                          break;
+            case 'F': cab.options |= (CabLine::OPTION_p_10xTOUGHER   | CabLine::OPTION_b_BUOYANT); break;
+            case 'S': cab.options |= (CabLine::OPTION_u_INVULNERABLE | CabLine::OPTION_b_BUOYANT); break; 
             case 'n': break; // Placeholder, does nothing 
 
             default:
@@ -896,15 +839,15 @@ void Parser::ParseCab()
         }
     }
 
-    m_document->cab_triangles.push_back(cab);
-    m_document->lines.emplace_back(Line(KEYWORD_CAB, (int)m_document->cab_triangles.size() - 1));
+    m_document->cab.push_back(cab);
+    m_document->lines.emplace_back(Line(KEYWORD_CAB, (int)m_document->cab.size() - 1));
 }
 
 void Parser::ParseTexcoords()
 {
     if (! this->CheckNumArguments(3)) { return; }
 
-    Texcoord texcoord;
+    TexcoordsLine texcoord;
     texcoord.node = this->GetArgNodeRef(0);
     texcoord.u    = this->GetArgFloat  (1);
     texcoord.v    = this->GetArgFloat  (2);
@@ -913,11 +856,11 @@ void Parser::ParseTexcoords()
     m_document->lines.emplace_back(Line(KEYWORD_TEXCOORDS, (int)m_document->texcoords.size() - 1));
 }
 
-void Parser::ParseFlexbody()
+void Parser::ParseFlexbodies()
 {
     if (! this->CheckNumArguments(10)) { return; }
 
-    Flexbody flexbody;
+    FlexbodiesLine flexbody;
     flexbody.reference_node = this->GetArgNodeRef (0);
     flexbody.x_axis_node    = this->GetArgNodeRef (1);
     flexbody.y_axis_node    = this->GetArgNodeRef (2);
@@ -935,7 +878,7 @@ void Parser::ParseFlexbody()
 
 void Parser::ParseForset()
 {
-    Forset def;
+    ForsetLine def;
 
     // Syntax: "forset", followed by space/comma, followed by ","-separated items.
     // Acceptable item forms:
@@ -947,7 +890,6 @@ void Parser::ParseForset()
     const char* item = std::strtok(setdef, ",");
 
     // TODO: Add error reporting
-    // It appears strtoul() sets no ERRNO for input 'x1' (parsed -> '0')
 
     const ptrdiff_t MAX_ITEM_LEN = 200;
     while (item != nullptr)
@@ -955,35 +897,26 @@ void Parser::ParseForset()
         const char* hyphen = strchr(item, '-');
         if (hyphen != nullptr)
         {
-            unsigned a = 0; 
             char* a_end = nullptr;
             std::string a_text;
             std::string b_text;
             if (hyphen != item)
             {
-                a = ::strtoul(item, &a_end, 10);
                 size_t length = std::min(a_end - item, MAX_ITEM_LEN);
                 a_text = std::string(item, length);
             }
             char* b_end = nullptr;
             const char* item2 = hyphen + 1;
-            unsigned b = ::strtoul(item2, &b_end, 10);
             size_t length = std::min(b_end - item2, MAX_ITEM_LEN);
             b_text = std::string(item2, length);
 
             // Add interval [a-b]
-            def.node_ranges.push_back(
-                Node::Range(
-                    Node::Ref(a_text, a, 0, m_current_line_number),
-                    Node::Ref(b_text, b, 0, m_current_line_number)));
+            def.node_ranges.push_back(NodeRangeCommon(a_text, b_text));
         }
         else
         {
-            errno = 0;
-            unsigned a = 0;
-            a = ::strtoul(item, nullptr, 10);
-            // Add interval [a-a]
-            def.node_ranges.push_back(Node::Range(Node::Ref(std::string(item), a, 0, m_current_line_number)));
+            // Add "interval" [a-a]
+            def.node_ranges.push_back(NodeRangeCommon(item, item));
         }
         item = strtok(nullptr, ",");
     }
@@ -993,43 +926,67 @@ void Parser::ParseForset()
 
 }
 
-void Parser::ParseFlaresUnified()
+void Parser::ParseFlares()
 {
-    const bool is_flares2 = (m_current_block == KEYWORD_FLARES2);
-    if (! this->CheckNumArguments(is_flares2 ? 6 : 5)) { return; }
+    if (! this->CheckNumArguments(5)) { return; }
 
-    Flare2 flare2;
-    int pos = 0;
-    flare2.reference_node = this->GetArgNodeRef(pos++);
-    flare2.node_axis_x    = this->GetArgNodeRef(pos++);
-    flare2.node_axis_y    = this->GetArgNodeRef(pos++);
-    flare2.offset.x       = this->GetArgFloat  (pos++);
-    flare2.offset.y       = this->GetArgFloat  (pos++);
+    FlaresLine flare;
+    flare.reference_node = this->GetArgNodeRef(0);
+    flare.node_axis_x    = this->GetArgNodeRef(1);
+    flare.node_axis_y    = this->GetArgNodeRef(2);
+    flare.offset.x       = this->GetArgFloat  (3);
+    flare.offset.y       = this->GetArgFloat  (4);
 
-    if (m_current_block == KEYWORD_FLARES2)
+    if (m_num_args > 5) { flare.type = this->GetArgFlareType(5); }
+
+    if (m_num_args > 6)
     {
-        flare2.offset.z = this->GetArgFloat(pos++);
+        switch (flare.type)
+        {
+            case FlareType::USER:      flare.control_number = this->GetArgInt(6); break;
+            case FlareType::DASHBOARD: flare.dashboard_link = this->GetArgStr(6); break;
+            default: break;
+        }
     }
 
-    if (m_num_args > pos) { flare2.type = this->GetArgFlareType(pos++); }
+    if (m_num_args > 7) { flare.blink_delay_milis = this->GetArgInt      (7); }
+    if (m_num_args > 8) { flare.size              = this->GetArgFloat    (8); }
+    if (m_num_args > 9) { flare.material_name     = this->GetArgStr      (9); }
 
-    if (m_num_args > pos)
+    m_document->flares.push_back(flare);
+    m_document->lines.emplace_back(Line(KEYWORD_FLARES, (int)m_document->flares.size() - 1));
+}
+
+void Parser::ParseFlares2()
+{
+    if (! this->CheckNumArguments(6)) { return; }
+
+    Flares2Line flare2;
+    flare2.reference_node = this->GetArgNodeRef(0);
+    flare2.node_axis_x    = this->GetArgNodeRef(1);
+    flare2.node_axis_y    = this->GetArgNodeRef(2);
+    flare2.offset.x       = this->GetArgFloat  (3);
+    flare2.offset.y       = this->GetArgFloat  (4);
+    flare2.offset.z       = this->GetArgFloat  (5); //<< only difference from 'flares'
+
+    if (m_num_args > 6) { flare2.type = this->GetArgFlareType(6); }
+
+    if (m_num_args > 7)
     {
         switch (flare2.type)
         {
-            case FlareType::USER:      flare2.control_number = this->GetArgInt(pos); break;
-            case FlareType::DASHBOARD: flare2.dashboard_link = this->GetArgStr(pos); break;
+            case FlareType::USER:      flare2.control_number = this->GetArgInt(7); break;
+            case FlareType::DASHBOARD: flare2.dashboard_link = this->GetArgStr(7); break;
             default: break;
         }
-        pos++;
     }
 
-    if (m_num_args > pos) { flare2.blink_delay_milis = this->GetArgInt      (pos++); }
-    if (m_num_args > pos) { flare2.size              = this->GetArgFloat    (pos++); }
-    if (m_num_args > pos) { flare2.material_name     = this->GetArgStr      (pos++); }
+    if (m_num_args > 8)  { flare2.blink_delay_milis = this->GetArgInt      (8); }
+    if (m_num_args > 9)  { flare2.size              = this->GetArgFloat    (9); }
+    if (m_num_args > 10) { flare2.material_name     = this->GetArgStr      (10); }
 
-    m_document->flares_2.push_back(flare2);
-    m_document->lines.emplace_back(Line(KEYWORD_FLARES2, (int)m_document->flares_2.size() - 1));
+    m_document->flares2.push_back(flare2);
+    m_document->lines.emplace_back(Line(KEYWORD_FLARES2, (int)m_document->flares2.size() - 1));
 }
 
 void Parser::ParseFixes()
@@ -1042,32 +999,32 @@ void Parser::ParseExtCamera()
 {
     if (! this->CheckNumArguments(2)) { return; }
     
-    ExtCamera extcam;
+    ExtcameraLine extcam;
     
     auto mode_str = this->GetArgStr(1);
     if (mode_str == "classic")
     {
-        extcam.mode = ExtCamera::MODE_CLASSIC;
+        extcam.mode = ExtcameraLine::MODE_CLASSIC;
     }
     else if (mode_str == "cinecam")
     {
-        extcam.mode = ExtCamera::MODE_CINECAM;
+        extcam.mode = ExtcameraLine::MODE_CINECAM;
     }
     else if ((mode_str == "node") && (m_num_args > 2))
     {
-        extcam.mode = ExtCamera::MODE_NODE;
+        extcam.mode = ExtcameraLine::MODE_NODE;
         extcam.node = this->GetArgNodeRef(2);
     }
 
-    m_document->ext_camera.push_back(extcam);
-    m_document->lines.emplace_back(Line(KEYWORD_EXTCAMERA, (int)m_document->ext_camera.size() - 1));
+    m_document->extcamera.push_back(extcam);
+    m_document->lines.emplace_back(Line(KEYWORD_EXTCAMERA, (int)m_document->extcamera.size() - 1));
 }
 
-void Parser::ParseExhaust()
+void Parser::ParseExhausts()
 {
     if (! this->CheckNumArguments(2)) { return; }
 
-    Exhaust exhaust;
+    ExhaustsLine exhaust;
     exhaust.reference_node = this->GetArgNodeRef(0);
     exhaust.direction_node = this->GetArgNodeRef(1);
     
@@ -1108,12 +1065,12 @@ void Parser::ParseCruiseControl()
 {
     if (! this->CheckNumArguments(3)) { return; } // keyword + 2 params
 
-    CruiseControl cruise_control;
-    cruise_control.min_speed = this->GetArgFloat(1);
-    cruise_control.autobrake = this->GetArgInt(2);
+    CruisecontrolLine cruisecontrol;
+    cruisecontrol.min_speed = this->GetArgFloat(1);
+    cruisecontrol.autobrake = this->GetArgInt(2);
 
-    m_document->cruise_control.push_back(cruise_control);
-    m_document->lines.emplace_back(Line(KEYWORD_CRUISECONTROL, (int)m_document->cruise_control.size() - 1));
+    m_document->cruisecontrol.push_back(cruisecontrol);
+    m_document->lines.emplace_back(Line(KEYWORD_CRUISECONTROL, (int)m_document->cruisecontrol.size() - 1));
 }
 
 void Parser::ParseDescription()
@@ -1132,7 +1089,7 @@ void Parser::ParseDirectiveAddAnimation()
         return;
     }
 
-    Animation animation;
+    AddAnimationLine animation;
     animation.ratio       = this->ParseArgFloat(tokens[0].c_str());
     animation.lower_limit = this->ParseArgFloat(tokens[1].c_str());
     animation.upper_limit = this->ParseArgFloat(tokens[2].c_str());
@@ -1148,10 +1105,10 @@ void Parser::ParseDirectiveAddAnimation()
 
         if (entry.size() == 1) // Single keyword
         {
-            if      (entry[0] == "autoanimate") { animation.mode |= Animation::MODE_AUTO_ANIMATE; }
-            else if (entry[0] == "noflip")      { animation.mode |= Animation::MODE_NO_FLIP; }
-            else if (entry[0] == "bounce")      { animation.mode |= Animation::MODE_BOUNCE; }
-            else if (entry[0] == "eventlock")   { animation.mode |= Animation::MODE_EVENT_LOCK; }
+            if      (entry[0] == "autoanimate") { animation.mode |= AddAnimationLine::MODE_AUTO_ANIMATE; }
+            else if (entry[0] == "noflip")      { animation.mode |= AddAnimationLine::MODE_NO_FLIP; }
+            else if (entry[0] == "bounce")      { animation.mode |= AddAnimationLine::MODE_BOUNCE; }
+            else if (entry[0] == "eventlock")   { animation.mode |= AddAnimationLine::MODE_EVENT_LOCK; }
 
             else { snprintf(warn_msg, WARN_LEN, "Invalid keyword: %s", entry[0].c_str()); }
         }
@@ -1165,12 +1122,12 @@ void Parser::ParseDirectiveAddAnimation()
                     std::string value = *itor;
                     Ogre::StringUtil::trim(value);
 
-                         if (value == "x-rotation") { animation.mode |= Animation::MODE_ROTATION_X; }
-                    else if (value == "y-rotation") { animation.mode |= Animation::MODE_ROTATION_Y; }
-                    else if (value == "z-rotation") { animation.mode |= Animation::MODE_ROTATION_Z; }
-                    else if (value == "x-offset"  ) { animation.mode |= Animation::MODE_OFFSET_X;   }
-                    else if (value == "y-offset"  ) { animation.mode |= Animation::MODE_OFFSET_Y;   }
-                    else if (value == "z-offset"  ) { animation.mode |= Animation::MODE_OFFSET_Z;   }
+                         if (value == "x-rotation") { animation.mode |= AddAnimationLine::MODE_ROTATION_X; }
+                    else if (value == "y-rotation") { animation.mode |= AddAnimationLine::MODE_ROTATION_Y; }
+                    else if (value == "z-rotation") { animation.mode |= AddAnimationLine::MODE_ROTATION_Z; }
+                    else if (value == "x-offset"  ) { animation.mode |= AddAnimationLine::MODE_OFFSET_X;   }
+                    else if (value == "y-offset"  ) { animation.mode |= AddAnimationLine::MODE_OFFSET_Y;   }
+                    else if (value == "z-offset"  ) { animation.mode |= AddAnimationLine::MODE_OFFSET_Z;   }
 
                     else { snprintf(warn_msg, WARN_LEN, "Invalid 'mode': %s, ignoring...", entry[1].c_str()); }
                 }
@@ -1188,65 +1145,65 @@ void Parser::ParseDirectiveAddAnimation()
                     std::string value = *itor;
                     Ogre::StringUtil::trim(value);
 
-                         if (value == "airspeed")      { animation.source |= Animation::SOURCE_AIRSPEED;          }
-                    else if (value == "vvi")           { animation.source |= Animation::SOURCE_VERTICAL_VELOCITY; }
-                    else if (value == "altimeter100k") { animation.source |= Animation::SOURCE_ALTIMETER_100K;    }
-                    else if (value == "altimeter10k")  { animation.source |= Animation::SOURCE_ALTIMETER_10K;     }
-                    else if (value == "altimeter1k")   { animation.source |= Animation::SOURCE_ALTIMETER_1K;      }
-                    else if (value == "aoa")           { animation.source |= Animation::SOURCE_ANGLE_OF_ATTACK;   }
-                    else if (value == "flap")          { animation.source |= Animation::SOURCE_FLAP;              }
-                    else if (value == "airbrake")      { animation.source |= Animation::SOURCE_AIR_BRAKE;         }
-                    else if (value == "roll")          { animation.source |= Animation::SOURCE_ROLL;              }
-                    else if (value == "pitch")         { animation.source |= Animation::SOURCE_PITCH;             }
-                    else if (value == "brakes")        { animation.source |= Animation::SOURCE_BRAKES;            }
-                    else if (value == "accel")         { animation.source |= Animation::SOURCE_ACCEL;             }
-                    else if (value == "clutch")        { animation.source |= Animation::SOURCE_CLUTCH;            }
-                    else if (value == "speedo")        { animation.source |= Animation::SOURCE_SPEEDO;            }
-                    else if (value == "tacho")         { animation.source |= Animation::SOURCE_TACHO;             }
-                    else if (value == "turbo")         { animation.source |= Animation::SOURCE_TURBO;             }
-                    else if (value == "parking")       { animation.source |= Animation::SOURCE_PARKING;           }
-                    else if (value == "shifterman1")   { animation.source |= Animation::SOURCE_SHIFT_LEFT_RIGHT;  }
-                    else if (value == "shifterman2")   { animation.source |= Animation::SOURCE_SHIFT_BACK_FORTH;  }
-                    else if (value == "sequential")    { animation.source |= Animation::SOURCE_SEQUENTIAL_SHIFT;  }
-                    else if (value == "shifterlin")    { animation.source |= Animation::SOURCE_SHIFTERLIN;        }
-                    else if (value == "torque")        { animation.source |= Animation::SOURCE_TORQUE;            }
-                    else if (value == "heading")       { animation.source |= Animation::SOURCE_HEADING;           }
-                    else if (value == "difflock")      { animation.source |= Animation::SOURCE_DIFFLOCK;          }
-                    else if (value == "rudderboat")    { animation.source |= Animation::SOURCE_BOAT_RUDDER;       }
-                    else if (value == "throttleboat")  { animation.source |= Animation::SOURCE_BOAT_THROTTLE;     }
-                    else if (value == "steeringwheel") { animation.source |= Animation::SOURCE_STEERING_WHEEL;    }
-                    else if (value == "aileron")       { animation.source |= Animation::SOURCE_AILERON;           }
-                    else if (value == "elevator")      { animation.source |= Animation::SOURCE_ELEVATOR;          }
-                    else if (value == "rudderair")     { animation.source |= Animation::SOURCE_AIR_RUDDER;        }
-                    else if (value == "permanent")     { animation.source |= Animation::SOURCE_PERMANENT;         }
-                    else if (value == "event")         { animation.source |= Animation::SOURCE_EVENT;             }
+                         if (value == "airspeed")      { animation.source |= AddAnimationLine::SOURCE_AIRSPEED;          }
+                    else if (value == "vvi")           { animation.source |= AddAnimationLine::SOURCE_VERTICAL_VELOCITY; }
+                    else if (value == "altimeter100k") { animation.source |= AddAnimationLine::SOURCE_ALTIMETER_100K;    }
+                    else if (value == "altimeter10k")  { animation.source |= AddAnimationLine::SOURCE_ALTIMETER_10K;     }
+                    else if (value == "altimeter1k")   { animation.source |= AddAnimationLine::SOURCE_ALTIMETER_1K;      }
+                    else if (value == "aoa")           { animation.source |= AddAnimationLine::SOURCE_ANGLE_OF_ATTACK;   }
+                    else if (value == "flap")          { animation.source |= AddAnimationLine::SOURCE_FLAP;              }
+                    else if (value == "airbrake")      { animation.source |= AddAnimationLine::SOURCE_AIR_BRAKE;         }
+                    else if (value == "roll")          { animation.source |= AddAnimationLine::SOURCE_ROLL;              }
+                    else if (value == "pitch")         { animation.source |= AddAnimationLine::SOURCE_PITCH;             }
+                    else if (value == "brakes")        { animation.source |= AddAnimationLine::SOURCE_BRAKES;            }
+                    else if (value == "accel")         { animation.source |= AddAnimationLine::SOURCE_ACCEL;             }
+                    else if (value == "clutch")        { animation.source |= AddAnimationLine::SOURCE_CLUTCH;            }
+                    else if (value == "speedo")        { animation.source |= AddAnimationLine::SOURCE_SPEEDO;            }
+                    else if (value == "tacho")         { animation.source |= AddAnimationLine::SOURCE_TACHO;             }
+                    else if (value == "turbo")         { animation.source |= AddAnimationLine::SOURCE_TURBO;             }
+                    else if (value == "parking")       { animation.source |= AddAnimationLine::SOURCE_PARKING;           }
+                    else if (value == "shifterman1")   { animation.source |= AddAnimationLine::SOURCE_SHIFT_LEFT_RIGHT;  }
+                    else if (value == "shifterman2")   { animation.source |= AddAnimationLine::SOURCE_SHIFT_BACK_FORTH;  }
+                    else if (value == "sequential")    { animation.source |= AddAnimationLine::SOURCE_SEQUENTIAL_SHIFT;  }
+                    else if (value == "shifterlin")    { animation.source |= AddAnimationLine::SOURCE_SHIFTERLIN;        }
+                    else if (value == "torque")        { animation.source |= AddAnimationLine::SOURCE_TORQUE;            }
+                    else if (value == "heading")       { animation.source |= AddAnimationLine::SOURCE_HEADING;           }
+                    else if (value == "difflock")      { animation.source |= AddAnimationLine::SOURCE_DIFFLOCK;          }
+                    else if (value == "rudderboat")    { animation.source |= AddAnimationLine::SOURCE_BOAT_RUDDER;       }
+                    else if (value == "throttleboat")  { animation.source |= AddAnimationLine::SOURCE_BOAT_THROTTLE;     }
+                    else if (value == "steeringwheel") { animation.source |= AddAnimationLine::SOURCE_STEERING_WHEEL;    }
+                    else if (value == "aileron")       { animation.source |= AddAnimationLine::SOURCE_AILERON;           }
+                    else if (value == "elevator")      { animation.source |= AddAnimationLine::SOURCE_ELEVATOR;          }
+                    else if (value == "rudderair")     { animation.source |= AddAnimationLine::SOURCE_AIR_RUDDER;        }
+                    else if (value == "permanent")     { animation.source |= AddAnimationLine::SOURCE_PERMANENT;         }
+                    else if (value == "event")         { animation.source |= AddAnimationLine::SOURCE_EVENT;             }
 
                     else
                     {
-                        Animation::MotorSource motor_source;
+                        AddAnimationLine::MotorSource motor_source;
                         if (entry[1].compare(0, 8, "throttle") == 0)
                         {
-                            motor_source.source = Animation::MotorSource::SOURCE_AERO_THROTTLE;
+                            motor_source.source = AddAnimationLine::MotorSource::SOURCE_AERO_THROTTLE;
                             motor_source.motor = this->ParseArgUint(entry[1].substr(8));
                         }
                         else if (entry[1].compare(0, 3, "rpm") == 0)
                         {
-                            motor_source.source = Animation::MotorSource::SOURCE_AERO_RPM;
+                            motor_source.source = AddAnimationLine::MotorSource::SOURCE_AERO_RPM;
                             motor_source.motor = this->ParseArgUint(entry[1].substr(3));
                         }
                         else if (entry[1].compare(0, 8, "aerotorq") == 0)
                         {
-                            motor_source.source = Animation::MotorSource::SOURCE_AERO_TORQUE;
+                            motor_source.source = AddAnimationLine::MotorSource::SOURCE_AERO_TORQUE;
                             motor_source.motor = this->ParseArgUint(entry[1].substr(8));
                         }
                         else if (entry[1].compare(0, 7, "aeropit") == 0)
                         {
-                            motor_source.source = Animation::MotorSource::SOURCE_AERO_PITCH;
+                            motor_source.source = AddAnimationLine::MotorSource::SOURCE_AERO_PITCH;
                             motor_source.motor = this->ParseArgUint(entry[1].substr(7));
                         }
                         else if (entry[1].compare(0, 10, "aerostatus") == 0)
                         {
-                            motor_source.source = Animation::MotorSource::SOURCE_AERO_STATUS;
+                            motor_source.source = AddAnimationLine::MotorSource::SOURCE_AERO_STATUS;
                             motor_source.motor = this->ParseArgUint(entry[1].substr(10));
                         }
                         else
@@ -1282,7 +1239,7 @@ void Parser::ParseDirectiveAddAnimation()
 
 void Parser::ParseAntiLockBrakes()
 {
-    AntiLockBrakes alb;
+    AntiLockBrakesLine alb;
     Ogre::StringVector tokens = Ogre::StringUtil::split(m_current_line + 15, ","); // "AntiLockBrakes " = 15 characters
     if (tokens.size() < 2)
     {
@@ -1325,26 +1282,26 @@ void Parser::ParseAntiLockBrakes()
         }
     }
 
-    m_document->anti_lock_brakes.push_back(alb);
-    m_document->lines.emplace_back(Line(KEYWORD_ANTILOCKBRAKES, (int)m_document->anti_lock_brakes.size() - 1));
+    m_document->antilockbrakes.push_back(alb);
+    m_document->lines.emplace_back(Line(KEYWORD_ANTILOCKBRAKES, (int)m_document->antilockbrakes.size() - 1));
 }
 
 void Parser::ParseEngoption()
 {
     if (! this->CheckNumArguments(1)) { return; }
 
-    Engoption engoption;
+    EngoptionLine engoption;
     engoption.inertia = this->GetArgFloat(0);
 
     if (m_num_args > 1)
     {
-        engoption.type = Engoption::EngineType(this->GetArgChar(1));
+        engoption.type = EngoptionLine::EngineType(this->GetArgChar(1));
     }
 
     if (m_num_args > 2) { engoption.clutch_force     = this->GetArgFloat(2); }
-    if (m_num_args > 3) { engoption.shift_time       = this->GetArgFloat(3); }
-    if (m_num_args > 4) { engoption.clutch_time      = this->GetArgFloat(4); }
-    if (m_num_args > 5) { engoption.post_shift_time  = this->GetArgFloat(5); }
+    if (m_num_args > 3) { engoption.shift_time_sec       = this->GetArgFloat(3); }
+    if (m_num_args > 4) { engoption.clutch_time_sec      = this->GetArgFloat(4); }
+    if (m_num_args > 5) { engoption.post_shift_time_sec  = this->GetArgFloat(5); }
     if (m_num_args > 6) { engoption.stall_rpm        = this->GetArgFloat(6); }
     if (m_num_args > 7) { engoption.idle_rpm         = this->GetArgFloat(7); }
     if (m_num_args > 8) { engoption.max_idle_mixture = this->GetArgFloat(8); }
@@ -1359,7 +1316,7 @@ void Parser::ParseEngturbo()
 {
     if (! this->CheckNumArguments(4)) { return; }
 
-    Engturbo engturbo;
+    EngturboLine engturbo;
     engturbo.version        = this->GetArgInt  ( 0);
     engturbo.tinertiaFactor = this->GetArgFloat( 1);
     engturbo.nturbos        = this->GetArgInt  ( 2);
@@ -1390,7 +1347,7 @@ void Parser::ParseEngine()
 {
     if (! this->CheckNumArguments(6)) { return; }
 
-    Engine engine;
+    EngineLine engine;
     engine.shift_down_rpm     = this->GetArgFloat(0);
     engine.shift_up_rpm       = this->GetArgFloat(1);
     engine.torque             = this->GetArgFloat(2);
@@ -1419,7 +1376,7 @@ void Parser::ParseEngine()
     m_document->lines.emplace_back(Line(KEYWORD_ENGINE, (int)m_document->engine.size() - 1));
 }
 
-void Parser::ParseContacter()
+void Parser::ParseContacters()
 {
     if (! this->CheckNumArguments(1)) { return; }
 
@@ -1427,44 +1384,65 @@ void Parser::ParseContacter()
     m_document->lines.emplace_back(Line(KEYWORD_CONTACTERS, (int)m_document->contacters.size() - 1));
 }
 
-void Parser::ParseCommandsUnified()
+void Parser::ParseCommands()
 {
-    const bool is_commands2 = (m_current_block == KEYWORD_COMMANDS2);
-    const int max_args = (is_commands2 ? 8 : 7);
-    if (! this->CheckNumArguments(max_args)) { return; }
+    if (! this->CheckNumArguments(7)) { return; }
 
-    Command2 command2;
-    command2._format_version   = (is_commands2) ? 2 : 1;
+    CommandsLine command;
 
-    int pos = 0;
-    command2.nodes[0]          = this->GetArgNodeRef(pos++);
-    command2.nodes[1]          = this->GetArgNodeRef(pos++);
-    command2.shorten_rate      = this->GetArgFloat  (pos++);
+    command.nodes[0]          = this->GetArgNodeRef(0);
+    command.nodes[1]          = this->GetArgNodeRef(1);
+    command.rate              = this->GetArgFloat  (2);
+    command.max_contraction = this->GetArgFloat(3);
+    command.max_extension   = this->GetArgFloat(4);
+    command.contract_key    = this->GetArgInt  (5);
+    command.extend_key      = this->GetArgInt  (6);
 
-    if (is_commands2)
-    {
-        command2.lengthen_rate = this->GetArgFloat(pos++);
-    }
-    else
-    {
-        command2.lengthen_rate = command2.shorten_rate;
-    }
+    if (m_num_args > 7) { this->ParseCommandOptions(command, this->GetArgStr(7)); }
+    if (m_num_args > 8) { command.description   = this->GetArgStr  (8);}
 
-    command2.max_contraction = this->GetArgFloat(pos++);
-    command2.max_extension   = this->GetArgFloat(pos++);
-    command2.contract_key    = this->GetArgInt  (pos++);
-    command2.extend_key      = this->GetArgInt  (pos++);
+    if (m_num_args > 9) { this->ParseOptionalInertia(command.inertia, 9); } // 4 args
 
-    if (m_num_args <= max_args) // No more args?
-    {
-        m_document->commands_2.push_back(command2);
-        return;
-    }
+    if (m_num_args > 13) { command.affect_engine = this->GetArgFloat(13);}
+    if (m_num_args > 14) { command.needs_engine  = this->GetArgBool (14);}
+    if (m_num_args > 15) { command.plays_sound   = this->GetArgBool (15);}
 
-    // Parse options
+    m_document->commands.push_back(command);
+    m_document->lines.emplace_back(Line(KEYWORD_COMMANDS, (int)m_document->commands.size() - 1));
+}
+
+void Parser::ParseCommands2()
+{
+    if (! this->CheckNumArguments(8)) { return; }
+
+    Commands2Line command;
+
+    command.nodes[0]          = this->GetArgNodeRef(0);
+    command.nodes[1]          = this->GetArgNodeRef(1);
+    command.shorten_rate      = this->GetArgFloat  (2); // <- different from 'commands'
+    command.lengthen_rate     = this->GetArgFloat  (3); // <- different from 'commands'
+    command.max_contraction = this->GetArgFloat(4);
+    command.max_extension   = this->GetArgFloat(5);
+    command.contract_key    = this->GetArgInt  (6);
+    command.extend_key      = this->GetArgInt  (7);
+
+    if (m_num_args > 8) { this->ParseCommandOptions(command, this->GetArgStr(8)); }
+    if (m_num_args > 9) { command.description   = this->GetArgStr  (9);}
+
+    if (m_num_args > 10) { this->ParseOptionalInertia(command.inertia, 10); } // 4 args
+
+    if (m_num_args > 14) { command.affect_engine = this->GetArgFloat(14);}
+    if (m_num_args > 15) { command.needs_engine  = this->GetArgBool (15);}
+    if (m_num_args > 16) { command.plays_sound   = this->GetArgBool (16);}
+
+    m_document->commands2.push_back(command);
+    m_document->lines.emplace_back(Line(KEYWORD_COMMANDS2, (int)m_document->commands2.size() - 1));
+}
+
+void Parser::ParseCommandOptions(CommandsCommon& command, std::string const& options_str)
+{
     const int WARN_LEN = 200;
     char warn_msg[WARN_LEN] = "";
-    std::string options_str = this->GetArgStr(pos++);
     char winner = 0;
     for (auto itor = options_str.begin(); itor != options_str.end(); ++itor)
     {
@@ -1472,12 +1450,12 @@ void Parser::ParseCommandsUnified()
         if ((winner == 0) && (c == 'o' || c == 'p' || c == 'c')) { winner = c; }
         
              if (c == 'n') {} // Filler, does nothing
-        else if (c == 'i') { command2.option_i_invisible     = true; }
-        else if (c == 'r') { command2.option_r_rope          = true; }
-        else if (c == 'f') { command2.option_f_not_faster    = true; }
-        else if (c == 'c') { command2.option_c_auto_center   = true; }
-        else if (c == 'p') { command2.option_p_1press        = true; }
-        else if (c == 'o') { command2.option_o_1press_center = true; }
+        else if (c == 'i') { command.option_i_invisible     = true; }
+        else if (c == 'r') { command.option_r_rope          = true; }
+        else if (c == 'f') { command.option_f_not_faster    = true; }
+        else if (c == 'c') { command.option_c_auto_center   = true; }
+        else if (c == 'p') { command.option_p_1press        = true; }
+        else if (c == 'o') { command.option_o_1press_center = true; }
         else
         {
             snprintf(warn_msg, WARN_LEN, "Ignoring unknown flag '%c'", c);
@@ -1486,20 +1464,20 @@ void Parser::ParseCommandsUnified()
     }
 
     // Resolve option conflicts
-    if (command2.option_c_auto_center && winner != 'c' && winner != 0)
+    if (command.option_c_auto_center && winner != 'c' && winner != 0)
     {
         AddMessage(Message::TYPE_WARNING, "Command cannot be one-pressed and self centering at the same time, ignoring flag 'c'");
-        command2.option_c_auto_center = false;
+        command.option_c_auto_center = false;
     }
     char ignored = '\0';
-    if (command2.option_o_1press_center && winner != 'o' && winner != 0)
+    if (command.option_o_1press_center && winner != 'o' && winner != 0)
     {
-        command2.option_o_1press_center = false;
+        command.option_o_1press_center = false;
         ignored = 'o';
     }
-    else if (command2.option_p_1press && winner != 'p' && winner != 0)
+    else if (command.option_p_1press && winner != 'p' && winner != 0)
     {
-        command2.option_p_1press = false;
+        command.option_p_1press = false;
         ignored = 'p';
     }
 
@@ -1514,39 +1492,28 @@ void Parser::ParseCommandsUnified()
         snprintf(warn_msg, WARN_LEN, "Command already has a one-pressed c.mode, ignoring flag '%c'", ignored);
         AddMessage(Message::TYPE_WARNING, warn_msg);
     }
-
-    if (m_num_args > pos) { command2.description   = this->GetArgStr  (pos++);}
-
-    if (m_num_args > pos) { ParseOptionalInertia(command2.inertia, pos); pos += 4; }
-
-    if (m_num_args > pos) { command2.affect_engine = this->GetArgFloat(pos++);}
-    if (m_num_args > pos) { command2.needs_engine  = this->GetArgBool (pos++);}
-    if (m_num_args > pos) { command2.plays_sound   = this->GetArgBool (pos++);}
-
-    m_document->commands_2.push_back(command2);
-    m_document->lines.emplace_back(Line(KEYWORD_COMMANDS2, (int)m_document->commands_2.size() - 1));
 }
 
-void Parser::ParseCollisionBox()
+void Parser::ParseCollisionboxes()
 {
-    CollisionBox collisionbox;
+    CollisionboxesLine collisionbox;
 
     Ogre::StringVector tokens = Ogre::StringUtil::split(m_current_line, ",");
     Ogre::StringVector::iterator iter = tokens.begin();
     for ( ; iter != tokens.end(); iter++)
     {
-        collisionbox.nodes.push_back( this->_ParseNodeRef(*iter) );
+        collisionbox.nodes.push_back( *iter );
     }
 
-    m_document->collision_boxes.push_back(collisionbox);
-    m_document->lines.emplace_back(Line(KEYWORD_COLLISIONBOXES, (int)m_document->collision_boxes.size() - 1));
+    m_document->collisionboxes.push_back(collisionbox);
+    m_document->lines.emplace_back(Line(KEYWORD_COLLISIONBOXES, (int)m_document->collisionboxes.size() - 1));
 }
 
 void Parser::ParseCinecam()
 {
     if (! this->CheckNumArguments(11)) { return; }
 
-    Cinecam cinecam;
+    CinecamLine cinecam;
 
     // Required arguments
     cinecam.position.x = this->GetArgFloat  ( 0);
@@ -1576,17 +1543,17 @@ void Parser::ParseCinecam()
     m_document->lines.emplace_back(Line(KEYWORD_CINECAM, (int)m_document->cinecam.size() - 1));
 }
 
-void Parser::ParseCameraRails()
+void Parser::ParseCamerarails()
 {
-    m_document->camera_rails.push_back( this->GetArgNodeRef(0) );
-    m_document->lines.emplace_back(Line(KEYWORD_CAMERARAIL, (int)m_document->camera_rails.size() - 1));
+    m_document->camerarails.push_back( this->GetArgNodeRef(0) );
+    m_document->lines.emplace_back(Line(KEYWORD_CAMERARAIL, (int)m_document->camerarails.size() - 1));
 }
 
 void Parser::ParseBrakes()
 {
     if (!this->CheckNumArguments(1)) { return; }
 
-    Brakes brakes;
+    BrakesLine brakes;
     brakes.default_braking_force = this->GetArgFloat(0);
 
     if (m_num_args > 1)
@@ -1600,7 +1567,7 @@ void Parser::ParseBrakes()
 
 void Parser::ParseAxles()
 {
-    Axle axle;
+    AxlesLine axle;
 
     Ogre::StringVector tokens = Ogre::StringUtil::split(m_current_line, ",");
     Ogre::StringVector::iterator iter = tokens.begin();
@@ -1617,8 +1584,8 @@ void Parser::ParseAxles()
         if (results[1].matched)
         {
             unsigned int wheel_index = PARSEINT(results[2]) - 1;
-            axle.wheels[wheel_index][0] = _ParseNodeRef(results[3]);
-            axle.wheels[wheel_index][1] = _ParseNodeRef(results[4]);
+            axle.wheels[wheel_index][0] = (results[3]);
+            axle.wheels[wheel_index][1] = (results[4]);
         }
         else if (results[5].matched)
         {
@@ -1656,7 +1623,7 @@ void Parser::ParseInterAxles()
     auto args = Ogre::StringUtil::split(m_current_line, ",");
     if (args.size() < 2) { return; }
 
-    InterAxle interaxle;
+    InteraxlesLine interaxle;
 
     interaxle.a1 = this->ParseArgInt(args[0].c_str()) - 1;
     interaxle.a2 = this->ParseArgInt(args[1].c_str()) - 1;
@@ -1703,7 +1670,7 @@ void Parser::ParseAirbrakes()
 {
     if (! this->CheckNumArguments(14)) { return; }
 
-    Airbrake airbrake;
+    AirbrakesLine airbrake;
     airbrake.reference_node        = this->GetArgNodeRef( 0);
     airbrake.x_axis_node           = this->GetArgNodeRef( 1);
     airbrake.y_axis_node           = this->GetArgNodeRef( 2);
@@ -1727,7 +1694,7 @@ void Parser::ParseVideoCamera()
 {
     if (! this->CheckNumArguments(19)) { return; }
 
-    VideoCamera videocamera;
+    VideocamerasLine videocamera;
 
     videocamera.reference_node       = this->GetArgNodeRef     ( 0);
     videocamera.left_node            = this->GetArgNodeRef     ( 1);
@@ -1759,7 +1726,7 @@ void Parser::ParseCameras()
 {
     if (! this->CheckNumArguments(3)) { return; }
 
-    Camera camera;
+    CamerasLine camera;
     camera.center_node = this->GetArgNodeRef(0);
     camera.back_node   = this->GetArgNodeRef(1);
     camera.left_node   = this->GetArgNodeRef(2);
@@ -1768,13 +1735,30 @@ void Parser::ParseCameras()
     m_document->lines.emplace_back(Line(KEYWORD_CAMERAS, (int)m_document->cameras.size() - 1));
 }
 
-void Parser::ParseTurbopropsUnified()
+void Parser::ParseTurboprops()
 {
-    bool is_turboprop_2 = m_current_block == KEYWORD_TURBOPROPS2;
+    if (! this->CheckNumArguments(8)) { return; }
 
-    if (! this->CheckNumArguments(is_turboprop_2 ? 9 : 8)) { return; }
+    TurbopropsLine turboprop;
 
-    Turboprop2 turboprop;
+    turboprop.reference_node     = this->GetArgNodeRef(0);
+    turboprop.axis_node          = this->GetArgNodeRef(1);
+    turboprop.blade_tip_nodes[0] = this->GetArgNodeRef(2);
+    turboprop.blade_tip_nodes[1] = this->GetArgNodeRef(3);
+    turboprop.blade_tip_nodes[2] = this->GetArgNullableNode(4);
+    turboprop.blade_tip_nodes[3] = this->GetArgNullableNode(5);
+    turboprop.turbine_power_kW   = this->GetArgFloat  (6);
+    turboprop.airfoil            = this->GetArgStr    (7);
+    
+    m_document->turboprops.push_back(turboprop);
+    m_document->lines.emplace_back(Line(KEYWORD_TURBOPROPS, (int)m_document->turboprops.size() - 1));
+}
+
+void Parser::ParseTurboprops2()
+{
+    if (! this->CheckNumArguments(9)) { return; }
+
+    Turboprops2Line turboprop;
     
     turboprop.reference_node     = this->GetArgNodeRef(0);
     turboprop.axis_node          = this->GetArgNodeRef(1);
@@ -1782,28 +1766,19 @@ void Parser::ParseTurbopropsUnified()
     turboprop.blade_tip_nodes[1] = this->GetArgNodeRef(3);
     turboprop.blade_tip_nodes[2] = this->GetArgNullableNode(4);
     turboprop.blade_tip_nodes[3] = this->GetArgNullableNode(5);
-
-    int offset = 0;
-
-    if (is_turboprop_2)
-    {
-        turboprop.couple_node = this->GetArgNullableNode(6);
-
-        offset = 1;
-    }
-
-    turboprop.turbine_power_kW   = this->GetArgFloat  (6 + offset);
-    turboprop.airfoil            = this->GetArgStr    (7 + offset);
+    turboprop.couple_node        = this->GetArgNullableNode(6);
+    turboprop.turbine_power_kW   = this->GetArgFloat  (7);
+    turboprop.airfoil            = this->GetArgStr    (8);
     
-    m_document->turboprops_2.push_back(turboprop);
-    m_document->lines.emplace_back(Line(KEYWORD_TURBOPROPS2, (int)m_document->turboprops_2.size() - 1));
+    m_document->turboprops2.push_back(turboprop);
+    m_document->lines.emplace_back(Line(KEYWORD_TURBOPROPS2, (int)m_document->turboprops2.size() - 1));
 }
 
 void Parser::ParseTurbojets()
 {
     if (! this->CheckNumArguments(9)) { return; }
 
-    Turbojet turbojet;
+    TurbojetsLine turbojet;
     turbojet.front_node     = this->GetArgNodeRef(0);
     turbojet.back_node      = this->GetArgNodeRef(1);
     turbojet.side_node      = this->GetArgNodeRef(2);
@@ -1815,13 +1790,14 @@ void Parser::ParseTurbojets()
     turbojet.nozzle_length  = this->GetArgFloat  (8);
 
     m_document->turbojets.push_back(turbojet);
+    m_document->lines.emplace_back(Line(KEYWORD_TURBOJETS, (int)m_document->turbojets.size() - 1));
 }
 
 void Parser::ParseTriggers()
 {
     if (! this->CheckNumArguments(6)) { return; }
 
-    Trigger trigger;
+    TriggersLine trigger;
     trigger.nodes[0]                  = this->GetArgNodeRef(0);
     trigger.nodes[1]                  = this->GetArgNodeRef(1);
     trigger.contraction_trigger_limit = this->GetArgFloat  (2);
@@ -1836,17 +1812,17 @@ void Parser::ParseTriggers()
         {
             switch(options_str.at(i))
             {
-                case 'i': trigger.options |= Trigger::OPTION_i_INVISIBLE;             break;
-                case 'c': trigger.options |= Trigger::OPTION_c_COMMAND_STYLE;         break;
-                case 'x': trigger.options |= Trigger::OPTION_x_START_OFF;             break;
-                case 'b': trigger.options |= Trigger::OPTION_b_BLOCK_KEYS;            break;
-                case 'B': trigger.options |= Trigger::OPTION_B_BLOCK_TRIGGERS;        break;
-                case 'A': trigger.options |= Trigger::OPTION_A_INV_BLOCK_TRIGGERS;    break;
-                case 's': trigger.options |= Trigger::OPTION_s_SWITCH_CMD_NUM;        break;
-                case 'h': trigger.options |= Trigger::OPTION_h_UNLOCK_HOOKGROUPS_KEY; break;
-                case 'H': trigger.options |= Trigger::OPTION_H_LOCK_HOOKGROUPS_KEY;   break;
-                case 't': trigger.options |= Trigger::OPTION_t_CONTINUOUS;            break;
-                case 'E': trigger.options |= Trigger::OPTION_E_ENGINE_TRIGGER;        break;
+                case 'i': trigger.options |= TriggersLine::OPTION_i_INVISIBLE;             break;
+                case 'c': trigger.options |= TriggersLine::OPTION_c_COMMAND_STYLE;         break;
+                case 'x': trigger.options |= TriggersLine::OPTION_x_START_OFF;             break;
+                case 'b': trigger.options |= TriggersLine::OPTION_b_BLOCK_KEYS;            break;
+                case 'B': trigger.options |= TriggersLine::OPTION_B_BLOCK_TRIGGERS;        break;
+                case 'A': trigger.options |= TriggersLine::OPTION_A_INV_BLOCK_TRIGGERS;    break;
+                case 's': trigger.options |= TriggersLine::OPTION_s_SWITCH_CMD_NUM;        break;
+                case 'h': trigger.options |= TriggersLine::OPTION_h_UNLOCK_HOOKGROUPS_KEY; break;
+                case 'H': trigger.options |= TriggersLine::OPTION_H_LOCK_HOOKGROUPS_KEY;   break;
+                case 't': trigger.options |= TriggersLine::OPTION_t_CONTINUOUS;            break;
+                case 'E': trigger.options |= TriggersLine::OPTION_E_ENGINE_TRIGGER;        break;
 
                 default:
                     this->AddMessage(Message::TYPE_WARNING, Ogre::String("Invalid trigger option: " + options_str.at(i)));
@@ -1864,21 +1840,21 @@ void Parser::ParseTriggers()
     // Handle actions
     if (trigger.IsHookToggleTrigger())
     {
-        Trigger::HookToggleTrigger hook_toggle;
+        TriggersLine::HookToggleTrigger hook_toggle;
         hook_toggle.contraction_trigger_hookgroup_id = shortbound_trigger_action;
         hook_toggle.extension_trigger_hookgroup_id = longbound_trigger_action;
         trigger.SetHookToggleTrigger(hook_toggle);
     }
     else if (trigger.HasFlag_E_EngineTrigger())
     {
-        Trigger::EngineTrigger engine_trigger;
-        engine_trigger.function = Trigger::EngineTrigger::Function(shortbound_trigger_action);
+        TriggersLine::EngineTrigger engine_trigger;
+        engine_trigger.function = TriggersLine::EngineTrigger::Function(shortbound_trigger_action);
         engine_trigger.motor_index = longbound_trigger_action;
         trigger.SetEngineTrigger(engine_trigger);
     }
     else
     {
-        Trigger::CommandKeyTrigger command_keys;
+        TriggersLine::CommandKeyTrigger command_keys;
         command_keys.contraction_trigger_key = shortbound_trigger_action;
         command_keys.extension_trigger_key   = longbound_trigger_action;
         trigger.SetCommandKeyTrigger(command_keys);
@@ -1890,7 +1866,7 @@ void Parser::ParseTriggers()
 
 void Parser::ParseTorqueCurve()
 {
-    TorqueCurve torque_curve;
+    TorquecurveLine torque_curve;
 
     Ogre::StringVector args = Ogre::StringUtil::split(m_current_line, ",");
     bool valid = true;
@@ -1912,8 +1888,8 @@ void Parser::ParseTorqueCurve()
 
     if (valid)
     {
-        m_document->torque_curve.push_back(torque_curve);
-        m_document->lines.emplace_back(Line(KEYWORD_TORQUECURVE, (int)m_document->torque_curve.size() - 1));
+        m_document->torquecurve.push_back(torque_curve);
+        m_document->lines.emplace_back(Line(KEYWORD_TORQUECURVE, (int)m_document->torquecurve.size() - 1));
     }
 }
 
@@ -1921,7 +1897,7 @@ void Parser::ParseTies()
 {
     if (! this->CheckNumArguments(5)) { return; }
 
-    Tie tie;
+    TiesLine tie;
 
     tie.root_node         = this->GetArgNodeRef(0);
     tie.max_reach_length  = this->GetArgFloat  (1);
@@ -1935,15 +1911,15 @@ void Parser::ParseTies()
         {
             switch (c)
             {
-            case Tie::OPTION_n_FILLER:
-            case Tie::OPTION_v_FILLER:
+            case TiesLine::OPTION_n_FILLER:
+            case TiesLine::OPTION_v_FILLER:
                 break;
 
-            case Tie::OPTION_i_INVISIBLE:
+            case TiesLine::OPTION_i_INVISIBLE:
                 tie.is_invisible = true;
                 break;
 
-            case Tie::OPTION_s_NO_SELF_LOCK:
+            case TiesLine::OPTION_s_NO_SELF_LOCK:
                 tie.disable_self_lock = true;
                 break;
 
@@ -1965,7 +1941,7 @@ void Parser::ParseSoundsources()
 {
     if (! this->CheckNumArguments(2)) { return; }
     
-    SoundSource soundsource;
+    SoundsourcesLine soundsource;
     soundsource.node              = this->GetArgNodeRef(0);
     soundsource.sound_script_name = this->GetArgStr(1);
 
@@ -1977,7 +1953,7 @@ void Parser::ParseSoundsources2()
 {
     if (! this->CheckNumArguments(3)) { return; }
     
-    SoundSource2 soundsource2;
+    Soundsources2Line soundsource2;
     soundsource2.node              = this->GetArgNodeRef(0);
     soundsource2.sound_script_name = this->GetArgStr(2);
 
@@ -1990,11 +1966,11 @@ void Parser::ParseSoundsources2()
             this->AddMessage(Message::TYPE_ERROR, msg.c_str());
             mode = -2;
         }
-        soundsource2.mode = SoundSource2::Mode(mode);
+        soundsource2.mode = Soundsources2Line::Mode(mode);
     }
     else
     {
-        soundsource2.mode = SoundSource2::MODE_CINECAM;
+        soundsource2.mode = Soundsources2Line::MODE_CINECAM;
         soundsource2.cinecam_index = mode;
     }
 
@@ -2010,8 +1986,8 @@ void Parser::ParseSlidenodes()
         this->AddMessage(Message::TYPE_ERROR, "Too few arguments");
     }
 
-    SlideNode slidenode;
-    slidenode.slide_node = this->_ParseNodeRef(args[0]);
+    SlidenodesLine slidenode;
+    slidenode.slide_node = (args[0]);
     
     bool in_rail_node_list = true;
 
@@ -2050,16 +2026,16 @@ void Parser::ParseSlidenodes()
             switch (itor->at(1))
             {
             case 'a':
-                BITMASK_SET_1(slidenode.constraint_flags, SlideNode::CONSTRAINT_ATTACH_ALL);
+                BITMASK_SET_1(slidenode.constraint_flags, SlidenodesLine::CONSTRAINT_ATTACH_ALL);
                 break;
             case 'f':
-                BITMASK_SET_1(slidenode.constraint_flags, SlideNode::CONSTRAINT_ATTACH_FOREIGN);
+                BITMASK_SET_1(slidenode.constraint_flags, SlidenodesLine::CONSTRAINT_ATTACH_FOREIGN);
                 break;
             case 's':
-                BITMASK_SET_1(slidenode.constraint_flags, SlideNode::CONSTRAINT_ATTACH_SELF);
+                BITMASK_SET_1(slidenode.constraint_flags, SlidenodesLine::CONSTRAINT_ATTACH_SELF);
                 break;
             case 'n':
-                BITMASK_SET_1(slidenode.constraint_flags, SlideNode::CONSTRAINT_ATTACH_NONE);
+                BITMASK_SET_1(slidenode.constraint_flags, SlidenodesLine::CONSTRAINT_ATTACH_NONE);
                 break;
             default:
                 this->AddMessage(Message::TYPE_WARNING, std::string("Ignoring invalid option: ") + itor->at(1));
@@ -2069,7 +2045,10 @@ void Parser::ParseSlidenodes()
             break;
         default:
             if (in_rail_node_list)
-                slidenode.rail_node_ranges.push_back( _ParseNodeRef(*itor));
+            {
+                NodeRef_t ref(*itor);
+                slidenode.rail_node_ranges.push_back(NodeRangeCommon(ref, ref));
+            }
             break;
         }
     }
@@ -2082,7 +2061,7 @@ void Parser::ParseShock3()
 {
     if (! this->CheckNumArguments(15)) { return; }
 
-    Shock3 shock_3;
+    Shocks3Line shock_3;
 
     shock_3.nodes[0]       = this->GetArgNodeRef( 0);
     shock_3.nodes[1]       = this->GetArgNodeRef( 1);
@@ -2114,11 +2093,11 @@ void Parser::ParseShock3()
                 case 'n': 
                 case 'v': 
                     break; // Placeholder, does nothing.
-                case 'i': BITMASK_SET_1(shock_3.options, Shock3::OPTION_i_INVISIBLE);
+                case 'i': BITMASK_SET_1(shock_3.options, Shocks3Line::OPTION_i_INVISIBLE);
                     break;
-                case 'm': BITMASK_SET_1(shock_3.options, Shock3::OPTION_m_METRIC);
+                case 'm': BITMASK_SET_1(shock_3.options, Shocks3Line::OPTION_m_METRIC);
                     break;
-                case 'M': BITMASK_SET_1(shock_3.options, Shock3::OPTION_M_ABSOLUTE_METRIC);
+                case 'M': BITMASK_SET_1(shock_3.options, Shocks3Line::OPTION_M_ABSOLUTE_METRIC);
                     break;
                 default: {
                         char msg[100] = "";
@@ -2130,15 +2109,15 @@ void Parser::ParseShock3()
         }
     }
 
-    m_document->shocks_3.push_back(shock_3);
-    m_document->lines.emplace_back(Line(KEYWORD_SHOCKS3, (int)m_document->shocks_3.size() - 1));
+    m_document->shocks3.push_back(shock_3);
+    m_document->lines.emplace_back(Line(KEYWORD_SHOCKS3, (int)m_document->shocks3.size() - 1));
 }
 
 void Parser::ParseShock2()
 {
     if (! this->CheckNumArguments(13)) { return; }
 
-    Shock2 shock_2;
+    Shocks2Line shock_2;
 
     shock_2.nodes[0]                   = this->GetArgNodeRef( 0);
     shock_2.nodes[1]                   = this->GetArgNodeRef( 1);
@@ -2168,13 +2147,13 @@ void Parser::ParseShock2()
                 case 'n': 
                 case 'v': 
                     break; // Placeholder, does nothing.
-                case 'i': BITMASK_SET_1(shock_2.options, Shock2::OPTION_i_INVISIBLE);
+                case 'i': BITMASK_SET_1(shock_2.options, Shocks2Line::OPTION_i_INVISIBLE);
                     break;
-                case 'm': BITMASK_SET_1(shock_2.options, Shock2::OPTION_m_METRIC);
+                case 'm': BITMASK_SET_1(shock_2.options, Shocks2Line::OPTION_m_METRIC);
                     break;
-                case 'M': BITMASK_SET_1(shock_2.options, Shock2::OPTION_M_ABSOLUTE_METRIC);
+                case 'M': BITMASK_SET_1(shock_2.options, Shocks2Line::OPTION_M_ABSOLUTE_METRIC);
                     break;
-                case 's': BITMASK_SET_1(shock_2.options, Shock2::OPTION_s_SOFT_BUMP_BOUNDS);
+                case 's': BITMASK_SET_1(shock_2.options, Shocks2Line::OPTION_s_SOFT_BUMP_BOUNDS);
                     break;
                 default: {
                         char msg[100] = "";
@@ -2186,15 +2165,15 @@ void Parser::ParseShock2()
         }
     }
 
-    m_document->shocks_2.push_back(shock_2);
-    m_document->lines.emplace_back(Line(KEYWORD_SHOCKS2, (int)m_document->shocks_3.size() - 1));
+    m_document->shocks2.push_back(shock_2);
+    m_document->lines.emplace_back(Line(KEYWORD_SHOCKS2, (int)m_document->shocks3.size() - 1));
 }
 
 void Parser::ParseShock()
 {
     if (! this->CheckNumArguments(7)) { return; }
 
-    Shock shock;
+    ShocksLine shock;
 
     shock.nodes[0]       = this->GetArgNodeRef(0);
     shock.nodes[1]       = this->GetArgNodeRef(1);
@@ -2218,15 +2197,15 @@ void Parser::ParseShock()
                 case 'n':
                 case 'v':
                     break; // Placeholder, does nothing.
-                case 'i': BITMASK_SET_1(shock.options, Shock::OPTION_i_INVISIBLE);
+                case 'i': BITMASK_SET_1(shock.options, ShocksLine::OPTION_i_INVISIBLE);
                     break;
-                case 'm': BITMASK_SET_1(shock.options, Shock::OPTION_m_METRIC);
+                case 'm': BITMASK_SET_1(shock.options, ShocksLine::OPTION_m_METRIC);
                     break;
                 case 'r':
-                case 'R': BITMASK_SET_1(shock.options, Shock::OPTION_R_ACTIVE_RIGHT);
+                case 'R': BITMASK_SET_1(shock.options, ShocksLine::OPTION_R_ACTIVE_RIGHT);
                     break;
                 case 'l':
-                case 'L': BITMASK_SET_1(shock.options, Shock::OPTION_L_ACTIVE_LEFT);
+                case 'L': BITMASK_SET_1(shock.options, ShocksLine::OPTION_L_ACTIVE_LEFT);
                     break;
                 default: {
                     char msg[100] = "";
@@ -2251,59 +2230,37 @@ void Parser::_CheckInvalidTrailingText(Ogre::String const & line, std::smatch co
     }
 }
 
-Node::Ref Parser::_ParseNodeRef(std::string const & node_id_str)
-{
-
-    int node_id_num = PARSEINT(node_id_str);
-    if (node_id_num < 0)
-    {
-        Str<2000> msg;
-        msg << "Invalid negative node number " << node_id_num << ", parsing as " << (node_id_num*-1) << " for backwards compatibility";
-        AddMessage(node_id_str, Message::TYPE_WARNING, msg.ToCStr());
-        node_id_num *= -1;
-    }
-
-    return Node::Ref(node_id_str, node_id_num, 0, 0);
-
-}
-
 void Parser::ParseDirectiveSetDefaultMinimass()
 {
     if (! this->CheckNumArguments(2)) { return; } // Directive name + parameter
 
-    DefaultMinimass dm;
+    SetDefaultMinimassLine dm;
     dm.min_mass = this->GetArgFloat(1);
 
-    m_document->default_minimass.push_back(dm);
-    m_document->lines.emplace_back(Line(KEYWORD_SET_DEFAULT_MINIMASS, (int)m_document->default_minimass.size() - 1));
+    m_document->set_default_minimass.push_back(dm);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_DEFAULT_MINIMASS, (int)m_document->set_default_minimass.size() - 1));
 }
 
 void Parser::ParseDirectiveSetInertiaDefaults()
 {
     if (! this->CheckNumArguments(2)) { return; }
 
-    float start_delay = this->GetArgFloat(1);
-    float stop_delay = 0;
-    if (m_num_args > 2) { stop_delay = this->GetArgFloat(2); }
-
-    // Create
-    Inertia inertia;
+    SetInertiaDefaultsLine inertia;
     inertia._num_args = m_num_args;
-    inertia.start_delay_factor = start_delay;
-    inertia.stop_delay_factor = stop_delay;
-    
+    inertia.start_delay_factor = this->GetArgFloat(1);
+    if (m_num_args > 2) { inertia.stop_delay_factor = this->GetArgFloat(2); }
     if (m_num_args > 3) { inertia.start_function = this->GetArgStr(3); }
     if (m_num_args > 4) { inertia.stop_function  = this->GetArgStr(4); }
     
-    m_document->inertia_defaults.push_back(inertia);
-    m_document->lines.emplace_back(Line(KEYWORD_SET_INERTIA_DEFAULTS, (int)m_document->inertia_defaults.size() - 1));
+    m_document->set_inertia_defaults.push_back(inertia);
+    m_document->lines.emplace_back(Line(KEYWORD_SET_INERTIA_DEFAULTS, (int)m_document->set_inertia_defaults.size() - 1));
 }
 
 void Parser::ParseScrewprops()
 {
     if (! this->CheckNumArguments(4)) { return; }
     
-    Screwprop screwprop;
+    ScrewpropsLine screwprop;
 
     screwprop.prop_node = this->GetArgNodeRef(0);
     screwprop.back_node = this->GetArgNodeRef(1);
@@ -2314,11 +2271,38 @@ void Parser::ParseScrewprops()
     m_document->lines.emplace_back(Line(KEYWORD_SCREWPROPS, (int)m_document->screwprops.size() - 1));
 }
 
-void Parser::ParseRotatorsUnified()
+void Parser::ParseRotators()
 {
     if (! this->CheckNumArguments(13)) { return; }
 
-    Rotator2 rotator;
+    RotatorsLine rotator;
+    rotator.axis_nodes[0]           = this->GetArgNodeRef( 0);
+    rotator.axis_nodes[1]           = this->GetArgNodeRef( 1);
+    rotator.base_plate_nodes[0]     = this->GetArgNodeRef( 2);
+    rotator.base_plate_nodes[1]     = this->GetArgNodeRef( 3);
+    rotator.base_plate_nodes[2]     = this->GetArgNodeRef( 4);
+    rotator.base_plate_nodes[3]     = this->GetArgNodeRef( 5);
+    rotator.rotating_plate_nodes[0] = this->GetArgNodeRef( 6);
+    rotator.rotating_plate_nodes[1] = this->GetArgNodeRef( 7);
+    rotator.rotating_plate_nodes[2] = this->GetArgNodeRef( 8);
+    rotator.rotating_plate_nodes[3] = this->GetArgNodeRef( 9);
+    rotator.rate                    = this->GetArgFloat  (10);
+    rotator.spin_left_key           = this->GetArgInt    (11);
+    rotator.spin_right_key          = this->GetArgInt    (12);
+
+    this->ParseOptionalInertia(rotator.inertia, 13);
+    if (m_num_args > 17) { rotator.engine_coupling = this->GetArgFloat(17); }
+    if (m_num_args > 18) { rotator.needs_engine    = this->GetArgBool (18); }
+
+    m_document->rotators.push_back(rotator);
+    m_document->lines.emplace_back(Line(KEYWORD_ROTATORS, (int)m_document->rotators.size() - 1));
+}
+
+void Parser::ParseRotators2()
+{
+    if (! this->CheckNumArguments(13)) { return; }
+
+    Rotators2Line rotator;
     
     rotator.axis_nodes[0]           = this->GetArgNodeRef( 0);
     rotator.axis_nodes[1]           = this->GetArgNodeRef( 1);
@@ -2333,40 +2317,26 @@ void Parser::ParseRotatorsUnified()
     rotator.rate                    = this->GetArgFloat  (10);
     rotator.spin_left_key           = this->GetArgInt    (11);
     rotator.spin_right_key          = this->GetArgInt    (12);
-    
-    int offset = 0;
 
-    if (m_current_block == KEYWORD_ROTATORS2)
-    {
-        if (! this->CheckNumArguments(16)) { return; }
-        if (m_num_args > 13) { rotator.rotating_force  = this->GetArgFloat(13); }
-        if (m_num_args > 14) { rotator.tolerance       = this->GetArgFloat(14); }
-        if (m_num_args > 15) { rotator.description     = this->GetArgStr  (15); }
+    // Extra args for rotators2
+    if (m_num_args > 13) { rotator.rotating_force  = this->GetArgFloat(13); }
+    if (m_num_args > 14) { rotator.tolerance       = this->GetArgFloat(14); }
+    if (m_num_args > 15) { rotator.description     = this->GetArgStr  (15); }
 
-        offset = 3;
-    }
+    this->ParseOptionalInertia(rotator.inertia, 16); // 4 args
+    if (m_num_args > 20) { rotator.engine_coupling = this->GetArgFloat(20); }
+    if (m_num_args > 21) { rotator.needs_engine    = this->GetArgBool (21); }
 
-    this->ParseOptionalInertia(rotator.inertia, 13 + offset);
-    if (m_num_args > 17 + offset) { rotator.engine_coupling = this->GetArgFloat(17 + offset); }
-    if (m_num_args > 18 + offset) { rotator.needs_engine    = this->GetArgBool (18 + offset); }
+    m_document->rotators2.push_back(rotator);
+    m_document->lines.emplace_back(Line(KEYWORD_ROTATORS2, (int)m_document->rotators2.size() - 1));
 
-    if (m_current_block == KEYWORD_ROTATORS2)
-    {
-        m_document->rotators_2.push_back(rotator);
-        m_document->lines.emplace_back(Line(KEYWORD_ROTATORS2, (int)m_document->rotators_2.size() - 1));
-    }
-    else
-    {
-        m_document->rotators.push_back(rotator);
-        m_document->lines.emplace_back(Line(KEYWORD_ROTATORS, (int)m_document->rotators.size() - 1));
-    }
 }
 
 void Parser::ParseFileinfo()
 {
     if (! this->CheckNumArguments(2)) { return; }
 
-    Fileinfo fileinfo;
+    FileinfoLine fileinfo;
 
     fileinfo.unique_id = this->GetArgStr(1);
     Ogre::StringUtil::trim(fileinfo.unique_id);
@@ -2382,7 +2352,7 @@ void Parser::ParseRopes()
 {
     if (! this->CheckNumArguments(2)) { return; }
     
-    Rope rope;
+    RopesLine rope;
     rope.root_node      = this->GetArgNodeRef(0);
     rope.end_node       = this->GetArgNodeRef(1);
     
@@ -2396,7 +2366,7 @@ void Parser::ParseRopables()
 {
     if (! this->CheckNumArguments(1)) { return; }
 
-    Ropable ropable;
+    RopablesLine ropable;
     ropable.node = this->GetArgNodeRef(0);
     
     if (m_num_args > 1) { ropable.group         =  this->GetArgInt(1); }
@@ -2415,12 +2385,13 @@ void Parser::ParseRailGroups()
         return;
     }
 
-    RailGroup railgroup;
+    RailgroupsLine railgroup;
     railgroup.id = this->ParseArgInt(args[0].c_str());
 
     for (auto itor = args.begin() + 1; itor != args.end(); itor++)
     {
-        railgroup.node_list.push_back( this->_ParseNodeRef(*itor));
+        NodeRef_t ref = *itor;
+        railgroup.node_list.push_back(NodeRangeCommon(ref,ref));
     }
 
     m_document->railgroups.push_back(railgroup);
@@ -2430,7 +2401,7 @@ void Parser::ParseProps()
 {
     if (! this->CheckNumArguments(10)) { return; }
 
-    Prop prop;
+    PropsLine prop;
     prop.reference_node = this->GetArgNodeRef(0);
     prop.x_axis_node    = this->GetArgNodeRef(1);
     prop.y_axis_node    = this->GetArgNodeRef(2);
@@ -2443,19 +2414,19 @@ void Parser::ParseProps()
     prop.mesh_name      = this->GetArgStr    (9);
 
     bool is_dash = false;
-         if (prop.mesh_name.find("leftmirror"  ) != std::string::npos) { prop.special = Prop::SPECIAL_MIRROR_LEFT; }
-    else if (prop.mesh_name.find("rightmirror" ) != std::string::npos) { prop.special = Prop::SPECIAL_MIRROR_RIGHT; }
-    else if (prop.mesh_name.find("dashboard-rh") != std::string::npos) { prop.special = Prop::SPECIAL_DASHBOARD_RIGHT; is_dash = true; }
-    else if (prop.mesh_name.find("dashboard"   ) != std::string::npos) { prop.special = Prop::SPECIAL_DASHBOARD_LEFT;  is_dash = true; }
-    else if (Ogre::StringUtil::startsWith(prop.mesh_name, "spinprop", false) ) { prop.special = Prop::SPECIAL_AERO_PROP_SPIN; }
-    else if (Ogre::StringUtil::startsWith(prop.mesh_name, "pale", false)     ) { prop.special = Prop::SPECIAL_AERO_PROP_BLADE; }
-    else if (Ogre::StringUtil::startsWith(prop.mesh_name, "seat", false)     ) { prop.special = Prop::SPECIAL_DRIVER_SEAT; }
-    else if (Ogre::StringUtil::startsWith(prop.mesh_name, "seat2", false)    ) { prop.special = Prop::SPECIAL_DRIVER_SEAT_2; }
-    else if (Ogre::StringUtil::startsWith(prop.mesh_name, "beacon", false)   ) { prop.special = Prop::SPECIAL_BEACON; }
-    else if (Ogre::StringUtil::startsWith(prop.mesh_name, "redbeacon", false)) { prop.special = Prop::SPECIAL_REDBEACON; }
-    else if (Ogre::StringUtil::startsWith(prop.mesh_name, "lightb", false)   ) { prop.special = Prop::SPECIAL_LIGHTBAR; } // Previously: 'strncmp("lightbar", meshname, 6)'
+         if (prop.mesh_name.find("leftmirror"  ) != std::string::npos) { prop.special = SpecialProp::MIRROR_LEFT; }
+    else if (prop.mesh_name.find("rightmirror" ) != std::string::npos) { prop.special = SpecialProp::MIRROR_RIGHT; }
+    else if (prop.mesh_name.find("dashboard-rh") != std::string::npos) { prop.special = SpecialProp::DASHBOARD_RIGHT; is_dash = true; }
+    else if (prop.mesh_name.find("dashboard"   ) != std::string::npos) { prop.special = SpecialProp::DASHBOARD_LEFT;  is_dash = true; }
+    else if (Ogre::StringUtil::startsWith(prop.mesh_name, "spinprop", false) ) { prop.special = SpecialProp::AERO_PROP_SPIN; }
+    else if (Ogre::StringUtil::startsWith(prop.mesh_name, "pale", false)     ) { prop.special = SpecialProp::AERO_PROP_BLADE; }
+    else if (Ogre::StringUtil::startsWith(prop.mesh_name, "seat", false)     ) { prop.special = SpecialProp::DRIVER_SEAT; }
+    else if (Ogre::StringUtil::startsWith(prop.mesh_name, "seat2", false)    ) { prop.special = SpecialProp::DRIVER_SEAT_2; }
+    else if (Ogre::StringUtil::startsWith(prop.mesh_name, "beacon", false)   ) { prop.special = SpecialProp::BEACON; }
+    else if (Ogre::StringUtil::startsWith(prop.mesh_name, "redbeacon", false)) { prop.special = SpecialProp::REDBEACON; }
+    else if (Ogre::StringUtil::startsWith(prop.mesh_name, "lightb", false)   ) { prop.special = SpecialProp::LIGHTBAR; } // Previously: 'strncmp("lightbar", meshname, 6)'
 
-    if ((prop.special == Prop::SPECIAL_BEACON) && (m_num_args >= 14))
+    if ((prop.special == SpecialProp::BEACON) && (m_num_args >= 14))
     {
         prop.special_prop_beacon.flare_material_name = this->GetArgStr(10);
         Ogre::StringUtil::trim(prop.special_prop_beacon.flare_material_name);
@@ -2482,7 +2453,7 @@ void Parser::ParsePistonprops()
 {
     if (!this->CheckNumArguments(10)) { return; }
 
-    Pistonprop pistonprop;
+    PistonpropsLine pistonprop;
     pistonprop.reference_node     = this->GetArgNodeRef     (0);
     pistonprop.axis_node          = this->GetArgNodeRef     (1);
     pistonprop.blade_tip_nodes[0] = this->GetArgNodeRef     (2);
@@ -2503,7 +2474,7 @@ void Parser::ParseParticles()
 {
     if (!this->CheckNumArguments(3)) { return; }
 
-    Particle particle;
+    ParticlesLine particle;
     particle.emitter_node         = this->GetArgNodeRef(0);
     particle.reference_node       = this->GetArgNodeRef(1);
     particle.particle_system_name = this->GetArgStr    (2);
@@ -2543,96 +2514,63 @@ void Parser::_TrimTrailingComments(std::string const & line_in, std::string & li
     line_out = line_in;
 }
 
-void Parser::_PrintNodeDataForVerification(Ogre::String& line, Ogre::StringVector& args, int num_args, Node& node)
-{
-    std::stringstream msg;
-    msg << "Data print for verification:";
-    msg << "\n\tPosition X: " << node.position.x << " (input text: \"" << args[1] << "\"";
-    msg << "\n\tPosition Y: " << node.position.y << " (input text: \"" << args[2] << "\"";
-    msg << "\n\tPosition Z: " << node.position.z << " (input text: \"" << args[3] << "\"";
-    if (num_args > 4) // Has options?
-    {
-        msg << "\n\tOptions: ";
-        if (BITMASK_IS_1(node.options, Node::OPTION_l_LOAD_WEIGHT))          { msg << "l_LOAD_WEIGHT ";        }
-        if (BITMASK_IS_1(node.options, Node::OPTION_n_MOUSE_GRAB))           { msg << "n_MOUSE_GRAB ";         }
-        if (BITMASK_IS_1(node.options, Node::OPTION_m_NO_MOUSE_GRAB))        { msg << "m_NO_MOUSE_GRAB ";      }
-        if (BITMASK_IS_1(node.options, Node::OPTION_f_NO_SPARKS))            { msg << "f_NO_SPARKS ";          }
-        if (BITMASK_IS_1(node.options, Node::OPTION_x_EXHAUST_POINT))        { msg << "x_EXHAUST_POINT ";      }
-        if (BITMASK_IS_1(node.options, Node::OPTION_y_EXHAUST_DIRECTION))    { msg << "y_EXHAUST_DIRECTION ";  }
-        if (BITMASK_IS_1(node.options, Node::OPTION_c_NO_GROUND_CONTACT))    { msg << "c_NO_GROUND_CONTACT ";  }
-        if (BITMASK_IS_1(node.options, Node::OPTION_h_HOOK_POINT))           { msg << "h_HOOK_POINT ";         }
-        if (BITMASK_IS_1(node.options, Node::OPTION_e_TERRAIN_EDIT_POINT))   { msg << "e_TERRAIN_EDIT_POINT "; }
-        if (BITMASK_IS_1(node.options, Node::OPTION_b_EXTRA_BUOYANCY))       { msg << "b_EXTRA_BUOYANCY ";     }
-        if (BITMASK_IS_1(node.options, Node::OPTION_p_NO_PARTICLES))         { msg << "p_NO_PARTICLES ";       }
-        if (BITMASK_IS_1(node.options, Node::OPTION_L_LOG))                  { msg << "L_LOG ";                }
-        msg << "(input text:\"" << args[4] << "\"";
-    }
-    if (num_args > 5) // Has load weight override?
-    {
-        msg << "\n\tLoad weight overide: " << node.load_weight_override << " (input text: \"" << args[5] << "\"";
-    }
-    if (num_args > 6) // Is there invalid trailing text?
-    {
-        msg << "\n\t~Invalid trailing text: ";
-        for (int i = 6; i < num_args; ++i)
-        {
-            msg << args[i];
-        }
-    }
-    this->AddMessage(line, Message::TYPE_WARNING, msg.str());
-}
-
-void Parser::ParseNodesUnified()
+void Parser::ParseNodes()
 {
     if (! this->CheckNumArguments(4)) { return; }
 
-    Node node;
+    NodesLine node;
     node._num_args = m_num_args;
-    Keyword keyword = KEYWORD_INVALID;
-
-    if (m_current_block == KEYWORD_NODES2)
-    {
-        node.id.setStr(this->GetArgStr(0));
-        keyword = KEYWORD_NODES2;
-    }
-    else
-    {
-        node.id.SetNum(this->GetArgUint(0));
-        keyword = KEYWORD_NODES;
-    }
-
+    node.num = NodeNum_t(this->GetArgInt(0));
     node.position.x = this->GetArgFloat(1);
     node.position.y = this->GetArgFloat(2);
     node.position.z = this->GetArgFloat(3);
-    if (m_num_args > 4)
-    {
-        node.options = this->GetArgNodeOptions(4);
-    }
+    node.options = this->GetArgStr(4);
     if (m_num_args > 5)
     {
         // Only used on spawn if 'l' flag is present
-        node.load_weight_override = this->GetArgFloat(5);
+        node.loadweight_override = this->GetArgFloat(5);
     }
 
-
     m_document->nodes.push_back(node);
-    m_document->lines.emplace_back(Line(keyword, (int)m_document->nodes.size() - 1));
+    m_document->lines.emplace_back(Line(KEYWORD_NODES, (int)m_document->nodes.size() - 1));
+}
+
+void Parser::ParseNodes2()
+{
+    if (! this->CheckNumArguments(4)) { return; }
+
+    Nodes2Line node;
+    node._num_args = m_num_args;
+    node.name = this->GetArgStr(0);
+    node.position.x = this->GetArgFloat(1);
+    node.position.y = this->GetArgFloat(2);
+    node.position.z = this->GetArgFloat(3);
+    node.options = this->GetArgStr(4);
+    if (m_num_args > 5)
+    {
+        // Only used on spawn if 'l' flag is present
+        node.loadweight_override = this->GetArgFloat(5);
+    }
+
+    m_document->nodes2.push_back(node);
+    m_document->lines.emplace_back(Line(KEYWORD_NODES2, (int)m_document->nodes2.size() - 1));
 }
 
 void Parser::ParseNodeCollision()
 {
     if (! this->CheckNumArguments(2)) { return; }
     
-    NodeCollision node_collision;
+    NodecollisionLine node_collision;
     node_collision.node   = this->GetArgNodeRef(0);
     node_collision.radius = this->GetArgFloat  (1);
     
-    m_document->node_collisions.push_back(node_collision);
+    m_document->nodecollision.push_back(node_collision);
+    m_document->lines.emplace_back(Line(KEYWORD_NODECOLLISION, (int)m_document->nodecollision.size() - 1));
 }
 
 void Parser::ParseMinimass()
 {
-    Minimass minimass;
+    MinimassLine minimass;
     minimass.min_mass = this->GetArgFloat(0);
     if (m_num_args > 1)
     {
@@ -2642,10 +2580,10 @@ void Parser::ParseMinimass()
             switch (c)
             {
             case '\0': // Terminator NULL character
-            case (Minimass::OPTION_n_FILLER):
+            case (MinimassLine::OPTION_n_FILLER):
                 break;
 
-            case (Minimass::OPTION_l_SKIP_LOADED):
+            case (MinimassLine::OPTION_l_SKIP_LOADED):
                 minimass.option_l_skip_loaded = true;
                 break;
 
@@ -2660,11 +2598,11 @@ void Parser::ParseMinimass()
     m_document->lines.emplace_back(Line(KEYWORD_MINIMASS, (int)m_document->minimass.size() - 1));
 }
 
-void Parser::ParseFlexBodyWheel()
+void Parser::ParseFlexbodywheels()
 {
     if (! this->CheckNumArguments(16)) { return; }
 
-    FlexBodyWheel flexbody_wheel;
+    FlexbodywheelsLine flexbody_wheel;
 
     flexbody_wheel.tyre_radius        = this->GetArgFloat        ( 0);
     flexbody_wheel.rim_radius         = this->GetArgFloat        ( 1);
@@ -2686,27 +2624,27 @@ void Parser::ParseFlexBodyWheel()
     if (m_num_args > 16) { flexbody_wheel.rim_mesh_name  = this->GetArgStr(16); }
     if (m_num_args > 17) { flexbody_wheel.tyre_mesh_name = this->GetArgStr(17); }
 
-    m_document->flex_body_wheels.push_back(flexbody_wheel);
-    m_document->lines.emplace_back(Line(KEYWORD_FLEXBODYWHEELS, (int)m_document->flex_body_wheels.size() - 1));
+    m_document->flexbodywheels.push_back(flexbody_wheel);
+    m_document->lines.emplace_back(Line(KEYWORD_FLEXBODYWHEELS, (int)m_document->flexbodywheels.size() - 1));
 }
 
 void Parser::ParseMaterialFlareBindings()
 {
     if (! this->CheckNumArguments(2)) { return; }
 
-    MaterialFlareBinding binding;
+    MaterialflarebindingsLine binding;
     binding.flare_number  = this->GetArgInt(0);
     binding.material_name = this->GetArgStr(1);
     
-    m_document->material_flare_bindings.push_back(binding);
-    m_document->lines.emplace_back(Line(KEYWORD_MATERIALFLAREBINDINGS, (int)m_document->material_flare_bindings.size() - 1));
+    m_document->materialflarebindings.push_back(binding);
+    m_document->lines.emplace_back(Line(KEYWORD_MATERIALFLAREBINDINGS, (int)m_document->materialflarebindings.size() - 1));
 }
 
 void Parser::ParseManagedMaterials()
 {
     if (! this->CheckNumArguments(2)) { return; }
 
-    ManagedMaterial managed_mat;
+    ManagedmaterialsLine managed_mat;
     
     managed_mat.name    = this->GetArgStr(0);
 
@@ -2716,8 +2654,8 @@ void Parser::ParseManagedMaterials()
         if (! this->CheckNumArguments(3)) { return; }
 
         managed_mat.type = (type_str == "mesh_standard")
-            ? ManagedMaterial::TYPE_MESH_STANDARD
-            : ManagedMaterial::TYPE_MESH_TRANSPARENT;
+            ? ManagedMaterialType::MESH_STANDARD
+            : ManagedMaterialType::MESH_TRANSPARENT;
         
         managed_mat.diffuse_map = this->GetArgStr(2);
         
@@ -2728,8 +2666,8 @@ void Parser::ParseManagedMaterials()
         if (! this->CheckNumArguments(3)) { return; }
 
         managed_mat.type = (type_str == "flexmesh_standard")
-            ? ManagedMaterial::TYPE_FLEXMESH_STANDARD
-            : ManagedMaterial::TYPE_FLEXMESH_TRANSPARENT;
+            ? ManagedMaterialType::FLEXMESH_STANDARD
+            : ManagedMaterialType::FLEXMESH_TRANSPARENT;
             
         managed_mat.diffuse_map = this->GetArgStr(2);
         
@@ -2749,12 +2687,14 @@ void Parser::ParseManagedMaterials()
         this->AddMessage(Message::TYPE_WARNING, "Missing texture file: " + managed_mat.diffuse_map);
         return;
     }
-    if (managed_mat.HasDamagedDiffuseMap() && !rgm.resourceExists(m_resource_group, managed_mat.damaged_diffuse_map))
+    if (managed_mat.damaged_diffuse_map != "" &&
+        !rgm.resourceExists(m_resource_group, managed_mat.damaged_diffuse_map))
     {
         this->AddMessage(Message::TYPE_WARNING, "Missing texture file: " + managed_mat.damaged_diffuse_map);
         managed_mat.damaged_diffuse_map = "-";
     }
-    if (managed_mat.HasSpecularMap() && !rgm.resourceExists(m_resource_group, managed_mat.specular_map))
+    if (managed_mat.specular_map != "" &&
+        !rgm.resourceExists(m_resource_group, managed_mat.specular_map))
     {
         this->AddMessage(Message::TYPE_WARNING, "Missing texture file: " + managed_mat.specular_map);
         managed_mat.specular_map = "-";
@@ -2768,7 +2708,7 @@ void Parser::ParseLockgroups()
 {
     if (! this->CheckNumArguments(2)) { return; } // Lockgroup num. + at least 1 node...
 
-    Lockgroup lockgroup;
+    LockgroupsLine lockgroup;
     lockgroup.number = this->GetArgInt(0);
     
     for (int i = 1; i < m_num_args; ++i)
@@ -2784,7 +2724,7 @@ void Parser::ParseHydros()
 {
     if (! this->CheckNumArguments(3)) { return; }
 
-    Hydro hydro;
+    HydrosLine hydro;
     
     hydro.nodes[0]           = this->GetArgNodeRef(0);
     hydro.nodes[1]           = this->GetArgNodeRef(1);
@@ -2798,7 +2738,7 @@ void Parser::ParseHydros()
     m_document->lines.emplace_back(Line(KEYWORD_HYDROS, (int)m_document->hydros.size() - 1));
 }
 
-void Parser::ParseOptionalInertia(Inertia & inertia, int index)
+void Parser::ParseOptionalInertia(InertiaCommon & inertia, int index)
 {
     if (m_num_args > index) { inertia.start_delay_factor = this->GetArgFloat(index++); }
     if (m_num_args > index) { inertia.stop_delay_factor  = this->GetArgFloat(index++); }
@@ -2810,7 +2750,7 @@ void Parser::ParseBeams()
 {
     if (! this->CheckNumArguments(2)) { return; }
     
-    Beam beam;
+    BeamsLine beam;
     
     beam.nodes[0] = this->GetArgNodeRef(0);
     beam.nodes[1] = this->GetArgNodeRef(1);
@@ -2822,9 +2762,9 @@ void Parser::ParseBeams()
         for (auto itor = options_str.begin(); itor != options_str.end(); ++itor)
         {
                  if (*itor == 'v') { continue; } // Dummy flag
-            else if (*itor == 'i') { beam.options |= Beam::OPTION_i_INVISIBLE; }
-            else if (*itor == 'r') { beam.options |= Beam::OPTION_r_ROPE; }
-            else if (*itor == 's') { beam.options |= Beam::OPTION_s_SUPPORT; }
+            else if (*itor == 'i') { beam.options |= BeamsLine::OPTION_i_INVISIBLE; }
+            else if (*itor == 'r') { beam.options |= BeamsLine::OPTION_r_ROPE; }
+            else if (*itor == 's') { beam.options |= BeamsLine::OPTION_s_SUPPORT; }
             else
             {
                 char msg[200] = "";
@@ -2834,7 +2774,7 @@ void Parser::ParseBeams()
         }
     }
     
-    if ((m_num_args > 3) && (beam.options & Beam::OPTION_s_SUPPORT))
+    if ((m_num_args > 3) && (beam.options & BeamsLine::OPTION_s_SUPPORT))
     {
         float support_break_limit = 0.0f;
         float support_break_factor = this->GetArgInt(3);
@@ -2850,15 +2790,15 @@ void Parser::ParseBeams()
     m_document->lines.emplace_back(Line(KEYWORD_BEAMS, (int)m_document->beams.size() - 1));
 }
 
-void Parser::ParseAnimator()
+void Parser::ParseAnimators()
 {
     auto args = Ogre::StringUtil::split(m_current_line, ",");
     if (args.size() < 4) { return; }
 
-    Animator animator;
+    AnimatorsLine animator;
 
-    animator.nodes[0]           = this->_ParseNodeRef(args[0]);
-    animator.nodes[1]           = this->_ParseNodeRef(args[1]);
+    animator.nodes[0]           = args[0];
+    animator.nodes[1]           = args[1];
     animator.lenghtening_factor = this->ParseArgFloat(args[2]);
 
     // Parse options; Just use the split/trim/compare method
@@ -2876,11 +2816,11 @@ void Parser::ParseAnimator()
         // Numbered keywords 
         if (std::regex_search(token, results, Regexes::PARSE_ANIMATORS_NUMBERED_KEYWORD))
         {
-                 if (results[1] == "throttle")   animator.aero_animator.flags |= AeroAnimator::OPTION_THROTTLE;
-            else if (results[1] == "rpm")        animator.aero_animator.flags |= AeroAnimator::OPTION_RPM;
-            else if (results[1] == "aerotorq")   animator.aero_animator.flags |= AeroAnimator::OPTION_TORQUE;
-            else if (results[1] == "aeropit")    animator.aero_animator.flags |= AeroAnimator::OPTION_PITCH;
-            else if (results[1] == "aerostatus") animator.aero_animator.flags |= AeroAnimator::OPTION_STATUS;
+                 if (results[1] == "throttle")   animator.aero_animator.flags |= AnimatorsLine::AeroAnimator::OPTION_THROTTLE;
+            else if (results[1] == "rpm")        animator.aero_animator.flags |= AnimatorsLine::AeroAnimator::OPTION_RPM;
+            else if (results[1] == "aerotorq")   animator.aero_animator.flags |= AnimatorsLine::AeroAnimator::OPTION_TORQUE;
+            else if (results[1] == "aeropit")    animator.aero_animator.flags |= AnimatorsLine::AeroAnimator::OPTION_PITCH;
+            else if (results[1] == "aerostatus") animator.aero_animator.flags |= AnimatorsLine::AeroAnimator::OPTION_STATUS;
 
             animator.aero_animator.motor = this->ParseArgInt(results[2].str().c_str());
         }
@@ -2892,45 +2832,45 @@ void Parser::ParseAnimator()
                 if (is_shortlimit)
                 {
                     animator.short_limit = std::strtod(fields[1].c_str(), nullptr);
-                    animator.flags |= Animator::OPTION_SHORT_LIMIT;
+                    animator.flags |= AnimatorsLine::OPTION_SHORT_LIMIT;
                 }
                 else
                 {
                     animator.long_limit = std::strtod(fields[1].c_str(), nullptr);
-                    animator.flags |= Animator::OPTION_LONG_LIMIT;
+                    animator.flags |= AnimatorsLine::OPTION_LONG_LIMIT;
                 }
             }
         }
         else
         {
             // Standalone keywords 
-                 if (token == "vis")           animator.flags |= Animator::OPTION_VISIBLE;
-            else if (token == "inv")           animator.flags |= Animator::OPTION_INVISIBLE;
-            else if (token == "airspeed")      animator.flags |= Animator::OPTION_AIRSPEED;
-            else if (token == "vvi")           animator.flags |= Animator::OPTION_VERTICAL_VELOCITY;
-            else if (token == "altimeter100k") animator.flags |= Animator::OPTION_ALTIMETER_100K;
-            else if (token == "altimeter10k")  animator.flags |= Animator::OPTION_ALTIMETER_10K;
-            else if (token == "altimeter1k")   animator.flags |= Animator::OPTION_ALTIMETER_1K;
-            else if (token == "aoa")           animator.flags |= Animator::OPTION_ANGLE_OF_ATTACK;
-            else if (token == "flap")          animator.flags |= Animator::OPTION_FLAP;
-            else if (token == "airbrake")      animator.flags |= Animator::OPTION_AIR_BRAKE;
-            else if (token == "roll")          animator.flags |= Animator::OPTION_ROLL;
-            else if (token == "pitch")         animator.flags |= Animator::OPTION_PITCH;
-            else if (token == "brakes")        animator.flags |= Animator::OPTION_BRAKES;
-            else if (token == "accel")         animator.flags |= Animator::OPTION_ACCEL;
-            else if (token == "clutch")        animator.flags |= Animator::OPTION_CLUTCH;
-            else if (token == "speedo")        animator.flags |= Animator::OPTION_SPEEDO;
-            else if (token == "tacho")         animator.flags |= Animator::OPTION_TACHO;
-            else if (token == "turbo")         animator.flags |= Animator::OPTION_TURBO;
-            else if (token == "parking")       animator.flags |= Animator::OPTION_PARKING;
-            else if (token == "shifterman1")   animator.flags |= Animator::OPTION_SHIFT_LEFT_RIGHT;
-            else if (token == "shifterman2")   animator.flags |= Animator::OPTION_SHIFT_BACK_FORTH;
-            else if (token == "sequential")    animator.flags |= Animator::OPTION_SEQUENTIAL_SHIFT;
-            else if (token == "shifterlin")    animator.flags |= Animator::OPTION_GEAR_SELECT;
-            else if (token == "torque")        animator.flags |= Animator::OPTION_TORQUE;
-            else if (token == "difflock")      animator.flags |= Animator::OPTION_DIFFLOCK;
-            else if (token == "rudderboat")    animator.flags |= Animator::OPTION_BOAT_RUDDER;
-            else if (token == "throttleboat")  animator.flags |= Animator::OPTION_BOAT_THROTTLE;
+                 if (token == "vis")           animator.flags |= AnimatorsLine::OPTION_VISIBLE;
+            else if (token == "inv")           animator.flags |= AnimatorsLine::OPTION_INVISIBLE;
+            else if (token == "airspeed")      animator.flags |= AnimatorsLine::OPTION_AIRSPEED;
+            else if (token == "vvi")           animator.flags |= AnimatorsLine::OPTION_VERTICAL_VELOCITY;
+            else if (token == "altimeter100k") animator.flags |= AnimatorsLine::OPTION_ALTIMETER_100K;
+            else if (token == "altimeter10k")  animator.flags |= AnimatorsLine::OPTION_ALTIMETER_10K;
+            else if (token == "altimeter1k")   animator.flags |= AnimatorsLine::OPTION_ALTIMETER_1K;
+            else if (token == "aoa")           animator.flags |= AnimatorsLine::OPTION_ANGLE_OF_ATTACK;
+            else if (token == "flap")          animator.flags |= AnimatorsLine::OPTION_FLAP;
+            else if (token == "airbrake")      animator.flags |= AnimatorsLine::OPTION_AIR_BRAKE;
+            else if (token == "roll")          animator.flags |= AnimatorsLine::OPTION_ROLL;
+            else if (token == "pitch")         animator.flags |= AnimatorsLine::OPTION_PITCH;
+            else if (token == "brakes")        animator.flags |= AnimatorsLine::OPTION_BRAKES;
+            else if (token == "accel")         animator.flags |= AnimatorsLine::OPTION_ACCEL;
+            else if (token == "clutch")        animator.flags |= AnimatorsLine::OPTION_CLUTCH;
+            else if (token == "speedo")        animator.flags |= AnimatorsLine::OPTION_SPEEDO;
+            else if (token == "tacho")         animator.flags |= AnimatorsLine::OPTION_TACHO;
+            else if (token == "turbo")         animator.flags |= AnimatorsLine::OPTION_TURBO;
+            else if (token == "parking")       animator.flags |= AnimatorsLine::OPTION_PARKING;
+            else if (token == "shifterman1")   animator.flags |= AnimatorsLine::OPTION_SHIFT_LEFT_RIGHT;
+            else if (token == "shifterman2")   animator.flags |= AnimatorsLine::OPTION_SHIFT_BACK_FORTH;
+            else if (token == "sequential")    animator.flags |= AnimatorsLine::OPTION_SEQUENTIAL_SHIFT;
+            else if (token == "shifterlin")    animator.flags |= AnimatorsLine::OPTION_GEAR_SELECT;
+            else if (token == "torque")        animator.flags |= AnimatorsLine::OPTION_TORQUE;
+            else if (token == "difflock")      animator.flags |= AnimatorsLine::OPTION_DIFFLOCK;
+            else if (token == "rudderboat")    animator.flags |= AnimatorsLine::OPTION_BOAT_RUDDER;
+            else if (token == "throttleboat")  animator.flags |= AnimatorsLine::OPTION_BOAT_THROTTLE;
         }
     }
 
@@ -2942,7 +2882,7 @@ void Parser::ParseAuthor()
 {
     if (! this->CheckNumArguments(2)) { return; }
 
-    Author author;
+    AuthorLine author;
     if (m_num_args > 1) { author.type             = this->GetArgStr(1); }
     if (m_num_args > 2) { author.forum_account_id = this->GetArgInt(2); author._has_forum_account = true; }
     if (m_num_args > 3) { author.name             = this->GetArgStr(3); }
@@ -3076,7 +3016,7 @@ char Parser::GetArgChar(int index)
     return *(m_args[index].start);
 }
 
-MeshWheel::Side Parser::GetArgWheelSide(int index)
+WheelSide Parser::GetArgWheelSide(int index)
 {
     char side_char = this->GetArgChar(index);
     if (side_char != 'r')
@@ -3087,9 +3027,9 @@ MeshWheel::Side Parser::GetArgWheelSide(int index)
             snprintf(msg, 200, "Bad arg~%d 'side' (value: %c), parsing as 'l' for backwards compatibility.", index + 1, side_char);
             this->AddMessage(Message::TYPE_WARNING, msg);
         }
-        return MeshWheel::SIDE_LEFT;
+        return WheelSide::SIDE_LEFT;
     }
-    return MeshWheel::SIDE_RIGHT;
+    return WheelSide::SIDE_RIGHT;
 }
 
 long Parser::GetArgLong(int index)
@@ -3124,17 +3064,17 @@ int Parser::GetArgInt(int index)
     return static_cast<int>(this->GetArgLong(index));
 }
 
-Node::Ref Parser::GetArgRigidityNode(int index)
+NodeRef_t Parser::GetArgRigidityNode(int index)
 {
     std::string rigidity_node = this->GetArgStr(index);
     if (rigidity_node != "9999") // Special null value
     {
         return this->GetArgNodeRef(index);
     }
-    return Node::Ref(); // Defaults to invalid ref
+    return NodeRef_t(); // Defaults to invalid ref
 }
 
-Wheels::Propulsion Parser::GetArgPropulsion(int index)
+WheelPropulsion Parser::GetArgPropulsion(int index)
 {
     int propulsion = this->GetArgInt(index);
     if (propulsion < 0 || propulsion > 2)
@@ -3142,44 +3082,35 @@ Wheels::Propulsion Parser::GetArgPropulsion(int index)
         char msg[100] = "";
         snprintf(msg, 100, "Bad value of param ~%d (propulsion), using 0 (no propulsion)", index + 1);
         this->AddMessage(Message::TYPE_ERROR, msg);
-        return Wheels::PROPULSION_NONE;
+        return WheelPropulsion::PROPULSION_NONE;
     }
-    return Wheels::Propulsion(propulsion);
+    return WheelPropulsion(propulsion);
 }
 
-Wheels::Braking Parser::GetArgBraking(int index)
+WheelBraking Parser::GetArgBraking(int index)
 {
     int braking = this->GetArgInt(index);
     if (braking < 0 || braking > 4)
     {
         char msg[100] = "";
         snprintf(msg, 100, "Bad value of param ~%d (braking), using 0 (no braking)", index + 1);
-        return Wheels::BRAKING_NO;
+        return WheelBraking::BRAKING_NO;
     }
-    return Wheels::Braking(braking);
+    return WheelBraking(braking);
 }
 
-Node::Ref Parser::GetArgNodeRef(int index)
+NodeRef_t Parser::GetArgNodeRef(int index)
 {
-    return this->_ParseNodeRef(this->GetArgStr(index));
+    return NodeRef_t(this->GetArgStr(index));
 }
 
-int Parser::GetArgNodeOptions(int index)
-{
-    ROR_ASSERT(index < m_num_args);
-
-    int options = 0;
-    this->_ParseNodeOptions(options, this->GetArgStr(index));
-    return options;
-}
-
-Node::Ref Parser::GetArgNullableNode(int index)
+NodeRef_t Parser::GetArgNullableNode(int index)
 {
     if (! (Ogre::StringConverter::parseReal(this->GetArgStr(index)) == -1.f))
     {
         return this->GetArgNodeRef(index);
     }
-    return Node::Ref(); // Defaults to empty ref.
+    return NodeRef_t(); // Defaults to empty ref.
 }
 
 unsigned Parser::GetArgUint(int index)
@@ -3252,25 +3183,25 @@ bool Parser::GetArgBool(int index)
     return Ogre::StringConverter::parseBool(this->GetArgStr(index));
 }
 
-Wing::Control Parser::GetArgWingSurface(int index)
+WingControlSurface Parser::GetArgWingSurface(int index)
 {
     std::string str = this->GetArgStr(index);
-    size_t bad_pos = str.find_first_not_of(Wing::CONTROL_LEGAL_FLAGS);
+    size_t bad_pos = str.find_first_not_of(WingsLine::CONTROL_LEGAL_FLAGS);
     const int MSG_LEN = 300;
     char msg_buf[MSG_LEN] = "";
     if (bad_pos == 0)
     {
         snprintf(msg_buf, MSG_LEN, "Invalid argument ~%d 'control surface' (value: %s), allowed are: <%s>, ignoring...",
-            index + 1, str.c_str(), Wing::CONTROL_LEGAL_FLAGS.c_str());
+            index + 1, str.c_str(), WingsLine::CONTROL_LEGAL_FLAGS.c_str());
         this->AddMessage(Message::TYPE_ERROR, msg_buf);
-        return Wing::CONTROL_n_NONE;
+        return WingControlSurface::n_NONE;
     }
     if (str.size() > 1)
     {
         snprintf(msg_buf, MSG_LEN, "Argument ~%d 'control surface' (value: %s), should be only 1 letter.", index, str.c_str());
         this->AddMessage(Message::TYPE_WARNING, msg_buf);
     }
-    return Wing::Control(str.at(0));
+    return WingControlSurface(str.at(0));
 }
 
 std::string Parser::GetArgManagedTex(int index)

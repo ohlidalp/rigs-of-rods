@@ -45,7 +45,7 @@
 #include "Network.h"
 #include "PointColDetector.h"
 #include "Replay.h"
-#include "RigDef_Validator.h"
+//#include "RigDef_Validator.h"
 #include "ActorSpawner.h"
 #include "ScriptEngine.h"
 #include "SoundScriptManager.h"

@@ -26,7 +26,7 @@
 #include "Differentials.h"
 #include "GfxActor.h"
 #include "PerVehicleCameraContext.h"
-#include "RigDef_Prerequisites.h"
+
 #include "SimData.h"
 #include "TyrePressure.h"
 

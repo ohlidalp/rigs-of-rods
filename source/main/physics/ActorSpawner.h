@@ -39,38 +39,6 @@
 
 namespace RoR {
 
-/// Processes a RigDef::File data structure (result of parsing a "Truckfile" fileformat) into 'an Actor' - a simulated physical object.
-///
-/// HISTORY:
-///
-/// Before v0.4.5, truckfiles were parsed&spawned on-the-fly: RoR's simulation used data structures with arrays of pre-defined sizes
-/// (i.e. MAX_NODES, MAX_BEAMS, MAX_* ...) and the spawner (class `SerializedRig`) wrote directly into them while reading data from the truckfile. Gfx elements were also created immediately.
-/// As a result, the logic was chaotic: some features broke each other (most notably VideoCameras X MaterialFlares X SkinZips) and the sim. structs often contained parser context variables.
-/// Also, the whole system was extremely sensitive to order of definitions in truckfile - often [badly/not] documented, known only by forum/IRC users at the time.
-///
-/// Since v0.4.5, RoR has `RigDef::Parser` which reads truckfile and emits instance of `RigDef::File` - all data from truckfile in memory. `RigDef::File` doesn't preserve the order of definitions,
-/// instead it's designed to resolve all order-dependent references to order-independent, see `RigDef::SequentialImporter` (resources/rig_def_fileformat/RigDef_SequentialImporter.h) for more info.
-/// `ActorSpawner` was created by carefully refactoring old `SerializedRig` described above, so a lot of the dirty logic remained. Elements were still written into constant-size arrays.
-///
-/// PRESENT (06/2017):
-///
-/// RoR is being refactored to get rid of the MAX_[BEAMS/NODES/***] limits. Static arrays in `rig_t` are replaced with pointers to dynamically allocated memory.
-/// Memory requirements are calculated upfront from `RigDef::File`.
-///
-/// FUTURE:
-///
-/// ActorSpawner will work in 2 steps:
-///  1. Physics/simulation data are fully prepared. This should be very fast (we can pre-calculate and cache things if needed).
-///  2. Graphics/sounds are set up, reading the completed physics/sim data. Graphics are fully managed by `GfxActor`. Similar utility will be added for sound.
-///
-/// CONVENTIONS:
-///
-/// * Functions "Process*(Definition & def)"                 Transform elements of truckfile to rig structures.
-/// * Functions "FindAndProcess*(Definition & def)"          Find and process an element which should be unique in the current actor configuration.
-/// * Functions "Add*()", "Create*()" or "Build*()"          Add partial structures to the actor.
-/// * Functions Other functions are utilities.
-///
-/// @author Petr Ohlidal
 class ActorSpawner
 {
     friend class RoR::FlexFactory; // Needs to use `ComposeName()` and `SetupNewEntity()`
@@ -147,13 +115,13 @@ public:
     Ogre::MaterialPtr InstantiateManagedMaterial(Ogre::String const & source_name, Ogre::String const & clone_name);
 
     /**
-    * Finds existing node by Node::Ref; throws an exception if the node doesn't exist.
+    * Finds existing node by NodeRef_t; throws an exception if the node doesn't exist.
     * @return Index of existing node
     * @throws Exception If the node isn't found.
     */
-    NodeNum_t GetNodeIndexOrThrow(RigDef::Node::Ref const & id);
+    NodeNum_t GetNodeIndexOrThrow(RigDef::NodeRef_t const & id);
 
-    std::string GetSubmeshGroundmodelName() { return m_state.submeshes_ground_model_name; }
+    std::string GetSubmeshGroundmodelName() { return m_state.submesh_groundmodel; }
 
     static void SetupDefaultSoundSources(Actor *vehicle);
 
@@ -170,26 +138,17 @@ private:
             MPROP_RIGHT,
         };
 
-        CustomMaterial():
-            material_flare_def(nullptr),
-            video_camera_def(nullptr),
-            mirror_prop_type(MirrorPropType::MPROP_NONE),
-            mirror_prop_scenenode(nullptr)
-        {}
+        CustomMaterial(){}
 
         CustomMaterial(Ogre::MaterialPtr& mat):
-            material(mat),
-            material_flare_def(nullptr),
-            video_camera_def(nullptr),
-            mirror_prop_type(MirrorPropType::MPROP_NONE),
-            mirror_prop_scenenode(nullptr)
+            material(mat)
         {}
 
         Ogre::MaterialPtr              material;
-        RigDef::MaterialFlareBinding*  material_flare_def;
-        RigDef::VideoCamera*           video_camera_def;
-        MirrorPropType                 mirror_prop_type;
-        Ogre::SceneNode*               mirror_prop_scenenode;
+        RigDef::DataPos_t              material_flare_pos = RigDef::DATAPOS_INVALID;
+        RigDef::DataPos_t              video_camera_pos = RigDef::DATAPOS_INVALID;
+        MirrorPropType                 mirror_prop_type = MirrorPropType::MPROP_NONE;
+        Ogre::SceneNode*               mirror_prop_scenenode = nullptr;
     };
 
     struct BeamVisualsTicket //!< Visuals are queued for processing using this struct
@@ -206,37 +165,12 @@ private:
 
     struct WheelVisualsTicket //!< Wheel visuals are queued for processing using this struct
     {
-        WheelVisualsTicket(uint16_t wheel_idx, uint16_t node_idx, RigDef::Wheel* def):
-            wheel_index(wheel_idx), base_node_index(node_idx),
-            wheel_def(def), wheel2_def(nullptr), meshwheel_def(nullptr), flexbodywheel_def(nullptr)
-        {}
-
-        WheelVisualsTicket(uint16_t wheel_idx, uint16_t node_idx, RigDef::Wheel2* def):
-            wheel_index(wheel_idx), base_node_index(node_idx),
-            wheel_def(nullptr), wheel2_def(def), meshwheel_def(nullptr), flexbodywheel_def(nullptr)
-        {}
-
-        WheelVisualsTicket(uint16_t wheel_idx, uint16_t node_idx, RigDef::MeshWheel* def, uint16_t axis1, uint16_t axis2):
-            wheel_index(wheel_idx), base_node_index(node_idx),
-            wheel_def(nullptr), wheel2_def(nullptr), meshwheel_def(def), flexbodywheel_def(nullptr),
-            axis_node_1(axis1), axis_node_2(axis2)
-        {}
-
-        WheelVisualsTicket(uint16_t wheel_idx, uint16_t node_idx, RigDef::FlexBodyWheel* def, uint16_t axis1, uint16_t axis2):
-            wheel_index(wheel_idx), base_node_index(node_idx),
-            wheel_def(nullptr), wheel2_def(nullptr), meshwheel_def(nullptr), flexbodywheel_def(def),
-            axis_node_1(axis1), axis_node_2(axis2)
-        {}
-
-        RigDef::Wheel*         wheel_def;
-        RigDef::Wheel2*        wheel2_def;
-        RigDef::MeshWheel*     meshwheel_def;
-        RigDef::FlexBodyWheel* flexbodywheel_def;
-
-        uint16_t               wheel_index;
-        NodeNum_t              base_node_index;
-        NodeNum_t              axis_node_1;
-        NodeNum_t              axis_node_2;
+        int                    wheel_index = -1;
+        RigDef::Keyword        wheel_type = RigDef::KEYWORD_INVALID;
+        RigDef::DataPos_t      wheel_datapos = RigDef::DATAPOS_INVALID;
+        NodeNum_t              base_node_index = NODENUM_INVALID;
+        NodeNum_t              axis_node_1 = NODENUM_INVALID;
+        NodeNum_t              axis_node_2 = NODENUM_INVALID;
     };
 
     struct FlexbodyTicket
@@ -247,322 +181,84 @@ private:
         RigDef::DataPos_t flexbody_camera_mode_data_pos = RigDef::DATAPOS_INVALID;
     };
 
-/* -------------------------------------------------------------------------- */
-/* Processing functions.                                                      */
-/* NOTE: Please maintain alphabetical order.                                  */
-/* -------------------------------------------------------------------------- */
+    // --------------------------------------
+    // Processing functions (alphabetically).
 
-    /**
-    * Section 'airbrakes'.
-    */
-    void ProcessAirbrake(RigDef::Airbrake & def);
-
-    /**
-    * Section 'animators'.
-    */
-    void ProcessAnimator(RigDef::Animator & def);
-
-    /**
-    * Section 'AntiLockBrakes'.
-    */
-    void ProcessAntiLockBrakes(RigDef::AntiLockBrakes & def);
-
-    /**
-    * Section 'author' in root module.
-    */
-    void ProcessAuthors();
-
-    /**
-    * Section 'axles'.
-    */
-    void ProcessAxle(RigDef::Axle & def);
-
-    /**
-    * Section 'beams'. Depends on 'nodes'
-    */
-    void ProcessBeam(RigDef::Beam & def);
-
-    /**
-    * Section 'brakes' in any module.
-    */
-    void ProcessBrakes(RigDef::Brakes & def);
-
-    /**
-    * Section 'camerarail', depends on 'nodes'.
-    */
-    void ProcessCameraRail(int pos);
-
-    /**
-    * Section 'cameras', depends on 'nodes'.
-    */
-    void ProcessCamera(RigDef::Camera & def);
-
-    /**
-    * Section 'cinecam', depends on 'nodes'.
-    */
-    void ProcessCinecam(RigDef::Cinecam & def);
-
-    /**
-    * Section 'collisionboxes'
-    */
-    void ProcessCollisionBox(RigDef::CollisionBox & def);
-
-    /**
-    * Processes sections 'commands' and 'commands2' (unified).
-    */
-    void ProcessCommand(RigDef::Command2 & def);
-
-    /**
-    * Section 'contacters'.
-    */
-    void ProcessContacter(RigDef::Node::Ref & node_ref);
-
-    /**
-    * Section 'cruisecontrol' in any module.
-    */
-    void ProcessCruiseControl(RigDef::CruiseControl & def);
-
-    /**
-    * Section 'engine' in any module.
-    */
-    void ProcessEngine(RigDef::Engine & def);
-
-    /**
-    * Section 'engoption' in any module.
-    */ 
-    void ProcessEngoption(RigDef::Engoption & def);
-
-    /**
-    * Section 'engturbo' in any module.
-    */
-    void ProcessEngturbo(RigDef::Engturbo & def);
-
-    /**
-    * Section 'exhausts'.
-    */
-    void ProcessExhaust(RigDef::Exhaust & def);
-
-    /**
-    * Inline-section 'extcamera'.
-    */
-    void ProcessExtCamera(RigDef::ExtCamera & def);
-
-    /**
-    * Section 'fixes'
-    */
-    void ProcessFixedNode(RigDef::Node::Ref node_ref);
-
-    /**
-    * Sections 'flares' and 'flares2'.
-    */
-    void ProcessFlare2(RigDef::Flare2 & def);
-
-    /**
-    * Section 'flexbodies'.
-    */
+    void ProcessAddAnimation(RigDef::DataPos_t pos);
+    void ProcessAirbrake(RigDef::DataPos_t pos);
+    void ProcessAnimator(RigDef::DataPos_t pos);
+    void ProcessAntiLockBrakes(RigDef::DataPos_t pos);
+    void ProcessAuthors(RigDef::DataPos_t pos);
+    void ProcessAxle(RigDef::DataPos_t pos);
+    void ProcessBeam(RigDef::DataPos_t pos);
+    void ProcessBrakes(RigDef::DataPos_t pos);
+    void ProcessCameraRail(RigDef::DataPos_t pos);
+    void ProcessCamera(RigDef::DataPos_t pos);
+    void ProcessCinecam(RigDef::DataPos_t pos);
+    void ProcessCollisionBox(RigDef::DataPos_t pos);
+    void ProcessCommand(RigDef::DataPos_t pos);
+    void ProcessCommand2(RigDef::DataPos_t pos);
+    void ProcessContacter(RigDef::DataPos_t pos);
+    void ProcessCruiseControl(RigDef::DataPos_t pos);
+    void ProcessEngine(RigDef::DataPos_t pos);
+    void ProcessEngoption(RigDef::DataPos_t pos);
+    void ProcessEngturbo(RigDef::DataPos_t pos);
+    void ProcessExhaust(RigDef::DataPos_t pos);
+    void ProcessExtCamera(RigDef::DataPos_t pos);
+    void ProcessFixedNode(RigDef::DataPos_t pos);
+    void ProcessFlare(RigDef::DataPos_t pos);
+    void ProcessFlare2(RigDef::DataPos_t pos);
     void ProcessFlexbody(RigDef::DataPos_t pos);
-
     void ProcessFlexbodyCameraMode(RigDef::DataPos_t pos);
-
-    /**
-    * Section 'flexbodywheels'.
-    */
-    void ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def);
-
+    void ProcessFlexBodyWheel(RigDef::DataPos_t pos);
     void ProcessForset(RigDef::DataPos_t pos);
-
-    /**
-    * Section 'fusedrag'.
-    */
-    void ProcessFusedrag(RigDef::Fusedrag & def);
-
-    /**
-    * Section 'gobals' in any module
-    */
-    void ProcessGlobals(RigDef::Globals & def);
-
-    /**
-    * Section 'guisettings'.
-    */
-    void ProcessGuiSettings(RigDef::GuiSettings & def);
-
-    void ProcessHelp();
-
-    /**
-    * Depends on 'nodes'
-    */
-    void ProcessHook(RigDef::Hook & def);
-
-    void ProcessHydro(RigDef::Hydro & def);
-
-    /**
-    * Section 'interaxles'.
-    */
-    void ProcessInterAxle(RigDef::InterAxle & def);
-
-    /**
-    * Depends on section 'nodes'
-    */
-    void ProcessLockgroup(RigDef::Lockgroup & lockgroup);
-
+    void ProcessFusedrag(RigDef::DataPos_t pos);
+    void ProcessGlobals(RigDef::DataPos_t pos);
+    void ProcessGuiSettings(RigDef::DataPos_t pos);
+    void ProcessHelp(RigDef::DataPos_t pos);
+    void ProcessHook(RigDef::DataPos_t pos);
+    void ProcessHydro(RigDef::DataPos_t pos);
+    void ProcessInterAxle(RigDef::DataPos_t pos);
+    void ProcessLockgroup(RigDef::DataPos_t pos);
     void ProcessLockgroupDefaultNolock();
-
-    /**
-    * Section 'managedmaterials'
-    */
-    void ProcessManagedMaterial(RigDef::ManagedMaterial & def);
-
-    /**
-    * Section 'meshwheels'.
-    */
-    void ProcessMeshWheel(RigDef::MeshWheel & meshwheel_def);
-
-    /**
-    * Section 'meshwheels2'.
-    */
-    void ProcessMeshWheel2(RigDef::MeshWheel & def);
-
-    /**
-    * Section 'minimass'.
-    */
-    void ProcessMinimass(RigDef::Minimass& def);
-
-    void ProcessNode(RigDef::Node & def);
-
-    /**
-    * Section 'particles'.
-    */
-    void ProcessParticle(RigDef::Particle & def);
-
-    /**
-    * Section 'pistonprops'.
-    */
-    void ProcessPistonprop(RigDef::Pistonprop & def);
-
-    /**
-    * Section 'props'.
-    */
-    void ProcessProp(RigDef::Prop & def);
-
-    /**
-    * Section 'railgroups'.
-    */
-    void ProcessRailGroup(RigDef::RailGroup & def);
-
-    /**
-    * Section 'ropables'.
-    */
-    void ProcessRopable(RigDef::Ropable & def);
-
-    /**
-    * Section 'ropes'.
-    */
-    void ProcessRope(RigDef::Rope & def);
-
-    void ProcessRotator(RigDef::Rotator & def);
-
-    void ProcessRotator2(RigDef::Rotator2 & def);
-
-    void ProcessScrewprop(RigDef::Screwprop & def);
-
-    /**
-    * Section 'shocks'.
-    */
-    void ProcessShock(RigDef::Shock & def);
-
-    /**
-    * Add a shock absorber (section 'shocks2') to the rig.
-    */
-    void ProcessShock2(RigDef::Shock2 & def);
-
-    /**
-    * Add a shock absorber (section 'shocks3') to the rig.
-    */
-    void ProcessShock3(RigDef::Shock3 & def);
-
-    /**
-    * Section 'slidenodes'. Depends on 'railgroups'
-    */
-    void ProcessSlidenode(RigDef::SlideNode & def);
-
+    void ProcessManagedMaterial(RigDef::DataPos_t pos);
+    void ProcessMeshWheel(RigDef::DataPos_t pos);
+    void ProcessMeshWheel2(RigDef::DataPos_t pos);
+    void ProcessMinimass(RigDef::DataPos_t pos);
+    void ProcessNode(RigDef::DataPos_t pos);
+    void ProcessNode2(RigDef::DataPos_t pos);
+    void ProcessParticle(RigDef::DataPos_t pos);
+    void ProcessPistonprop(RigDef::DataPos_t pos);
+    void ProcessProp(RigDef::DataPos_t pos);
+    void ProcessRailGroup(RigDef::DataPos_t pos);
+    void ProcessRopable(RigDef::DataPos_t pos);
+    void ProcessRope(RigDef::DataPos_t pos);
+    void ProcessRotator(RigDef::DataPos_t pos);
+    void ProcessRotator2(RigDef::DataPos_t pos);
+    void ProcessScrewprop(RigDef::DataPos_t pos);
+    void ProcessShock(RigDef::DataPos_t pos);
+    void ProcessShock2(RigDef::DataPos_t pos);
+    void ProcessShock3(RigDef::DataPos_t pos);
+    void ProcessSlidenode(RigDef::DataPos_t pos);
     void ProcessSlidenodeConnectInstantly();
-
-    /**
-    * Section 'soundsources'.
-    */
-    void ProcessSoundSource(RigDef::SoundSource & def); 
-
-    /**
-    * Section 'soundsources2'.
-    */
-    void ProcessSoundSource2(RigDef::SoundSource2 & def);
-
-    void ProcessSpeedLimiter(RigDef::SpeedLimiter & def);
-
-    /**
-    * Section 'submeshes'.
-    */
+    void ProcessSoundSource(RigDef::DataPos_t pos);
+    void ProcessSoundSource2(RigDef::DataPos_t pos);
+    void ProcessSpeedLimiter(RigDef::DataPos_t pos);
     void ProcessSubmesh();
-    void ProcessSubmeshGroundModel(int pos);
-
-    void ProcessTexcoord(RigDef::Texcoord & def);
-
-    /**
-    * Section 'ties'.
-    */
-    void ProcessTie(RigDef::Tie & def);
-
-    /**
-    * Section 'torquecurve' in any module. Depends on 'engine'.
-    */
-    void ProcessTorqueCurve(RigDef::TorqueCurve & def);
-
-    /**
-    * Section 'TractionControl' in any module.
-    */
-    void ProcessTractionControl(RigDef::TractionControl & def);
-
-    /**
-    * Section 'transfercase'.
-    */
-    void ProcessTransferCase(RigDef::TransferCase & def);
-
-    void ProcessTrigger(RigDef::Trigger & def);
-
-    void ProcessTurbojet(RigDef::Turbojet & def);
-
-    /**
-    * Sections 'turboprops' and 'turboprops2'
-    */
-    void ProcessTurboprop2(RigDef::Turboprop2 & def);
-
-    /**
-    * Section 'wheeldetachers' in all modules.
-    */
-    void ProcessWheelDetacher(RigDef::WheelDetacher & def);
-
-    /**
-    * Section 'wheels' in all modules.
-    */
-    void ProcessWheel(RigDef::Wheel & def);
-
-    /**
-    * Section 'wheels2' in all modules.
-    * @author Pierre-Michel Ricordel
-    * @author Thomas Fischer
-    */
-    void ProcessWheel2(RigDef::Wheel2 & def);
-
-    /**
-    * Section 'wings'.
-    * @author 
-    */
-    void ProcessWing(RigDef::Wing & def);
-
-/* -------------------------------------------------------------------------- */
-/* Presets/modifiers processing.                                              */
-/* -------------------------------------------------------------------------- */
-
+    void ProcessSubmeshGroundModel(RigDef::DataPos_t pos);
+    void ProcessTexcoord(RigDef::DataPos_t pos);
+    void ProcessTie(RigDef::DataPos_t pos);
+    void ProcessTorqueCurve(RigDef::DataPos_t pos);
+    void ProcessTractionControl(RigDef::DataPos_t pos);
+    void ProcessTransferCase(RigDef::DataPos_t pos);
+    void ProcessTrigger(RigDef::DataPos_t pos);
+    void ProcessTurbojet(RigDef::DataPos_t pos);
+    void ProcessTurboprop(RigDef::DataPos_t pos);
+    void ProcessTurboprop2(RigDef::DataPos_t pos);
+    void ProcessWheelDetacher(RigDef::DataPos_t pos);
+    void ProcessWheel(RigDef::DataPos_t pos);
+    void ProcessWheel2(RigDef::DataPos_t pos);
+    void ProcessWing(RigDef::DataPos_t pos);
     void ProcessNodeDefaults(RigDef::DataPos_t pos);
     void ProcessInertiaDefaults(RigDef::DataPos_t pos);
     void ProcessBeamDefaults(RigDef::DataPos_t pos);
@@ -571,10 +267,10 @@ private:
     void ProcessManagedMatOptions(RigDef::DataPos_t pos);
     void ProcessSkeletonSettings(RigDef::DataPos_t pos);
 
-/* -------------------------------------------------------------------------- */
-/* Partial processing functions.                                              */
-/* -------------------------------------------------------------------------- */
+    // --------------------------------------
+    // Builder utility functions.
 
+    // Aeroengines
     void BuildAeroEngine(
         NodeNum_t ref_node_index,
         NodeNum_t back_node_index,
@@ -589,103 +285,70 @@ private:
         float pitch
     );
 
+    // Flexbodies
     void BuildFlexbody(FlexbodyTicket const& ticket);
 
-    /**
-    * Fetches free beam and sets up defaults.
-    */
+    // Nodes
+    void AddNode(RigDef::NodesCommon& def, std::string const& node_name, NodeNum_t node_number);
+    void InitNode(node_t & node, Ogre::Vector3 const & position);
+    void InitNode(unsigned int node_index, Ogre::Vector3 const & position);
+
+    // Beams
     beam_t & AddBeam(node_t & node_1, node_t & node_2);
-    beam_t & AddBeam(RigDef::Node::Ref n1, RigDef::Node::Ref n2);
-
-    /**
-    * Adds complete wheel (section 'wheels') to the rig.
-    * @return wheel index in rig_t::wheels array.
-    */
-    unsigned int AddWheel(RigDef::Wheel & wheel);
-
-    /**
-    * Adds wheel from section 'wheels2'.
-    * @return wheel index.
-    */
-    unsigned int AddWheel2(RigDef::Wheel2 & wheel_2_def);
-
+    beam_t & AddBeam(RigDef::NodeRef_t n1, RigDef::NodeRef_t n2);
+    void InitBeam(beam_t & beam, node_t *node_1, node_t *node_2); //!< Sets up nodes & length of a beam.
+    void CalculateBeamLength(beam_t & beam);
+    void SetBeamStrength(beam_t & beam, float strength);
+    void SetBeamSpring(beam_t & beam, float spring);
+    void SetBeamDamping(beam_t & beam, float damping);
     void CreateBeamVisuals(beam_t const& beam, int beam_index, bool visible, std::string material_override="");
+
+    // Wheels
+    unsigned int AddWheel(RigDef::DataPos_t pos); //!< @return wheel index in rig_t::wheels array.
+
+    // Wheels2
+    unsigned int AddWheel2(RigDef::DataPos_t pos); //!< @return wheel index in rig_t::wheels array.
+    unsigned int AddWheels2RimBeam(RigDef::DataPos_t pos, node_t *node_1, node_t *node_2);
+    unsigned int AddWheels2TyreBeam(RigDef::DataPos_t pos, node_t *node_1, node_t *node_2);
+    unsigned int AddWheels2Beam(RigDef::DataPos_t pos, node_t *node_1, node_t *node_2);
+
+    // Flares
+    void ProcessFlareCommon(RigDef::FlaresCommon& def);
+
+    void AddCommand(RigDef::DataPos_t pos, float shorten_rate, float lenghten_rate);
+
+    
     void ProcessBackmesh();
 
-    RailGroup *CreateRail(std::vector<RigDef::Node::Range> & node_ranges);
+    RailGroup *CreateRail(std::vector<RigDef::NodeRangeCommon> & node_ranges);
 
     static void AddSoundSource(Actor *vehicle, SoundScriptInstance *sound_script, NodeNum_t node_index, int type = -2);
 
     static void AddSoundSourceInstance(Actor *vehicle, Ogre::String const & sound_script_name, int node_index, int type = -2);
 
-/* -------------------------------------------------------------------------- */
-/* Limits.                                                                    */
-/* -------------------------------------------------------------------------- */
+    // LIMITS - to be elmiminated
 
-    /**
-    * Checks there is still space left in rig_t::ar_custom_particles array.
-    * @param count Required number of free slots.
-    * @return True if there is space left.
-    */
     bool CheckParticleLimit(unsigned int count);
-    
-    /**
-    * Checks there is still space left in rig_t::axles array.
-    * @param count Required number of free slots.
-    * @return True if there is space left.
-    */
     bool CheckAxleLimit(unsigned int count);
-
-    /**
-    * Checks there is still space left in rig_t::cabs array.
-    * @param count Required number of free slots.
-    * @return True if there is space left.
-    */
     bool CheckCabLimit(unsigned int count);
-
-    /**
-    * Checks there is still space left in rig_t::ar_camera_rail array.
-    * @param count Required number of free slots.
-    * @return True if there is space left.
-    */
     bool CheckCameraRailLimit(unsigned int count);
-
-    /**
-    * Checks there is still space left in rig_t::soundsources array (static version).
-    * @param count Required number of free slots.
-    * @return True if there is space left.
-    */
     static bool CheckSoundScriptLimit(Actor *vehicle, unsigned int count);
-
-    /**
-    * Checks there is still space left in rig_t::aeroengines array.
-    * @param count Required number of free slots.
-    * @return True if there is enough space left.
-    */
     bool CheckAeroEngineLimit(unsigned int count);
-
-    /**
-    * Checks there is still space left in rig_t::screwprops array.
-    * @param count Required number of free slots.
-    * @return True if there is enough space left.
-    */
     bool CheckScrewpropLimit(unsigned int count);
 
-/* -------------------------------------------------------------------------- */
-/* Utility functions.                                                         */
-/* -------------------------------------------------------------------------- */
+    // **** TO BE SORTED ****
 
     /**
     * Seeks node.
     * @return Pointer to node, or nullptr if not found.
     */
-    node_t* GetBeamNodePointer(RigDef::Node::Ref const & node_ref);
+    node_t* GetBeamNodePointer(RigDef::NodeRef_t const & node_ref);
 
     /**
     * Seeks node in both RigDef::File definition and rig_t generated rig.
     * @return Node index or -1 if the node was not found.
     */
-    NodeNum_t FindNodeIndex(RigDef::Node::Ref & node_ref, bool silent = false);
+    NodeNum_t FindNodeIndex(RigDef::NodeRef_t & node_ref, bool silent = false);
 
     /**
     * Finds wheel with given axle nodes and returns it's index.
@@ -711,44 +374,49 @@ private:
         unsigned int direction_node_idx
     );
 
-    NodeNum_t ResolveNodeRef(RigDef::Node::Ref const & node_ref);
+    NodeNum_t ResolveNodeRef(RigDef::NodeRef_t const & node_ref);
+
+    void ResolveNodeRanges(
+        std::vector<NodeNum_t> & out_nodes,
+        std::vector<RigDef::NodeRangeCommon> & in_ranges
+    );
 
     /**
-    * Finds existing node by Node::Ref
+    * Finds existing node by NodeRef_t
     * @return First: Index of existing node; Second: true if node was found.
     */
-    std::pair<NodeNum_t, bool> GetNodeIndex(RigDef::Node::Ref const & node_ref, bool quiet = false);
+    std::pair<NodeNum_t, bool> GetNodeIndex(RigDef::NodeRef_t const & node_ref, bool quiet = false);
 
     /**
-    * Finds existing node by Node::Ref
+    * Finds existing node by NodeRef_t
     * @return Pointer to node or nullptr if not found.
     */
-    node_t* GetNodePointer(RigDef::Node::Ref const & node_ref);
+    node_t* GetNodePointer(RigDef::NodeRef_t const & node_ref);
 
     /**
-    * Finds existing node by Node::Ref
+    * Finds existing node by NodeRef_t
     * @return Pointer to node
     * @throws Exception If the node isn't found.
     */
-    node_t* GetNodePointerOrThrow(RigDef::Node::Ref const & node_ref);
+    node_t* GetNodePointerOrThrow(RigDef::NodeRef_t const & node_ref);
 
     /**
-    * Finds existing node by Node::Ref; throws an exception if the node doesn't exist.
+    * Finds existing node by NodeRef_t; throws an exception if the node doesn't exist.
     * @return Reference to existing node.
     * @throws Exception If the node isn't found.
     */
-    node_t & GetNodeOrThrow(RigDef::Node::Ref const & node_ref);
+    node_t & GetNodeOrThrow(RigDef::NodeRef_t const & node_ref);
 
     /**
     * Finds existing pointer by Node::Id
     * @return Ref. to node.
     */
-    node_t & GetNode(RigDef::Node::Ref & node_ref)
+    node_t & GetNode(RigDef::NodeRef_t & node_ref)
     {
         node_t * node = GetNodePointer(node_ref);
         if (node == nullptr)
         {
-            throw Exception(std::string("Failed to retrieve node from reference: ") + node_ref.ToString());
+            throw Exception(std::string("Failed to retrieve node from reference: ") + node_ref);
         }
         return * node;
     }
@@ -759,24 +427,8 @@ private:
     */
     node_t & GetNode(NodeNum_t node_index);
 
-    /**
-    * Sets up defaults & position of a node.
-    */
-    void InitNode(node_t & node, Ogre::Vector3 const & position);
 
-    /**
-    * Sets up defaults & position of a node.
-    */
-    void InitNode(unsigned int node_index, Ogre::Vector3 const & position);
 
-    /**
-    * Sets up defaults & position of a node.
-    */
-    void InitNode(
-        node_t & node, 
-        Ogre::Vector3 const & position,
-        std::shared_ptr<RigDef::NodeDefaults> node_defaults
-    );
 
     /**
     * Setter.
@@ -788,14 +440,7 @@ private:
 
     beam_t & GetBeam(unsigned int index);
 
-    /**
-    * Parses list of node-ranges into list of individual nodes.
-    * @return False if some nodes could not be found and thus the lookup wasn't completed.
-    */
-    bool CollectNodesFromRanges(
-        std::vector<RigDef::Node::Range> & node_ranges,
-        std::vector<NodeNum_t> & out_node_indices
-    );
+
 
     /**
     * Gets a free node slot; checks limits, sets it's array position and updates 'free_node' index.
@@ -823,39 +468,16 @@ private:
 
     shock_t & GetFreeShock();
 
-    /**
-    * Sets up nodes & length of a beam.
-    */
-    void InitBeam(beam_t & beam, node_t *node_1, node_t *node_2);
 
-    void CalculateBeamLength(beam_t & beam);
-
-    void SetBeamStrength(beam_t & beam, float strength);
-
-    void SetBeamSpring(beam_t & beam, float spring);
-
-    void SetBeamDamping(beam_t & beam, float damping);
 
     beam_t *FindBeamInRig(NodeNum_t node_a, NodeNum_t node_b);
 
     void UpdateCollcabContacterNodes();
 
-    wheel_t::BrakeCombo TranslateBrakingDef(RigDef::Wheels::Braking def);
+    wheel_t::BrakeCombo TranslateBrakingDef(RigDef::WheelBraking def);
 
-    /**
-    * Creates beam pre-configured for use as rim with section 'wheels2'.
-    */
-    unsigned int AddWheelRimBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1, node_t *node_2);
 
-    /**
-    * Creates beam pre-configured for use as tyre with section 'wheels2'.
-    */
-    unsigned int AddTyreBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1, node_t *node_2);
 
-    /**
-    * Creates beam partially configured for use with section 'wheels2'.
-    */
-    unsigned int _SectionWheels2AddBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1, node_t *node_2);
 
     /**
     * Builds complete wheel visuals (sections 'wheels', 'wheels2').
@@ -912,11 +534,11 @@ private:
 
     Ogre::ParticleSystem* CreateParticleSystem(std::string const & name, std::string const & template_name);
 
-    RigDef::MaterialFlareBinding* FindFlareBindingForMaterial(std::string const & material_name); //!< Returns NULL if none found
+    RigDef::DataPos_t FindFlareBindingForMaterial(std::string const & material_name); //!< Returns DATAPOS_INVALID if none found
 
-    RigDef::VideoCamera* FindVideoCameraByMaterial(std::string const & material_name); //!< Returns NULL if none found
+    RigDef::DataPos_t FindVideoCameraByMaterial(std::string const & material_name); //!< Returns DATAPOS_INVALID if none found
 
-    void CreateVideoCamera(RigDef::VideoCamera* def);
+    void CreateVideoCamera(RigDef::DataPos_t pos);
     void CreateMirrorPropVideoCam(Ogre::MaterialPtr custom_mat, CustomMaterial::MirrorPropType type, Ogre::SceneNode* prop_scenenode);
 
     /**
@@ -937,8 +559,8 @@ private:
         unsigned int reserve_nodes,
         unsigned int reserve_beams,
         float wheel_radius,
-        RigDef::Wheels::Propulsion propulsion,
-        RigDef::Wheels::Braking braking,
+        RigDef::WheelPropulsion propulsion,
+        RigDef::WheelBraking braking,
         float wheel_mass,
         float wheel_width = -1.f
     );
@@ -955,7 +577,7 @@ private:
         float tyre_damping,
         float rim_spring,
         float rim_damping,
-        RigDef::Node::Ref const & rigidity_node_id,
+        RigDef::NodeRef_t const & rigidity_node_id,
         float max_extension = 0.f
     );
 
@@ -995,12 +617,12 @@ private:
     void FetchAxisNodes(
         node_t* & axis_node_1, 
         node_t* & axis_node_2, 
-        RigDef::Node::Ref const & axis_node_1_id,
-        RigDef::Node::Ref const & axis_node_2_id
+        RigDef::NodeRef_t const & axis_node_1_id,
+        RigDef::NodeRef_t const & axis_node_2_id
     );
 
     void _ProcessKeyInertia(
-        RigDef::Inertia & inertia, 
+        RigDef::InertiaCommon & inertia, 
         RoR::CmdKeyInertia& contract_key, 
         RoR::CmdKeyInertia& extend_key
     );
@@ -1008,7 +630,7 @@ private:
     /** 
     * For specified nodes
     */
-    void AdjustNodeBuoyancy(node_t & node, RigDef::Node & node_def);
+    void AdjustNodeBuoyancy(node_t & node, RigDef::NodesCommon & node_def);
 
     /** 
     * For generated nodes
@@ -1037,7 +659,7 @@ private:
     // Context
     struct ActorSpawnState
     {
-        // Globals
+        // GlobalsLine
         float       truckmass=0;   //!< Keyword 'globals' - dry mass
         float       loadmass=0;
         std::string texname;       //!< Keyword 'globals' - submeshes texture
@@ -1091,7 +713,7 @@ private:
         std::vector<CabBackmeshType>     subisback;       //!< 'backmesh'
         std::vector<int>                 subtexcoords;    //!< maps 'texcoords' to 'submesh'
         std::vector<int>                 subcabs;         //!< maps 'cab' to 'submesh'
-        std::string                      submeshes_ground_model_name;
+        std::string                      submesh_groundmodel;
 
         // 'guisettings':
         std::string helpmat;

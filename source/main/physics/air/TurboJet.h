@@ -30,7 +30,7 @@ class TurbojetVisual
 {
 public:
     ~TurbojetVisual();
-    void SetupVisuals(RigDef::Turbojet & def, int num, std::string const& propname, Ogre::Entity* nozzle, Ogre::Entity* afterburner_flame);
+    void SetupVisuals(RigDef::TurbojetsLine & def, int num, std::string const& propname, Ogre::Entity* nozzle, Ogre::Entity* afterburner_flame);
     void SetNodes(int front, int back, int ref);
     void UpdateVisuals(RoR::GfxActor* gfx_actor);
     void SetVisible(bool visible);
@@ -57,7 +57,7 @@ class Turbojet: public AeroEngine, public ZeroedMemoryAllocator
 
 public:
 
-    Turbojet(Actor* actor, int tnodefront, int tnodeback, int tnoderef, RigDef::Turbojet & def);
+    Turbojet(Actor* actor, int tnodefront, int tnodeback, int tnoderef, RigDef::TurbojetsLine & def);
     ~Turbojet();
 
     void flipStart();

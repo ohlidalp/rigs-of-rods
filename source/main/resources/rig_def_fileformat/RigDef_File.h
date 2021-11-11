@@ -22,7 +22,6 @@
 /** 
     @file   RigDef_File.h
     @author Petr Ohlidal
-    @date   12/2013
     @brief Structures which represent a rig-definition file (1:1 match)
            See https://docs.rigsofrods.org/vehicle-creation/fileformat-truck/ for reference.
            Values prefixed by `_` are helper data, for example argument count (where it matters).
@@ -32,7 +31,6 @@
 
 #include "Application.h"
 #include "BitFlags.h"
-#include "RigDef_Node.h"
 #include "SimConstants.h"
 #include "SimData.h"
 
@@ -46,6 +44,10 @@
 
 namespace RigDef {
 
+/// Any line referencing a node must assume the node may be named.
+typedef std::string NodeRef_t;
+extern const NodeRef_t NODEREF_INVALID;
+
 // IMPORTANT! If you add a value here, you must also modify Regexes::IDENTIFY_KEYWORD, it relies on numeric values of this enum.
 enum Keyword
 {
@@ -53,8 +55,8 @@ enum Keyword
     KEYWORD_AIRBRAKES,
     KEYWORD_ANIMATORS,
     KEYWORD_ANTILOCKBRAKES,
-    KEYWORD_AXLES,
     KEYWORD_AUTHOR,
+    KEYWORD_AXLES,
     KEYWORD_BACKMESH,
     KEYWORD_BEAMS,
     KEYWORD_BRAKES,
@@ -163,7 +165,7 @@ enum Keyword
     KEYWORD_WHEELS2,
     KEYWORD_WINGS,
 
-    KEYWORD_INVALID = 0xFFFFFFFF
+    KEYWORD_INVALID = -1
 };
 
 enum class DifferentialType: char
@@ -174,11 +176,121 @@ enum class DifferentialType: char
     DIFF_v_VISCOUS = 'v'
 };
 
-/* -------------------------------------------------------------------------- */
-/* Directives [PROP/FLEXBODY]_CAMERA_MODE                                     */
-/* -------------------------------------------------------------------------- */
+enum WheelBraking
+{
+    BRAKING_NO                = 0,
+    BRAKING_YES               = 1,
+    BRAKING_DIRECTIONAL_LEFT  = 2,
+    BRAKING_DIRECTIONAL_RIGHT = 3,
+    BRAKING_ONLY_FOOT         = 4,
 
-struct CameraSettings
+    BRAKING_INVALID           = -1
+};
+
+enum WheelPropulsion
+{
+    PROPULSION_NONE     = 0,
+    PROPULSION_FORWARD  = 1,
+    PROPULSION_BACKWARD = 2,
+
+    PROPULSION_INVALID  = -1
+};
+
+enum WheelSide
+{
+    SIDE_INVALID   = 0,
+    SIDE_RIGHT     = 'r',
+    SIDE_LEFT      = 'l'
+};
+
+enum class NodeOption: char
+{
+    n_MOUSE_GRAB        = 'n',
+    m_NO_MOUSE_GRAB     = 'm',
+    f_NO_SPARKS         = 'f',
+    x_EXHAUST_POINT     = 'x',
+    y_EXHAUST_DIRECTION = 'y',
+    c_NO_GROUND_CONTACT = 'c',
+    h_HOOK_POINT        = 'h',
+    e_TERRAIN_EDIT_POINT= 'e',
+    b_EXTRA_BUOYANCY    = 'b',
+    p_NO_PARTICLES      = 'p',
+    L_LOG               = 'L',
+    l_LOAD_WEIGHT       = 'l',
+};
+
+enum class HydroOption: char
+{
+    n_NORMAL                    = 'n',
+    i_INVISIBLE                 = 'i',
+    // Useful for trucks
+    s_DISABLE_ON_HIGH_SPEED     = 's',
+    // Useful for planes: These can be used to control flight surfaces, or to create a thrust vectoring system.
+    a_INPUT_AILERON             = 'a',
+    r_INPUT_RUDDER              = 'r',
+    e_INPUT_ELEVATOR            = 'e',
+    u_INPUT_AILERON_ELEVATOR    = 'u',
+    v_INPUT_InvAILERON_ELEVATOR = 'v',
+    x_INPUT_AILERON_RUDDER      = 'x',
+    y_INPUT_InvAILERON_RUDDER   = 'y',
+    g_INPUT_ELEVATOR_RUDDER     = 'g',
+    h_INPUT_InvELEVATOR_RUDDER  = 'h',
+};
+
+enum class SpecialProp
+{
+    MIRROR_LEFT = 1,
+    MIRROR_RIGHT,
+    DASHBOARD_LEFT,
+    DASHBOARD_RIGHT,
+    AERO_PROP_SPIN,
+    AERO_PROP_BLADE,
+    DRIVER_SEAT,
+    DRIVER_SEAT_2,
+    BEACON,
+    REDBEACON,
+    LIGHTBAR,
+
+    INVALID = -1
+};
+
+enum class ManagedMaterialType
+{
+    FLEXMESH_STANDARD = 1,
+    FLEXMESH_TRANSPARENT,
+    MESH_STANDARD,
+    MESH_TRANSPARENT,
+
+    INVALID = -1
+};
+
+enum class WingControlSurface: char
+{
+    n_NONE                  = 'n',
+    a_RIGHT_AILERON         = 'a',
+    b_LEFT_AILERON          = 'b',
+    f_FLAP                  = 'f',
+    e_ELEVATOR              = 'e',
+    r_RUDDER                = 'r',
+    S_RIGHT_HAND_STABILATOR = 'S',
+    T_LEFT_HAND_STABILATOR  = 'T',
+    c_RIGHT_ELEVON          = 'c',
+    d_LEFT_ELEVON           = 'd',
+    g_RIGHT_FLAPERON        = 'g',
+    h_LEFT_FLAPERON         = 'h',
+    U_RIGHT_HAND_TAILERON   = 'U',
+    V_LEFT_HAND_TAILERON    = 'V',
+    i_RIGHT_RUDDERVATOR     = 'i',
+    j_LEFT_RUDDERVATOR      = 'j',
+
+    INVALID                 = 0
+};
+
+    // --------------------------------
+    // Common line data
+
+
+struct CameraModeCommon
 {
     enum Mode
     {
@@ -193,230 +305,145 @@ struct CameraSettings
     unsigned int cinecam_index = 0;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Directive SECTION                                                          */
-/* -------------------------------------------------------------------------- */
-
-struct SectionTag
+struct InertiaCommon
 {
-    std::vector<std::string> configs;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Directive SET_NODE_DEFAULTS                                                */
-/* -------------------------------------------------------------------------- */
-
-struct NodeDefaults
-{
-    NodeDefaults();
-
     int _num_args = -1;
 
-    float loadweight;
-    float friction;
-    float volume;
-    float surface;
-    unsigned int options; //!< Bit flags
+    float start_delay_factor = 0.f;
+    float stop_delay_factor = 0.f;
+    std::string start_function;
+    std::string stop_function;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Directive SET_BEAM_DEFAULTS_SCALE                                          */
-/* -------------------------------------------------------------------------- */
-
-struct BeamDefaultsScale
+struct CommandsCommon
 {
-    BeamDefaultsScale():
-        springiness(1),
-        damping_constant(1),
-        deformation_threshold_constant(1),
-        breaking_threshold_constant(1)
-    {}
+    NodeRef_t nodes[2];
+    float max_contraction = 0.f;
+    float max_extension = 0.f;
+    unsigned int contract_key = 0u;
+    unsigned int extend_key = 0u;
+    std::string description;
+    InertiaCommon inertia;
+    float affect_engine = 1.f;
+    bool needs_engine = true;
+    bool plays_sound = true;
 
+    bool option_i_invisible = false;
+    bool option_r_rope = false;
+    bool option_c_auto_center = false;
+    bool option_f_not_faster = false;
+    bool option_p_1press = false;
+    bool option_o_1press_center = false;
+};
+
+struct FlaresCommon
+{
+    NodeRef_t reference_node;
+    NodeRef_t node_axis_x;
+    NodeRef_t node_axis_y;
+    Ogre::Vector3 offset = Ogre::Vector3(0, 0, 1);
+    RoR::FlareType type = RoR::FlareType::HEADLIGHT;
+    int control_number; //!< Only 'u' type flares.
+    std::string dashboard_link; //!< Only 'd' type flares.
+    int blink_delay_milis;
+    float size;
+    std::string material_name;
+};
+
+struct NodeRangeCommon
+{
+    NodeRangeCommon(NodeRef_t _first, NodeRef_t _last): first(_first), last(_last){}
+
+    NodeRef_t first;
+    NodeRef_t last;
+};
+
+struct NodesCommon
+{
     int _num_args = -1;
-
-    float springiness;
-    float damping_constant;
-    float deformation_threshold_constant;
-    float breaking_threshold_constant;
+    Ogre::Vector3 position;
+    float loadweight_override = -1.f;
+    std::string options;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Directive SET_BEAM_DEFAULTS                                                */
-/* -------------------------------------------------------------------------- */
-
-struct BeamDefaults
+struct RotatorsCommon
 {
-    BeamDefaults(): // NOTE: -1.f is 'empty value'; replaced by constant in parser.
-        springiness(-1.f),
-        damping_constant(-1.f),
-        deformation_threshold(-1.f),
-        visual_beam_diameter(-1.f),
-        beam_material_name("tracks/beam"),
-        plastic_deform_coef(0.f), // This is a default
-        breaking_threshold(-1.f)
-    {}
+    NodeRef_t axis_nodes[2];
+    NodeRef_t base_plate_nodes[4];
+    NodeRef_t rotating_plate_nodes[4];
 
-    int _num_args = -1;
-
-    float springiness;
-    float damping_constant;
-    float deformation_threshold;
-    float breaking_threshold;
-    float visual_beam_diameter;
-    Ogre::String beam_material_name;
-    float plastic_deform_coef;
+    float rate = 0.f;
+    unsigned int spin_left_key = 0u;
+    unsigned int spin_right_key = 0u;
+    InertiaCommon inertia;
+    float engine_coupling = 1.f;
+    bool needs_engine = false;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Section MINIMASS                                                           */
-/* -------------------------------------------------------------------------- */
-
-struct Minimass
+struct SoundsourcesCommon
 {
-    enum Option
-    {
-        OPTION_n_FILLER  = 'n',     //!< Updates the global minimass
-        OPTION_l_SKIP_LOADED = 'l'  //!< Only apply minimum mass to nodes without "L" option.
-    };
-
-    float min_mass = DEFAULT_MINIMASS; //!< minimum node mass in Kg
-    bool option_l_skip_loaded = false;
+    NodeRef_t node;
+    std::string sound_script_name;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Directive SET_DEFAULT_MINIMASS                                             */
-/* -------------------------------------------------------------------------- */
-
-struct DefaultMinimass
+struct TurbopropsCommon
 {
-    float min_mass = DEFAULT_MINIMASS;
+    NodeRef_t reference_node;
+    NodeRef_t axis_node;
+    NodeRef_t blade_tip_nodes[4];
+    float turbine_power_kW = 0.f;
+    std::string airfoil;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Directive SET_DEFAULT_INERTIA                                              */
-/* -------------------------------------------------------------------------- */
-
-/** Common base for DefaultInertia and Command2Inertia */
-struct Inertia 
+struct WheelsCommon
 {
-    Inertia():
-        start_delay_factor(0),
-        stop_delay_factor(0)
-    {}
-
-    int _num_args = -1;
-
-    float start_delay_factor;
-    float stop_delay_factor;
-    Ogre::String start_function;
-    Ogre::String stop_function;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Directive SET_MANAGEDMATERIALS_OPTIONS                                     */
-/* -------------------------------------------------------------------------- */
-
-struct ManagedMaterialsOptions
-{
-    ManagedMaterialsOptions():
-        double_sided(false)
-    {}
-
-    bool double_sided;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Directive SET_SHADOWS                                                      */
-/* -------------------------------------------------------------------------- */
-
-struct ShadowOptions
-{
-    ShadowOptions():
-        shadow_mode(0)
-    {}
-
-    int shadow_mode;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section GLOBALS                                                            */
-/* -------------------------------------------------------------------------- */
-
-struct Globals
-{
-    Globals():
-        dry_mass(0), /* The default */
-        cargo_mass(0) /* The default */
-    {}
-
-    float dry_mass;
-    float cargo_mass;
-    Ogre::String material_name;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section GUISETTINGS                                                        */
-/* -------------------------------------------------------------------------- */
-
-struct GuiSettings
-{
-    Ogre::String key;
-    Ogre::String value;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section AIRBRAKES                                                          */
-/* -------------------------------------------------------------------------- */
-
-struct Airbrake
-{
-    Airbrake();
-
-    Node::Ref reference_node;
-    Node::Ref x_axis_node;
-    Node::Ref y_axis_node;
-    Node::Ref aditional_node;
-    Ogre::Vector3 offset;
     float width;
-    float height;
-    float max_inclination_angle;
-    float texcoord_x1;
-    float texcoord_x2;
-    float texcoord_y1;
-    float texcoord_y2;
-    float lift_coefficient;
+    unsigned int num_rays;
+    NodeRef_t nodes[2];
+    NodeRef_t rigidity_node;
+    WheelBraking braking = BRAKING_NO;
+    WheelPropulsion propulsion;
+    NodeRef_t reference_arm_node;
+    float mass;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Directive ADD_ANIMATION                                                    */
-/* -------------------------------------------------------------------------- */
+struct Wheels2Common: WheelsCommon
+{
+    float rim_radius;
+    float tyre_radius;
+    float tyre_springiness;
+    float tyre_damping;
+};
 
-struct Animation
+struct MeshwheelsShared: public WheelsCommon
+{
+    WheelSide side = SIDE_INVALID;
+    std::string mesh_name;
+    std::string material_name;
+    float rim_radius;
+    float tyre_radius;
+    float spring;
+    float damping;
+};
+
+
+    // --------------------------------
+    // Individual lines, alphabetically
+
+
+struct AddAnimationLine
 {
     struct MotorSource
     {
-        MotorSource():
-            source(0),
-            motor(0)
-        {}
-
         static const unsigned int SOURCE_AERO_THROTTLE = BITMASK(1);
         static const unsigned int SOURCE_AERO_RPM      = BITMASK(2);
         static const unsigned int SOURCE_AERO_TORQUE   = BITMASK(3);
         static const unsigned int SOURCE_AERO_PITCH    = BITMASK(4);
         static const unsigned int SOURCE_AERO_STATUS   = BITMASK(5);
 
-        unsigned int source;
-        unsigned int motor;
+        unsigned int source = 0;
+        unsigned int motor = 0;
     };
-
-    Animation():
-        ratio(0),
-        lower_limit(-1.f),
-        upper_limit(-1.f),
-        source(0),
-        mode(0)
-    {}
 
     BITMASK_PROPERTY( source,  1, SOURCE_AIRSPEED          , HasSource_AirSpeed            , SetHasSource_AirSpeed )
     BITMASK_PROPERTY( source,  2, SOURCE_VERTICAL_VELOCITY , HasSource_VerticalVelocity    , SetHasSource_VerticalVelocity )
@@ -471,776 +498,47 @@ struct Animation
 
     // NOTE: MSVC highlights 'event' as keyword: http://msdn.microsoft.com/en-us/library/4b612y2s%28v=vs.100%29.aspx
     // But it's ok to use as identifier in this context: http://msdn.microsoft.com/en-us/library/8d7y7wz6%28v=vs.100%29.aspx
-    Ogre::String event;
+    std::string event;
 
-    void AddMotorSource(unsigned int source, unsigned int motor);
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section AXLES                                                              */
-/* -------------------------------------------------------------------------- */
-
-struct Axle
-{
-    Node::Ref wheels[2][2];
-    std::vector<DifferentialType> options; //!< Order matters!
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section INTERAXLES                                                         */
-/* -------------------------------------------------------------------------- */
-
-struct InterAxle
-{
-    int a1 = 0;
-    int a2 = 0;
-    std::vector<DifferentialType> options; //!< Order matters!
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section TRANSFER_CASE                                                      */
-/* -------------------------------------------------------------------------- */
-
-struct TransferCase
-{
-    TransferCase():
-        a1(0),
-        a2(-1),
-        has_2wd(true),
-        has_2wd_lo(false),
-        gear_ratios({1.0f})
-    {}
-
-    int a1;
-    int a2;
-    bool has_2wd;
-    bool has_2wd_lo;
-    std::vector<float> gear_ratios;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section BEAMS                                                              */
-/* -------------------------------------------------------------------------- */
-
-struct Beam
-{
-    Beam():
-        options(0),
-        extension_break_limit(0), /* This is default */
-        _has_extension_break_limit(false)
-    {}
-
-    BITMASK_PROPERTY(options, 1, OPTION_i_INVISIBLE, HasFlag_i_Invisible, SetFlag_i_Invisible);
-    BITMASK_PROPERTY(options, 2, OPTION_r_ROPE     , HasFlag_r_Rope     , SetFlag_r_Rope     );
-    BITMASK_PROPERTY(options, 3, OPTION_s_SUPPORT  , HasFlag_s_Support  , SetFlag_s_Support  );
-
-    Node::Ref nodes[2];
-    unsigned int options; //!< Bit flags
-    float extension_break_limit;
-    bool _has_extension_break_limit;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section CAMERAS                                                            */
-/* -------------------------------------------------------------------------- */
-
-struct Camera
-{
-    Node::Ref center_node;
-    Node::Ref back_node;
-    Node::Ref left_node;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section CINECAM                                                            */
-/* -------------------------------------------------------------------------- */
-
-struct Cinecam
-{
-    Cinecam():
-        position(Ogre::Vector3::ZERO),
-        spring(8000.f),
-        damping(800.f),
-        node_mass(20.f)
-    {}
-
-    Ogre::Vector3 position;
-    Node::Ref nodes[8];
-    float spring;
-    float damping;
-    float node_mass;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section COLLISIONBOXES                                                     */
-/* -------------------------------------------------------------------------- */
-
-struct CollisionBox
-{
-    CollisionBox()
+    void AddMotorSource(unsigned int source, unsigned int motor)
     {
-        nodes.reserve(25);
+        MotorSource motor_source;
+        motor_source.source = source;
+        motor_source.motor = motor;
+        this->motor_sources.push_back(motor_source);
     }
-
-    std::vector<Node::Ref> nodes;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Section CRUISECONTROL                                                      */
-/* -------------------------------------------------------------------------- */
-
-struct CruiseControl
+struct AirbrakesLine
 {
-    CruiseControl():
-        min_speed(0),
-        autobrake(0)
-    {}
-
-    float min_speed;
-    int autobrake;
+    NodeRef_t reference_node;
+    NodeRef_t x_axis_node;
+    NodeRef_t y_axis_node;
+    NodeRef_t aditional_node;
+    Ogre::Vector3 offset = Ogre::Vector3::ZERO;
+    float width = -1.f;
+    float height = -1.f;
+    float max_inclination_angle = -1.f;
+    float texcoord_x1 = -1.f;
+    float texcoord_x2 = -1.f;
+    float texcoord_y1 = -1.f;
+    float texcoord_y2 = -1.f;
+    float lift_coefficient = -1.f;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Section AUTHOR                                                             */
-/* -------------------------------------------------------------------------- */
-
-struct Author
+struct AnimatorsLine
 {
-    Author():
-        forum_account_id(0),
-        _has_forum_account(false)
-    {}
-
-    Ogre::String type;
-    unsigned int forum_account_id;
-    Ogre::String name;
-    Ogre::String email;
-    bool _has_forum_account;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Inline - section FILEINFO                                                  */
-/* -------------------------------------------------------------------------- */
-
-struct Fileinfo
-{
-    Fileinfo():
-        category_id(-1),
-        file_version(0) /* Default */
-    {}
-
-    Ogre::String unique_id;
-    int category_id;
-    int file_version;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section ENGINE                                                             */
-/* -------------------------------------------------------------------------- */
-
-struct Engine
-{
-    Engine():
-        shift_down_rpm(0),
-        shift_up_rpm(0),
-        torque(0),
-        global_gear_ratio(0),
-        reverse_gear_ratio(0),
-        neutral_gear_ratio(0)
+    struct AeroAnimator
     {
-        gear_ratios.reserve(5);	
-    }
+        static const unsigned int OPTION_THROTTLE = BITMASK(1);
+        static const unsigned int OPTION_RPM      = BITMASK(2);
+        static const unsigned int OPTION_TORQUE   = BITMASK(3);
+        static const unsigned int OPTION_PITCH    = BITMASK(4);
+        static const unsigned int OPTION_STATUS   = BITMASK(5);
 
-    float shift_down_rpm;
-    float shift_up_rpm;
-    float torque;
-    float global_gear_ratio;
-    float reverse_gear_ratio;
-    float neutral_gear_ratio;
-    std::vector<float> gear_ratios;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section ENGOPTION                                                          */
-/* -------------------------------------------------------------------------- */
-
-struct Engoption
-{
-    Engoption();
-
-    enum EngineType
-    {
-        ENGINE_TYPE_c_CAR   = 'c',
-        ENGINE_TYPE_e_ECAR  = 'e',
-        ENGINE_TYPE_t_TRUCK = 't',
-
-        ENGINE_TYPE_INVALID = 0xFFFFFFFF
+        unsigned int flags = 0u;
+        unsigned int motor = 0u;
     };
-
-    float inertia;
-    EngineType type;
-    float clutch_force;
-    float shift_time;       //!< Seconds
-    float clutch_time;      //!< Seconds
-    float post_shift_time;  //!< Seconds
-    float idle_rpm;
-    float stall_rpm;
-    float max_idle_mixture;
-    float min_idle_mixture;
-    float braking_torque;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section ENGTURBO                                                           */
-/* -------------------------------------------------------------------------- */
- 
-struct Engturbo
-{
-    Engturbo();
-    
-    int version;
-    float tinertiaFactor;
-    int nturbos;
-    float param1;
-    float param2;
-    float param3;
-    float param4;
-    float param5;
-    float param6;
-    float param7;
-    float param8;
-    float param9;
-    float param10;
-    float param11;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section EXHAUSTS                                                           */
-/* -------------------------------------------------------------------------- */
-
-struct Exhaust
-{
-    Node::Ref reference_node;
-    Node::Ref direction_node;
-    Ogre::String particle_name;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section EXTCAMERA                                                          */
-/* -------------------------------------------------------------------------- */
-
-struct ExtCamera
-{
-    ExtCamera():
-        mode(MODE_CLASSIC)
-    {}
-
-    enum Mode
-    {
-        MODE_CLASSIC = 0, // Hardcoded in simulation code, do not change
-        MODE_CINECAM = 1, // Hardcoded in simulation code, do not change
-        MODE_NODE    = 2, // Hardcoded in simulation code, do not change
-
-        MODE_INVALID = 0xFFFFFFFF
-    };
-
-    Mode mode;
-    Node::Ref node;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Directive FORSET                                                           */
-/* -------------------------------------------------------------------------- */
-
-struct Forset
-{
-    std::vector<Node::Range> node_ranges;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section BRAKES                                                             */
-/* -------------------------------------------------------------------------- */
-
-struct Brakes
-{
-    Brakes():
-        default_braking_force(30000), // Default
-        parking_brake_force(-1.f) // Empty value
-    {}
-
-    float default_braking_force;
-    float parking_brake_force;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section ANTI_LOCK_BRAKES                                                   */
-/* -------------------------------------------------------------------------- */
-
-struct AntiLockBrakes
-{
-    AntiLockBrakes();
-
-    float regulation_force;
-    unsigned int min_speed;
-    float pulse_per_sec;
-    bool attr_is_on;
-    bool attr_no_dashboard;
-    bool attr_no_toggle;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section TRACTION_CONTROL                                                   */
-/* -------------------------------------------------------------------------- */
-
-struct TractionControl
-{
-    TractionControl();
-
-    float regulation_force;
-    float wheel_slip;
-    float fade_speed;
-    float pulse_per_sec;
-    bool attr_is_on;
-    bool attr_no_dashboard;
-    bool attr_no_toggle;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section WHEELDETACHERS                                                     */
-/* -------------------------------------------------------------------------- */
-
-struct WheelDetacher
-{
-    WheelDetacher():
-        wheel_id(0),
-        detacher_group(0)
-    {}
-
-    int wheel_id;
-    int detacher_group;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section WHEELS                                                             */
-/* -------------------------------------------------------------------------- */
-
-/** Syntax-sugar struct to hold enums */
-struct Wheels
-{
-    enum Braking
-    {
-        BRAKING_NO                = 0,
-        BRAKING_YES               = 1,
-        BRAKING_DIRECTIONAL_LEFT  = 2,
-        BRAKING_DIRECTIONAL_RIGHT = 3,
-        BRAKING_ONLY_FOOT         = 4,
-
-        BRAKING_INVALID           = 0xFFFFFFFF
-    };
-
-    enum Propulsion
-    {
-        PROPULSION_NONE     = 0,
-        PROPULSION_FORWARD  = 1,
-        PROPULSION_BACKWARD = 2,
-
-        PROPULSION_INVALID  = 0xFFFFFFFF
-    };
-};
-
-/** Attributes common to all wheel definitions */
-struct BaseWheel
-{
-    BaseWheel():
-        width(0),
-        num_rays(0),
-        braking(Wheels::BRAKING_NO),
-        mass(0)
-    {}
-
-    virtual ~BaseWheel()
-    {}
-
-    float width;
-    unsigned int num_rays;
-    Node::Ref nodes[2];
-    Node::Ref rigidity_node;
-    Wheels::Braking braking;
-    Wheels::Propulsion propulsion;
-    Node::Ref reference_arm_node;
-    float mass;
-
-};
-
-/** The actual wheel */
-struct Wheel: BaseWheel
-{
-    Wheel():
-        BaseWheel(),
-        radius(0),
-        face_material_name("tracks/wheelface"),
-        band_material_name("tracks/wheelband1")
-    {}
-
-    float radius;
-    float springiness;
-    float damping;
-    Ogre::String face_material_name;
-    Ogre::String band_material_name;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section WHEELS_2                                                           */
-/* -------------------------------------------------------------------------- */
-
-/** Attributes common to WHEELS_2 and newer definitions */
-struct BaseWheel2: BaseWheel
-{
-    BaseWheel2():
-        BaseWheel(),
-        rim_radius(0),
-        tyre_radius(0),
-        tyre_springiness(0),
-        tyre_damping(0)
-    {}
-
-    float rim_radius;
-    float tyre_radius;
-    float tyre_springiness;
-    float tyre_damping;
-};
-
-struct Wheel2: BaseWheel2
-{
-    Wheel2():
-        BaseWheel2(),
-        rim_springiness(0),
-        rim_damping(0),
-        face_material_name("tracks/wheelface"),
-        band_material_name("tracks/wheelband1")
-    {}
-
-    Ogre::String face_material_name;
-    Ogre::String band_material_name;
-    float rim_springiness;
-    float rim_damping;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section MESHWHEELS                                                         */
-/* -------------------------------------------------------------------------- */
-
-struct MeshWheel: BaseWheel
-{
-    MeshWheel():
-        BaseWheel(),
-        side(SIDE_INVALID),
-        rim_radius(0),
-        tyre_radius(0),
-        _is_meshwheel2(false)
-    {}
-
-    enum Side
-    {
-        SIDE_INVALID   = 0,
-        SIDE_RIGHT     = 'r',
-        SIDE_LEFT      = 'l'
-    };
-
-    Side side;
-    Ogre::String mesh_name;
-    Ogre::String material_name;
-    float rim_radius;
-    float tyre_radius;
-    float spring;
-    float damping;
-    bool _is_meshwheel2;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section FLARES FLARES2                                                     */
-/* -------------------------------------------------------------------------- */
-
-/** Used for both 'flares' and 'flares_2' sections
-*/
-struct Flare2
-{
-    Flare2():
-        offset(0, 0, 1), /* Section 'flares(1)' has offset.z hardcoded to 1 */
-        type(RoR::FlareType::HEADLIGHT),
-        control_number(-1),
-        blink_delay_milis(-2),
-        size(-1)
-    {}
-
-    Node::Ref reference_node;
-    Node::Ref node_axis_x;
-    Node::Ref node_axis_y;
-    Ogre::Vector3 offset;
-    RoR::FlareType type;
-    int control_number; //!< Only 'u' type flares.
-    std::string dashboard_link; //!< Only 'd' type flares.
-    int blink_delay_milis;
-    float size;
-    Ogre::String material_name;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section FLEXBODIES                                                         */
-/* -------------------------------------------------------------------------- */
-
-struct Flexbody
-{
-    Flexbody():
-        offset(Ogre::Vector3::ZERO),
-        rotation(Ogre::Vector3::ZERO)
-    {
-    }
-
-    Node::Ref reference_node;
-    Node::Ref x_axis_node;
-    Node::Ref y_axis_node;
-    Ogre::Vector3 offset;
-    Ogre::Vector3 rotation;
-    Ogre::String mesh_name;
-    std::list<Animation> animations;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section FLEX_BODY_WHEELS                                                   */
-/* -------------------------------------------------------------------------- */
-
-struct FlexBodyWheel: BaseWheel2
-{
-    FlexBodyWheel():
-        side(MeshWheel::SIDE_INVALID),
-        rim_springiness(0),
-        rim_damping(0)
-    {}
-
-    MeshWheel::Side side;
-
-    float rim_springiness;
-    float rim_damping;
-    Ogre::String rim_mesh_name;
-    Ogre::String tyre_mesh_name;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section FUSEDRAG                                                           */
-/* -------------------------------------------------------------------------- */
-
-struct Fusedrag
-{
-    Fusedrag();
-
-    bool autocalc;
-    Node::Ref front_node;
-    Node::Ref rear_node;
-    float approximate_width;
-    Ogre::String airfoil_name;
-    float area_coefficient;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section HOOKS                                                              */
-/* -------------------------------------------------------------------------- */
-
-struct Hook
-{
-    Hook();
-
-    Node::Ref node;
-    float option_hook_range;
-    float option_speed_coef;
-    float option_max_force;
-    int option_hookgroup;
-    int option_lockgroup;
-    float option_timer;
-    float option_min_range_meters;
-    bool flag_self_lock :1;
-    bool flag_auto_lock :1;
-    bool flag_no_disable:1;
-    bool flag_no_rope   :1;
-    bool flag_visible   :1;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section SHOCKS                                                             */
-/* -------------------------------------------------------------------------- */
-
-struct Shock
-{
-    Shock();
-
-    BITMASK_PROPERTY(options, 1, OPTION_i_INVISIBLE    , HasOption_i_Invisible,   SetOption_i_Invisible) 
-    // Stability active suspension can be made with "L" for suspension on the truck's left and "R" for suspension on the truck's right. 
-    BITMASK_PROPERTY(options, 2, OPTION_L_ACTIVE_LEFT  , HasOption_L_ActiveLeft,  SetOption_L_ActiveLeft) 
-    // Stability active suspension can be made with "L" for suspension on the truck's left and "R" for suspension on the truck's right. 
-    BITMASK_PROPERTY(options, 3, OPTION_R_ACTIVE_RIGHT , HasOption_R_ActiveRight, SetOption_R_ActiveRight)
-    BITMASK_PROPERTY(options, 4, OPTION_m_METRIC       , HasOption_m_Metric,      SetOption_m_Metric) 
-
-    Node::Ref nodes[2];
-    float spring_rate;         //!< The 'stiffness' of the shock. The higher the value, the less the shock will move for a given bump. 
-    float damping;             //!< The 'resistance to motion' of the shock. The best value is given by this equation:  2 * sqrt(suspended mass * springness)
-    float short_bound;         //!< Maximum contraction. The shortest length the shock can be, as a proportion of its original length. "0" means the shock will not be able to contract at all, "1" will let it contract all the way to zero length. If the shock tries to shorten more than this value allows, it will become as rigid as a normal beam. 
-    float long_bound;          //!< Maximum extension. The longest length a shock can be, as a proportion of its original length. "0" means the shock will not be able to extend at all. "1" means the shock will be able to double its length. Higher values allow for longer extension.
-    float precompression;      //!< Changes compression or extension of the suspension when the truck spawns. This can be used to "level" the suspension of a truck if it sags in game. The default value is 1.0. 
-    unsigned int options;      //!< Bit flags.
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section SHOCKS_2                                                           */
-/* -------------------------------------------------------------------------- */
-
-struct Shock2
-{
-    Shock2();
-
-    BITMASK_PROPERTY(options, 1, OPTION_i_INVISIBLE       , HasOption_i_Invisible,      SetOption_i_Invisible) 
-    // soft bump boundaries, use when shocks reach limiters too often and "jumprebound" (default is hard bump boundaries)
-    BITMASK_PROPERTY(options, 2, OPTION_s_SOFT_BUMP_BOUNDS, HasOption_s_SoftBumpBounds, SetOption_s_SoftBumpBounds)
-    // metric values for shortbound/longbound applying to the length of the beam.
-    BITMASK_PROPERTY(options, 3, OPTION_m_METRIC          , HasOption_m_Metric,         SetOption_m_Metric)
-    // Absolute metric values for shortbound/longbound, settings apply without regarding to the original length of the beam.(Use with caution, check ror.log for errors)
-    BITMASK_PROPERTY(options, 4, OPTION_M_ABSOLUTE_METRIC , HasOption_M_AbsoluteMetric, SetOption_M_AbsoluteMetric)  
-
-    Node::Ref nodes[2];
-    float spring_in;                  //!< Spring value applied when the shock is compressing.
-    float damp_in;                    //!< Damping value applied when the shock is compressing. 
-    float progress_factor_spring_in;  //!< Progression factor for springin. A value of 0 disables this option. 1...x as multipliers, example:maximum springrate == springrate + (factor*springrate)
-    float progress_factor_damp_in;    //!< Progression factor for dampin. 0 = disabled, 1...x as multipliers, example:maximum dampingrate == springrate + (factor*dampingrate)
-    float spring_out;                 //!< spring value applied when shock extending
-    float damp_out;                   //!< damping value applied when shock extending
-    float progress_factor_spring_out; //!< Progression factor springout, 0 = disabled, 1...x as multipliers, example:maximum springrate == springrate + (factor*springrate)
-    float progress_factor_damp_out;   //!< Progression factor dampout, 0 = disabled, 1...x as multipliers, example:maximum dampingrate == springrate + (factor*dampingrate)
-    float short_bound;                //!< Maximum contraction limit, in percentage ( 1.00 = 100% )
-    float long_bound;                 //!< Maximum extension limit, in percentage ( 1.00 = 100% )
-    float precompression;             //!< Changes compression or extension of the suspension when the truck spawns. This can be used to "level" the suspension of a truck if it sags in game. The default value is 1.0.  
-    unsigned int options;             //!< Bit flags.
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section SHOCKS_2                                                           */
-/* -------------------------------------------------------------------------- */
-
-struct Shock3
-{
-    Shock3();
-
-    BITMASK_PROPERTY(options, 1, OPTION_i_INVISIBLE       , HasOption_i_Invisible,      SetOption_i_Invisible) 
-    // metric values for shortbound/longbound applying to the length of the beam.
-    BITMASK_PROPERTY(options, 2, OPTION_m_METRIC          , HasOption_m_Metric,         SetOption_m_Metric)
-    // Absolute metric values for shortbound/longbound, settings apply without regarding to the original length of the beam.(Use with caution, check ror.log for errors)
-    BITMASK_PROPERTY(options, 3, OPTION_M_ABSOLUTE_METRIC , HasOption_M_AbsoluteMetric, SetOption_M_AbsoluteMetric)  
-
-    Node::Ref nodes[2];
-    float spring_in;                  //!< Spring value applied when the shock is compressing.
-    float damp_in;                    //!< Damping value applied when the shock is compressing. 
-    float spring_out;                 //!< Spring value applied when shock extending
-    float damp_out;                   //!< Damping value applied when shock extending
-    float damp_in_slow;               //!< Damping value applied when shock is commpressing slower than split in velocity
-    float split_vel_in;               //!< Split velocity in (m/s) - threshold for slow / fast damping during compression
-    float damp_in_fast;               //!< Damping value applied when shock is commpressing faster than split in velocity
-    float damp_out_slow;              //!< Damping value applied when shock is commpressing slower than split out velocity
-    float split_vel_out;              //!< Split velocity in (m/s) - threshold for slow / fast damping during extension
-    float damp_out_fast;              //!< Damping value applied when shock is commpressing faster than split out velocity
-    float short_bound;                //!< Maximum contraction limit, in percentage ( 1.00 = 100% )
-    float long_bound;                 //!< Maximum extension limit, in percentage ( 1.00 = 100% )
-    float precompression;             //!< Changes compression or extension of the suspension when the truck spawns. This can be used to "level" the suspension of a truck if it sags in game. The default value is 1.0.  
-    unsigned int options;             //!< Bit flags.
-};
-
-/* -------------------------------------------------------------------------- */
-/* Inline-section SET_SKELETON_DISPLAY                                        */
-/* -------------------------------------------------------------------------- */
-
-struct SkeletonSettings
-{
-    SkeletonSettings():
-        visibility_range_meters(150.f),
-        beam_thickness_meters(BEAM_SKELETON_DIAMETER)
-    {}
-
-    float visibility_range_meters;
-    float beam_thickness_meters;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section HYDROS                                                             */
-/* -------------------------------------------------------------------------- */
-
-struct Hydro
-{
-
-    static const char OPTION_n_NORMAL                    = 'n';
-    static const char OPTION_i_INVISIBLE                 = 'i';
-
-    /* Useful for trucks */
-
-    static const char OPTION_s_DISABLE_ON_HIGH_SPEED     = 's';
-
-    /* Useful for planes: These can be used to control flight surfaces, or to create a thrust vectoring system.  */
-
-    static const char OPTION_a_INPUT_AILERON             = 'a';
-    static const char OPTION_r_INPUT_RUDDER              = 'r';
-    static const char OPTION_e_INPUT_ELEVATOR            = 'e';
-    static const char OPTION_u_INPUT_AILERON_ELEVATOR    = 'u';
-    static const char OPTION_v_INPUT_InvAILERON_ELEVATOR = 'v';
-    static const char OPTION_x_INPUT_AILERON_RUDDER      = 'x';
-    static const char OPTION_y_INPUT_InvAILERON_RUDDER   = 'y';
-    static const char OPTION_g_INPUT_ELEVATOR_RUDDER     = 'g';
-    static const char OPTION_h_INPUT_InvELEVATOR_RUDDER  = 'h';
-
-    inline bool HasFlag_a() { return options.find(RigDef::Hydro::OPTION_a_INPUT_AILERON)             != std::string::npos; }
-    inline bool HasFlag_e() { return options.find(RigDef::Hydro::OPTION_e_INPUT_ELEVATOR)            != std::string::npos; }
-    inline bool HasFlag_g() { return options.find(RigDef::Hydro::OPTION_g_INPUT_ELEVATOR_RUDDER)     != std::string::npos; }
-    inline bool HasFlag_h() { return options.find(RigDef::Hydro::OPTION_h_INPUT_InvELEVATOR_RUDDER)  != std::string::npos; }
-    inline bool HasFlag_i() { return options.find(RigDef::Hydro::OPTION_i_INVISIBLE)                 != std::string::npos; }
-    inline bool HasFlag_r() { return options.find(RigDef::Hydro::OPTION_r_INPUT_RUDDER)              != std::string::npos; }
-    inline bool HasFlag_s() { return options.find(RigDef::Hydro::OPTION_s_DISABLE_ON_HIGH_SPEED)     != std::string::npos; }
-    inline bool HasFlag_u() { return options.find(RigDef::Hydro::OPTION_u_INPUT_AILERON_ELEVATOR)    != std::string::npos; }
-    inline bool HasFlag_v() { return options.find(RigDef::Hydro::OPTION_v_INPUT_InvAILERON_ELEVATOR) != std::string::npos; }
-    inline bool HasFlag_x() { return options.find(RigDef::Hydro::OPTION_x_INPUT_AILERON_RUDDER)      != std::string::npos; }
-    inline bool HasFlag_y() { return options.find(RigDef::Hydro::OPTION_y_INPUT_InvAILERON_RUDDER)   != std::string::npos; }
-
-    inline void AddFlag(char flag) { options += flag; }
-
-    Node::Ref nodes[2];
-    float lenghtening_factor = 0;
-    std::string options;
-    Inertia inertia;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section ANIMATORS                                                          */
-/* -------------------------------------------------------------------------- */
-
-struct AeroAnimator
-{
-    AeroAnimator():
-        flags(0),
-        motor(0)
-    {}
-
-    static const unsigned int OPTION_THROTTLE = BITMASK(1);
-    static const unsigned int OPTION_RPM      = BITMASK(2);
-    static const unsigned int OPTION_TORQUE   = BITMASK(3);
-    static const unsigned int OPTION_PITCH    = BITMASK(4);
-    static const unsigned int OPTION_STATUS   = BITMASK(5);
-
-    unsigned int flags;
-    unsigned int motor;
-};
-
-struct Animator
-{
-    Animator():
-        lenghtening_factor(0),
-        flags(0),
-        short_limit(0),
-        long_limit(0)
-    {}
 
     static const unsigned int OPTION_VISIBLE           = BITMASK(1);
     static const unsigned int OPTION_INVISIBLE         = BITMASK(2);
@@ -1272,92 +570,693 @@ struct Animator
     static const unsigned int OPTION_SHORT_LIMIT       = BITMASK(28);
     static const unsigned int OPTION_LONG_LIMIT        = BITMASK(29);
 
-    Node::Ref nodes[2];
-    float lenghtening_factor;
-    unsigned int flags;
-    float short_limit;
-    float long_limit;
+    NodeRef_t nodes[2];
+    float lenghtening_factor = 0.f;
+    unsigned int flags = 0u;
+    float short_limit = 0.f;
+    float long_limit = 0.f;
     AeroAnimator aero_animator;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Section COMMANDS & COMMANDS_2 (unified)                                    */
-/* -------------------------------------------------------------------------- */
-
-struct Command2
+struct AntiLockBrakesLine
 {
-    Command2();
-
-    unsigned int _format_version;
-    Node::Ref nodes[2];
-    float shorten_rate;
-    float lengthen_rate;
-    float max_contraction;
-    float max_extension;
-    unsigned int contract_key;
-    unsigned int extend_key;
-    Ogre::String description;
-    Inertia inertia;
-    float affect_engine;
-    bool needs_engine;
-    bool plays_sound;
-
-    bool option_i_invisible;
-    bool option_r_rope;
-    bool option_c_auto_center;
-    bool option_f_not_faster;
-    bool option_p_1press;
-    bool option_o_1press_center;
+    float regulation_force = 0.f;
+    unsigned int min_speed = 0;
+    float pulse_per_sec = 0.f;
+    bool attr_is_on = true;
+    bool attr_no_dashboard = false;
+    bool attr_no_toggle = false;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Section ROTATORS                                                           */
-/* -------------------------------------------------------------------------- */
-
-struct Rotator
+struct AuthorLine
 {
-    Rotator():
-        rate(0),
-        spin_left_key(0),
-        spin_right_key(0),
-        engine_coupling(1), /* Default */
-        needs_engine(false) /* Default */
+    std::string type;
+    unsigned int forum_account_id;
+    std::string name;
+    std::string email;
+    bool _has_forum_account;
+};
+
+struct AxlesLine
+{
+    NodeRef_t wheels[2][2];
+    std::vector<DifferentialType> options; //!< Order matters!
+};
+
+struct BeamsLine
+{
+    BeamsLine():
+        options(0),
+        extension_break_limit(0), /* This is default */
+        _has_extension_break_limit(false)
     {}
 
-    Node::Ref axis_nodes[2];
-    Node::Ref base_plate_nodes[4];
-    Node::Ref rotating_plate_nodes[4];
+    BITMASK_PROPERTY(options, 1, OPTION_i_INVISIBLE, HasFlag_i_Invisible, SetFlag_i_Invisible);
+    BITMASK_PROPERTY(options, 2, OPTION_r_ROPE     , HasFlag_r_Rope     , SetFlag_r_Rope     );
+    BITMASK_PROPERTY(options, 3, OPTION_s_SUPPORT  , HasFlag_s_Support  , SetFlag_s_Support  );
 
-    float rate;
-    unsigned int spin_left_key;
-    unsigned int spin_right_key;
-    Inertia inertia;
-    float engine_coupling;
-    bool needs_engine;
+    NodeRef_t nodes[2];
+    unsigned int options; //!< Bit flags
+    float extension_break_limit;
+    bool _has_extension_break_limit;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Section ROTATORS_2                                                         */
-/* -------------------------------------------------------------------------- */
-
-struct Rotator2: public Rotator
+struct BrakesLine
 {
-    Rotator2():
-        Rotator(),
-        rotating_force(10000000), /* Default */
-        tolerance(0)
-    {}
-
-    float rotating_force;
-    float tolerance;
-    Ogre::String description;
+    float default_braking_force = -1.f;
+    float parking_brake_force = -1.f;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Section TRIGGERS                                                           */
-/* -------------------------------------------------------------------------- */
+struct CabLine
+{
+    bool GetOption_D_ContactBuoyant()
+    {
+        return BITMASK_IS_1(options, OPTION_b_BUOYANT) && BITMASK_IS_1(options, OPTION_c_CONTACT);
+    }
 
-struct Trigger
+    bool GetOption_F_10xTougherBuoyant()
+    {
+        return BITMASK_IS_1(options, OPTION_b_BUOYANT) && BITMASK_IS_1(options, OPTION_p_10xTOUGHER);
+    }
+
+    bool GetOption_S_UnpenetrableBuoyant()
+    {
+        return BITMASK_IS_1(options, OPTION_b_BUOYANT) && BITMASK_IS_1(options, OPTION_u_INVULNERABLE);
+    }
+
+    static const unsigned int OPTION_c_CONTACT           = BITMASK(1);
+    static const unsigned int OPTION_b_BUOYANT           = BITMASK(2);
+    static const unsigned int OPTION_p_10xTOUGHER        = BITMASK(3);
+    static const unsigned int OPTION_u_INVULNERABLE      = BITMASK(4);
+    static const unsigned int OPTION_s_BUOYANT_NO_DRAG   = BITMASK(5);
+    static const unsigned int OPTION_r_BUOYANT_ONLY_DRAG = BITMASK(6);
+
+    NodeRef_t nodes[3];
+    unsigned int options = 0u;
+};
+
+struct CamerasLine
+{
+    NodeRef_t center_node;
+    NodeRef_t back_node;
+    NodeRef_t left_node;
+};
+
+struct CinecamLine
+{
+    Ogre::Vector3 position = Ogre::Vector3::ZERO;
+    NodeRef_t nodes[8];
+    float spring = -1.f;
+    float damping = -1.f;
+    float node_mass = -1.f;
+};
+
+struct CollisionboxesLine
+{
+    std::vector<NodeRef_t> nodes;
+};
+
+struct CommandsLine: public CommandsCommon
+{
+    float rate = 0.f;
+};
+
+struct Commands2Line: public CommandsCommon
+{
+    float shorten_rate = 0.f;
+    float lengthen_rate = 0.f;
+};
+
+struct CruisecontrolLine
+{
+    float min_speed;
+    int autobrake;
+};
+
+struct EngineLine
+{
+    float shift_down_rpm = -1.f;
+    float shift_up_rpm = -1.f;
+    float torque = -1.f;
+    float global_gear_ratio = -1.f;
+    float reverse_gear_ratio = -1.f;
+    float neutral_gear_ratio = -1.f;
+    std::vector<float> gear_ratios;
+};
+
+struct EngoptionLine
+{
+    enum EngineType
+    {
+        ENGINE_TYPE_c_CAR   = 'c',
+        ENGINE_TYPE_e_ECAR  = 'e',
+        ENGINE_TYPE_t_TRUCK = 't',
+
+        ENGINE_TYPE_INVALID = 0xFFFFFFFF
+    };
+
+    float inertia = 10.f;
+    EngineType type = ENGINE_TYPE_t_TRUCK;
+    float clutch_force = -1.f;
+    float shift_time_sec = -1.f;
+    float clutch_time_sec = -1.f;
+    float post_shift_time_sec = -1.f;
+    float idle_rpm = -1.f;
+    float stall_rpm = -1.f;
+    float max_idle_mixture = -1.f;
+    float min_idle_mixture = -1.f;
+    float braking_torque = -1.f;
+};
+
+struct EngturboLine
+{
+    int version = -1;
+    float tinertiaFactor = 1.f;
+    int nturbos = 1;
+    float param1  = 9999;
+    float param2  = 9999;
+    float param3  = 9999;
+    float param4  = 9999;
+    float param5  = 9999;
+    float param6  = 9999;
+    float param7  = 9999;
+    float param8  = 9999;
+    float param9  = 9999;
+    float param10 = 9999;
+    float param11 = 9999;
+};
+
+struct ExhaustsLine
+{
+    NodeRef_t reference_node;
+    NodeRef_t direction_node;
+    std::string particle_name;
+};
+
+struct ExtcameraLine
+{
+    enum Mode
+    {
+        MODE_CLASSIC = 0, // Hardcoded in simulation code, do not change
+        MODE_CINECAM = 1, // Hardcoded in simulation code, do not change
+        MODE_NODE    = 2, // Hardcoded in simulation code, do not change
+
+        MODE_INVALID = 0xFFFFFFFF
+    };
+
+    Mode mode = MODE_CLASSIC;
+    NodeRef_t node;
+};
+
+struct FileinfoLine
+{
+    std::string unique_id;
+    int category_id;
+    int file_version;
+};
+
+struct FlaresLine: public FlaresCommon
+{};
+
+struct Flares2Line: public FlaresCommon
+{};
+
+struct FlexbodyCameraModeLine: public CameraModeCommon
+{};
+
+struct FlexbodiesLine
+{
+    NodeRef_t reference_node;
+    NodeRef_t x_axis_node;
+    NodeRef_t y_axis_node;
+    Ogre::Vector3 offset = Ogre::Vector3::ZERO;
+    Ogre::Vector3 rotation = Ogre::Vector3::ZERO;
+    std::string mesh_name;
+    std::list<AddAnimationLine> animations;
+};
+
+struct FlexbodywheelsLine: Wheels2Common
+{
+    WheelSide side = SIDE_INVALID;
+    float rim_springiness;
+    float rim_damping;
+    std::string rim_mesh_name;
+    std::string tyre_mesh_name;
+};
+
+struct ForsetLine
+{
+    std::vector<NodeRangeCommon> node_ranges;
+};
+
+struct FusedragLine
+{
+    bool autocalc = false;
+    NodeRef_t front_node;
+    NodeRef_t rear_node;
+    float approximate_width;
+    std::string airfoil_name = "NACA0009.afl";
+    float area_coefficient = 1.f;
+};
+
+struct GlobalsLine
+{
+    float dry_mass = 0.f;
+    float cargo_mass = 0.f;
+    std::string material_name;
+};
+
+struct GuiSettingsLine
+{
+    std::string key;
+    std::string value;
+};
+
+struct HooksLine
+{
+    NodeRef_t node;
+    float option_hook_range = HOOK_RANGE_DEFAULT;
+    float option_speed_coef = 1.f;
+    float option_max_force = HOOK_FORCE_DEFAULT;
+    int option_hookgroup = -1;
+    int option_lockgroup = NODE_LOCKGROUP_DEFAULT;
+    float option_timer = HOOK_LOCK_TIMER_DEFAULT;
+    float option_min_range_meters = 0.f;
+    bool flag_self_lock = false;
+    bool flag_auto_lock = false;
+    bool flag_no_disable = false;
+    bool flag_no_rope = false;
+    bool flag_visible = false;
+};
+
+struct HydrosLine
+{
+    NodeRef_t nodes[2];
+    float lenghtening_factor = 0;
+    std::string options;
+    InertiaCommon inertia;
+};
+
+struct InteraxlesLine
+{
+    int a1 = 0;
+    int a2 = 0;
+    std::vector<DifferentialType> options; //!< Order matters!
+};
+
+struct LockgroupsLine
+{
+    int number = 0;
+    std::vector<NodeRef_t> nodes;
+};
+
+struct ManagedmaterialsLine
+{
+    std::string name;
+    ManagedMaterialType type;
+    // Textures:
+    std::string diffuse_map;
+    std::string damaged_diffuse_map;
+    std::string specular_map;
+};
+
+struct MaterialflarebindingsLine
+{
+    unsigned int flare_number = 0;
+    std::string material_name;
+};
+
+struct MeshwheelsLine: public MeshwheelsShared
+{};
+
+struct Meshwheels2Line: public MeshwheelsShared
+{};
+
+struct MinimassLine
+{
+    enum Option
+    {
+        OPTION_n_FILLER  = 'n',     //!< Updates the global minimass
+        OPTION_l_SKIP_LOADED = 'l'  //!< Only apply minimum mass to nodes without "L" option.
+    };
+
+    float min_mass = DEFAULT_MINIMASS; //!< minimum node mass in Kg
+    bool option_l_skip_loaded = false;
+};
+
+struct NodecollisionLine
+{
+    NodeRef_t node;
+    float radius = 0.f;
+};
+
+struct NodesLine: public NodesCommon
+{
+    RoR::NodeNum_t num;
+};
+
+struct Nodes2Line: public NodesCommon
+{
+    std::string name;
+};
+
+struct ParticlesLine
+{
+    NodeRef_t emitter_node;
+    NodeRef_t reference_node;
+    std::string particle_system_name;
+};
+
+struct PistonpropsLine
+{
+    NodeRef_t reference_node;
+    NodeRef_t axis_node;
+    NodeRef_t blade_tip_nodes[4];
+    NodeRef_t couple_node;
+    float turbine_power_kW = 0.f;
+    float pitch = 0.f;
+    std::string airfoil;
+};
+
+struct PropCameraModeLine: public CameraModeCommon
+{};
+
+struct PropsLine
+{
+    struct DashboardSpecial
+    {
+        DashboardSpecial():
+            offset(Ogre::Vector3::ZERO), // Default depends on right/left-hand dashboard placement
+            rotation_angle(160.f),
+            _offset_is_set(false),
+            mesh_name("dirwheel.mesh")
+        {}
+
+        Ogre::Vector3 offset;
+        bool _offset_is_set;
+        float rotation_angle;
+        std::string mesh_name;
+    };
+
+    struct BeaconSpecial
+    {
+        BeaconSpecial():
+            color(1.0, 0.5, 0.0),
+            flare_material_name("tracks/beaconflare")
+        {}
+
+        std::string flare_material_name;
+        Ogre::ColourValue color;
+    };
+
+    NodeRef_t reference_node;
+    NodeRef_t x_axis_node;
+    NodeRef_t y_axis_node;
+    Ogre::Vector3 offset = Ogre::Vector3::ZERO;
+    Ogre::Vector3 rotation = Ogre::Vector3::ZERO;
+    std::string mesh_name;
+    SpecialProp special = SpecialProp::INVALID;
+    BeaconSpecial special_prop_beacon;
+    DashboardSpecial special_prop_dashboard;
+};
+
+struct RailgroupsLine
+{
+    unsigned int id = 0;
+    std::vector<NodeRangeCommon> node_list;
+};
+
+struct RopablesLine
+{
+    NodeRef_t node;
+    int group = -1;
+    bool has_multilock = false;
+};
+
+struct RopesLine
+{
+    NodeRef_t root_node;
+    NodeRef_t end_node;
+    bool invisible = false;
+};
+
+struct RotatorsLine: public RotatorsCommon
+{};
+
+struct Rotators2Line: public RotatorsCommon
+{
+    float rotating_force = 10000000;
+    float tolerance = 0.f;
+    std::string description;
+};
+
+struct ScrewpropsLine
+{
+    NodeRef_t prop_node;
+    NodeRef_t back_node;
+    NodeRef_t top_node;
+    float power = 0.f;
+};
+
+struct SectionLine
+{
+    std::vector<std::string> configs;
+};
+
+struct SectionconfigLine
+{
+    int number = -1; // unused
+    std::string name;
+};
+
+struct SetBeamDefaultsLine
+{
+    int _num_args = -1;
+
+    float springiness;
+    float damping_constant;
+    float deformation_threshold;
+    float breaking_threshold;
+    float visual_beam_diameter;
+    std::string beam_material_name;
+    float plastic_deform_coef;
+};
+
+struct SetBeamDefaultsScaleLine
+{
+    int _num_args = -1;
+
+    float springiness = -1.f;
+    float damping_constant = -1.f;
+    float deformation_threshold_constant = -1.f;
+    float breaking_threshold_constant = -1.f;
+};
+
+struct SetInertiaDefaultsLine: public InertiaCommon
+{};
+
+struct SetDefaultMinimassLine
+{
+    float min_mass = -1.f;
+};
+
+struct SetManagedmaterialsOptionsLine
+{
+    bool double_sided = false;
+};
+
+struct SetNodeDefaultsLine
+{
+    int _num_args = -1;
+
+    float loadweight = -1.f;
+    float friction = -1.f;
+    float volume = -1.f;
+    float surface = -1.f;
+    std::string options;
+};
+
+struct SetShadowsLine
+{
+    int shadow_mode = 0;
+};
+
+struct SetSkeletonSettingsLine
+{
+    float visibility_range_meters = 150.f;
+    float beam_thickness_meters = BEAM_SKELETON_DIAMETER;
+};
+
+struct ShocksLine
+{
+    BITMASK_PROPERTY(options, 1, OPTION_i_INVISIBLE    , HasOption_i_Invisible,   SetOption_i_Invisible) 
+    // Stability active suspension can be made with "L" for suspension on the truck's left and "R" for suspension on the truck's right. 
+    BITMASK_PROPERTY(options, 2, OPTION_L_ACTIVE_LEFT  , HasOption_L_ActiveLeft,  SetOption_L_ActiveLeft) 
+    // Stability active suspension can be made with "L" for suspension on the truck's left and "R" for suspension on the truck's right. 
+    BITMASK_PROPERTY(options, 3, OPTION_R_ACTIVE_RIGHT , HasOption_R_ActiveRight, SetOption_R_ActiveRight)
+    BITMASK_PROPERTY(options, 4, OPTION_m_METRIC       , HasOption_m_Metric,      SetOption_m_Metric) 
+
+    NodeRef_t nodes[2];
+    float spring_rate = -1.f;         //!< The 'stiffness' of the shock. The higher the value, the less the shock will move for a given bump. 
+    float damping = -1.f;             //!< The 'resistance to motion' of the shock. The best value is given by this equation:  2 * sqrt(suspended mass * springness)
+    float short_bound = 0.f;         //!< Maximum contraction. The shortest length the shock can be, as a proportion of its original length. "0" means the shock will not be able to contract at all, "1" will let it contract all the way to zero length. If the shock tries to shorten more than this value allows, it will become as rigid as a normal beam. 
+    float long_bound = 0.f;          //!< Maximum extension. The longest length a shock can be, as a proportion of its original length. "0" means the shock will not be able to extend at all. "1" means the shock will be able to double its length. Higher values allow for longer extension.
+    float precompression = 1.f;      //!< Changes compression or extension of the suspension when the truck spawns. This can be used to "level" the suspension of a truck if it sags in game. The default value is 1.0. 
+    unsigned int options = 0u;      //!< Bit flags.
+};
+
+struct Shocks2Line
+{
+    BITMASK_PROPERTY(options, 1, OPTION_i_INVISIBLE       , HasOption_i_Invisible,      SetOption_i_Invisible) 
+    // soft bump boundaries, use when shocks reach limiters too often and "jumprebound" (default is hard bump boundaries)
+    BITMASK_PROPERTY(options, 2, OPTION_s_SOFT_BUMP_BOUNDS, HasOption_s_SoftBumpBounds, SetOption_s_SoftBumpBounds)
+    // metric values for shortbound/longbound applying to the length of the beam.
+    BITMASK_PROPERTY(options, 3, OPTION_m_METRIC          , HasOption_m_Metric,         SetOption_m_Metric)
+    // Absolute metric values for shortbound/longbound, settings apply without regarding to the original length of the beam.(Use with caution, check ror.log for errors)
+    BITMASK_PROPERTY(options, 4, OPTION_M_ABSOLUTE_METRIC , HasOption_M_AbsoluteMetric, SetOption_M_AbsoluteMetric)  
+
+    NodeRef_t nodes[2];
+    float spring_in = 0.f;                  //!< Spring value applied when the shock is compressing.
+    float damp_in = 0.f;                    //!< Damping value applied when the shock is compressing. 
+    float progress_factor_spring_in = 0.f;  //!< Progression factor for springin. A value of 0 disables this option. 1...x as multipliers, example:maximum springrate == springrate + (factor*springrate)
+    float progress_factor_damp_in = 0.f;    //!< Progression factor for dampin. 0 = disabled, 1...x as multipliers, example:maximum dampingrate == springrate + (factor*dampingrate)
+    float spring_out = 0.f;                 //!< spring value applied when shock extending
+    float damp_out = 0.f;                   //!< damping value applied when shock extending
+    float progress_factor_spring_out = 0.f; //!< Progression factor springout, 0 = disabled, 1...x as multipliers, example:maximum springrate == springrate + (factor*springrate)
+    float progress_factor_damp_out = 0.f;   //!< Progression factor dampout, 0 = disabled, 1...x as multipliers, example:maximum dampingrate == springrate + (factor*dampingrate)
+    float short_bound = 0.f;                //!< Maximum contraction limit, in percentage ( 1.00 = 100% )
+    float long_bound = 0.f;                 //!< Maximum extension limit, in percentage ( 1.00 = 100% )
+    float precompression = 0.f;             //!< Changes compression or extension of the suspension when the truck spawns. This can be used to "level" the suspension of a truck if it sags in game. The default value is 1.0.  
+    unsigned int options = 0u;              //!< Bit flags.
+};
+
+struct Shocks3Line
+{
+    BITMASK_PROPERTY(options, 1, OPTION_i_INVISIBLE       , HasOption_i_Invisible,      SetOption_i_Invisible) 
+    // metric values for shortbound/longbound applying to the length of the beam.
+    BITMASK_PROPERTY(options, 2, OPTION_m_METRIC          , HasOption_m_Metric,         SetOption_m_Metric)
+    // Absolute metric values for shortbound/longbound, settings apply without regarding to the original length of the beam.(Use with caution, check ror.log for errors)
+    BITMASK_PROPERTY(options, 3, OPTION_M_ABSOLUTE_METRIC , HasOption_M_AbsoluteMetric, SetOption_M_AbsoluteMetric)  
+
+    NodeRef_t nodes[2];
+    float spring_in = 0.f;                  //!< Spring value applied when the shock is compressing.
+    float damp_in = 0.f;                    //!< Damping value applied when the shock is compressing. 
+    float spring_out = 0.f;                 //!< Spring value applied when shock extending
+    float damp_out = 0.f;                   //!< Damping value applied when shock extending
+    float damp_in_slow = 0.f;               //!< Damping value applied when shock is commpressing slower than split in velocity
+    float split_vel_in = 0.f;               //!< Split velocity in (m/s) - threshold for slow / fast damping during compression
+    float damp_in_fast = 0.f;               //!< Damping value applied when shock is commpressing faster than split in velocity
+    float damp_out_slow = 0.f;              //!< Damping value applied when shock is commpressing slower than split out velocity
+    float split_vel_out = 0.f;              //!< Split velocity in (m/s) - threshold for slow / fast damping during extension
+    float damp_out_fast = 0.f;              //!< Damping value applied when shock is commpressing faster than split out velocity
+    float short_bound = 0.f;                //!< Maximum contraction limit, in percentage ( 1.00 = 100% )
+    float long_bound = 0.f;                 //!< Maximum extension limit, in percentage ( 1.00 = 100% )
+    float precompression = 0.f;             //!< Changes compression or extension of the suspension when the truck spawns. This can be used to "level" the suspension of a truck if it sags in game. The default value is 1.0.  
+    unsigned int options = 0u;              //!< Bit flags.
+};
+
+struct SlidenodesLine
+{
+    BITMASK_PROPERTY( constraint_flags, 1, CONSTRAINT_ATTACH_ALL     , HasConstraint_a_AttachAll     , SetConstraint_a_AttachAll     )   
+    BITMASK_PROPERTY( constraint_flags, 2, CONSTRAINT_ATTACH_FOREIGN , HasConstraint_f_AttachForeign , SetConstraint_f_AttachForeign )
+    BITMASK_PROPERTY( constraint_flags, 3, CONSTRAINT_ATTACH_SELF    , HasConstraint_s_AttachSelf 	 , SetConstraint_s_AttachSelf	 )
+    BITMASK_PROPERTY( constraint_flags, 4, CONSTRAINT_ATTACH_NONE    , HasConstraint_n_AttachNone 	 , SetConstraint_n_AttachNone	 )
+
+    NodeRef_t slide_node;
+    std::vector<NodeRangeCommon> rail_node_ranges;
+    float spring_rate = 9000000;
+    float break_force = 0.f;
+    float tolerance = 0.f;
+    int railgroup_id = -1;
+    bool _railgroup_id_set = false;
+    float attachment_rate = 1.f;
+    float max_attachment_distance = 0.1f;
+    bool _break_force_set = false;
+    unsigned int constraint_flags = 0u;
+};
+
+struct SoundsourcesLine: public SoundsourcesCommon
+{};
+
+struct Soundsources2Line: SoundsourcesCommon
+{
+    enum Mode
+    {
+        MODE_ALWAYS  = -2,
+        MODE_OUTSIDE = -1,
+        MODE_CINECAM = 1,
+
+        MODE_INVALID = 0xFFFFFFFF
+    };
+
+    Mode mode = MODE_INVALID;
+    unsigned int cinecam_index = 0;
+};
+
+struct SpeedlimiterLine
+{
+    float max_speed = 0.f;
+};
+
+struct TexcoordsLine
+{
+    NodeRef_t node;
+    float u = 0;
+    float v = 0;
+};
+
+struct TiesLine
+{
+    static const char OPTION_n_FILLER = 'n';
+    static const char OPTION_v_FILLER = 'v';
+    static const char OPTION_i_INVISIBLE = 'i';
+    static const char OPTION_s_NO_SELF_LOCK = 's';
+
+    NodeRef_t root_node;
+    float max_reach_length = 0.f;
+    float auto_shorten_rate = 0.f;
+    float min_length = 0.f;
+    float max_length = 0.f;
+    bool is_invisible = false;
+    bool disable_self_lock = false;
+    float max_stress = 100000.0f;
+    int group = -1;
+};
+
+struct TorquecurveLine
+{
+    struct Sample
+    {
+        float power = 0;
+        float torque_percent = 0;
+    };
+
+    // If func. name is empty string, sample applies.
+    Sample sample;
+    std::string predefined_func_name;
+};
+
+struct TractionControlLine
+{
+    float regulation_force = -1.f;
+    float wheel_slip = -1.f;
+    float fade_speed = -1.f;
+    float pulse_per_sec = 0.f;
+    bool attr_is_on = false;
+    bool attr_no_dashboard = false;
+    bool attr_no_toggle = false;
+};
+
+struct TransfercaseLine
+{
+    int a1 = 0;
+    int a2 = -1;
+    bool has_2wd = true;
+    bool has_2wd_lo = false;
+    std::vector<float> gear_ratios;
+};
+
+struct TriggersLine
 {
     struct EngineTrigger
     {
@@ -1389,8 +1288,6 @@ struct Trigger
         int extension_trigger_hookgroup_id;
     };
 
-    Trigger();
-
     BITMASK_PROPERTY(options,  1, OPTION_i_INVISIBLE             , HasFlag_i_Invisible,         SetFlag_i_Invisible         )
     BITMASK_PROPERTY(options,  2, OPTION_c_COMMAND_STYLE         , HasFlag_c_CommandStyle,      SetFlag_c_CommandStyle      )
     BITMASK_PROPERTY(options,  3, OPTION_x_START_OFF             , HasFlag_x_StartDisabled,     SetFlag_x_StartDisabled     )
@@ -1407,13 +1304,13 @@ struct Trigger
 
     inline bool IsTriggerBlockerAnyType() { return HasFlag_B_TriggerBlocker() || HasFlag_A_InvTriggerBlocker(); }
 
-    inline void SetEngineTrigger(Trigger::EngineTrigger const & trig)
+    inline void SetEngineTrigger(TriggersLine::EngineTrigger const & trig)
     {
         shortbound_trigger_action = (int) trig.function;
         longbound_trigger_action = (int) trig.motor_index;
     }
 
-    inline Trigger::EngineTrigger GetEngineTrigger() const
+    inline TriggersLine::EngineTrigger GetEngineTrigger() const
     {
         ROR_ASSERT(HasFlag_E_EngineTrigger());
         EngineTrigger trig;
@@ -1453,547 +1350,97 @@ struct Trigger
         return trig;
     }
 
-    Node::Ref nodes[2];
-    float contraction_trigger_limit;
-    float expansion_trigger_limit;
-    unsigned int options;
-    float boundary_timer;
-    int shortbound_trigger_action;
-    int longbound_trigger_action;
+    NodeRef_t nodes[2];
+    float contraction_trigger_limit = 0;
+    float expansion_trigger_limit = 0;
+    unsigned int options = 0u;
+    float boundary_timer = 1.f;
+    int shortbound_trigger_action = 0;
+    int longbound_trigger_action = 0;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Section LOCKGROUPS                                                         */
-/* -------------------------------------------------------------------------- */
-
-struct Lockgroup
+struct TurbojetsLine
 {
-    Lockgroup()
-        :	number(0)
-    {
-        nodes.reserve(20);
-    }
-
-    static const int LOCKGROUP_DEFAULT        = -1;
-    static const int LOCKGROUP_NOLOCK         = 9999;
-
-    int number;
-    std::vector<Node::Ref> nodes;
+    NodeRef_t front_node;
+    NodeRef_t back_node;
+    NodeRef_t side_node;
+    int is_reversable = 0;
+    float dry_thrust = 0.f;
+    float wet_thrust = 0.f;
+    float front_diameter = 0.f;
+    float back_diameter = 0.f;
+    float nozzle_length = 0.f;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Section MANAGEDMATERIALS                                                   */
-/* -------------------------------------------------------------------------- */
+struct TurbopropsLine: public TurbopropsCommon
+{};
 
-struct ManagedMaterial
+struct Turboprops2Line: public TurbopropsCommon
 {
-    /* IMPORTANT! Order of these values must match Regexes::IDENTIFY_MANAGED_MATERIAL_TYPE enum from Regexes.h */
-    enum Type
-    {
-        TYPE_FLEXMESH_STANDARD = 1,
-        TYPE_FLEXMESH_TRANSPARENT,
-        TYPE_MESH_STANDARD,
-        TYPE_MESH_TRANSPARENT,
-
-        TYPE_INVALID = 0xFFFFFFFF
-    };
-
-    Ogre::String name;
-    
-    /* Attributes */
-    Type type;
-    ManagedMaterialsOptions options;
-    
-    /* Textures */
-    Ogre::String diffuse_map;
-    Ogre::String damaged_diffuse_map;
-    Ogre::String specular_map;
-
-    bool HasDamagedDiffuseMap()
-    {
-        return (damaged_diffuse_map.length() != 0 && damaged_diffuse_map[0] != '-');
-    }
-
-    bool HasSpecularMap()
-    {
-        return (specular_map.length() != 0 && specular_map[0] != '-');
-    }
+    NodeRef_t couple_node;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Section MATERIALFLAREBINDINGS                                              */
-/* -------------------------------------------------------------------------- */
-
-struct MaterialFlareBinding
+struct VideocamerasLine
 {
-    MaterialFlareBinding():
-        flare_number(0)
-    {}
-
-    unsigned int flare_number;
-    Ogre::String material_name;
+    NodeRef_t reference_node;
+    NodeRef_t left_node;
+    NodeRef_t bottom_node;
+    NodeRef_t alt_reference_node;
+    NodeRef_t alt_orientation_node;
+    Ogre::Vector3 offset = Ogre::Vector3::ZERO;
+    Ogre::Vector3 rotation = Ogre::Vector3::ZERO;
+    float field_of_view = 0.f;
+    unsigned int texture_width = 0;
+    unsigned int texture_height = 0;
+    float min_clip_distance = 0.f;
+    float max_clip_distance = 0.f;
+    int camera_role = 0;
+    int camera_mode = 0;
+    std::string material_name;
+    std::string camera_name;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Section NODECOLLISION                                                      */
-/* -------------------------------------------------------------------------- */
-
-struct NodeCollision
+struct WheeldetachersLine
 {
-    NodeCollision():
-        radius(0)
-    {}
+    int wheel_id = -1;
+    int detacher_group = -1;
+};
 
-    Node::Ref node;
+struct WheelsLine: public WheelsCommon
+{
     float radius;
+    float springiness;
+    float damping;
+    std::string face_material_name = "tracks/wheelface";
+    std::string band_material_name = "tracks/wheelband1";
 };
 
-/* -------------------------------------------------------------------------- */
-/* Section PARTICLES                                                          */
-/* -------------------------------------------------------------------------- */
-
-struct Particle
+struct Wheels2Line: public Wheels2Common
 {
-    Node::Ref emitter_node;
-    Node::Ref reference_node;
-    Ogre::String particle_system_name;
+    std::string face_material_name = "tracks/wheelface";
+    std::string band_material_name = "tracks/wheelband1";
+    float rim_springiness;
+    float rim_damping;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Section PISTONPROPS                                                        */
-/* -------------------------------------------------------------------------- */
-
-struct Pistonprop
-{
-    Pistonprop():
-        turbine_power_kW(0),
-        pitch(0)
-    {}
-
-    Node::Ref reference_node;
-    Node::Ref axis_node;
-    Node::Ref blade_tip_nodes[4];
-    Node::Ref couple_node;
-    float turbine_power_kW;
-    float pitch;
-    Ogre::String airfoil;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section PROPS                                                              */
-/* -------------------------------------------------------------------------- */
-
-struct Prop
-{
-    struct DashboardSpecial
-    {
-        DashboardSpecial():
-            offset(Ogre::Vector3::ZERO), // Default depends on right/left-hand dashboard placement
-            rotation_angle(160.f),
-            _offset_is_set(false),
-            mesh_name("dirwheel.mesh")
-        {}
-
-        Ogre::Vector3 offset;
-        bool _offset_is_set;
-        float rotation_angle;
-        Ogre::String mesh_name;
-    };
-
-    struct BeaconSpecial
-    {
-        BeaconSpecial():
-            color(1.0, 0.5, 0.0),
-            flare_material_name("tracks/beaconflare")
-        {}
-
-        Ogre::String flare_material_name;
-        Ogre::ColourValue color;
-    };
-
-    Prop():
-        offset(Ogre::Vector3::ZERO),
-        rotation(Ogre::Vector3::ZERO),
-        special(SPECIAL_INVALID)
-    {}
-
-    /* IMPORTANT! Values must match results from Regexes::SPECIAL_PROPS */
-    enum Special
-    {
-        SPECIAL_MIRROR_LEFT = 1,
-        SPECIAL_MIRROR_RIGHT,
-        SPECIAL_DASHBOARD_LEFT,
-        SPECIAL_DASHBOARD_RIGHT,
-        SPECIAL_AERO_PROP_SPIN,
-        SPECIAL_AERO_PROP_BLADE,
-        SPECIAL_DRIVER_SEAT,
-        SPECIAL_DRIVER_SEAT_2,
-        SPECIAL_BEACON,
-        SPECIAL_REDBEACON,
-        SPECIAL_LIGHTBAR,
-
-        SPECIAL_INVALID = 0xFFFFFFFF
-    };
-
-    Node::Ref reference_node;
-    Node::Ref x_axis_node;
-    Node::Ref y_axis_node;
-    Ogre::Vector3 offset;
-    Ogre::Vector3 rotation;
-    Ogre::String mesh_name;
-    std::list<Animation> animations;
-    CameraSettings camera_settings;
-    Special special;
-    BeaconSpecial special_prop_beacon;
-    DashboardSpecial special_prop_dashboard;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section RAILGROUPS                                                         */
-/* -------------------------------------------------------------------------- */
-
-struct RailGroup
-{
-    RailGroup():
-        id(0)
-    {}
-
-    unsigned int id;
-    std::vector<Node::Range> node_list;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section Ropables                                                           */
-/* -------------------------------------------------------------------------- */
-
-struct Ropable
-{
-    Ropable():
-        group(-1), // = value not set
-        has_multilock(false)
-    {}
-
-    Node::Ref node;
-    int group;
-    bool has_multilock;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section ROPES                                                              */
-/* -------------------------------------------------------------------------- */
-
-struct Rope
-{
-    Node::Ref root_node;
-    Node::Ref end_node;
-    bool invisible = false;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section SCREWPROPS                                                         */
-/* -------------------------------------------------------------------------- */
-
-struct Screwprop
-{
-    Screwprop():
-        power(0)
-    {}
-
-    Node::Ref prop_node;
-    Node::Ref back_node;
-    Node::Ref top_node;
-    float power;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section SLIDENODES                                                         */
-/* -------------------------------------------------------------------------- */
-
-struct SlideNode
-{
-    SlideNode();
-
-    BITMASK_PROPERTY( constraint_flags, 1, CONSTRAINT_ATTACH_ALL     , HasConstraint_a_AttachAll     , SetConstraint_a_AttachAll     )   
-    BITMASK_PROPERTY( constraint_flags, 2, CONSTRAINT_ATTACH_FOREIGN , HasConstraint_f_AttachForeign , SetConstraint_f_AttachForeign )
-    BITMASK_PROPERTY( constraint_flags, 3, CONSTRAINT_ATTACH_SELF    , HasConstraint_s_AttachSelf 	 , SetConstraint_s_AttachSelf	 )
-    BITMASK_PROPERTY( constraint_flags, 4, CONSTRAINT_ATTACH_NONE    , HasConstraint_n_AttachNone 	 , SetConstraint_n_AttachNone	 )
-
-    Node::Ref slide_node;
-    std::vector<Node::Range> rail_node_ranges;
-    float spring_rate;
-    float break_force;
-    float tolerance;
-    int railgroup_id;
-    bool _railgroup_id_set;
-    float attachment_rate;
-    float max_attachment_distance;
-    bool _break_force_set;
-    unsigned int constraint_flags;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section SOUNDSOURCES                                                       */
-/* -------------------------------------------------------------------------- */
-
-struct SoundSource
-{
-    Node::Ref node;
-    Ogre::String sound_script_name;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section SOUNDSOURCES2                                                      */
-/* -------------------------------------------------------------------------- */
-
-struct SoundSource2: SoundSource
-{
-    enum Mode
-    {
-        MODE_ALWAYS  = -2,
-        MODE_OUTSIDE = -1,
-        MODE_CINECAM = 1,
-
-        MODE_INVALID = 0xFFFFFFFF
-    };
-
-    SoundSource2():
-        mode(MODE_INVALID),
-        cinecam_index(0)
-    {}
-
-    Mode mode;
-    unsigned int cinecam_index;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section SPEEDLIMITER                                                       */
-/* -------------------------------------------------------------------------- */
-
-struct SpeedLimiter
-{
-    SpeedLimiter():
-        max_speed(0.f)
-    {}
-
-    float max_speed;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section SUBMESH                                                            */
-/* -------------------------------------------------------------------------- */
-
-struct Cab
-{
-    Cab():
-        options(0)
-    {}
-
-    bool GetOption_D_ContactBuoyant()
-    {
-        return BITMASK_IS_1(options, OPTION_b_BUOYANT) && BITMASK_IS_1(options, OPTION_c_CONTACT);
-    }
-
-    bool GetOption_F_10xTougherBuoyant()
-    {
-        return BITMASK_IS_1(options, OPTION_b_BUOYANT) && BITMASK_IS_1(options, OPTION_p_10xTOUGHER);
-    }
-
-    bool GetOption_S_UnpenetrableBuoyant()
-    {
-        return BITMASK_IS_1(options, OPTION_b_BUOYANT) && BITMASK_IS_1(options, OPTION_u_INVULNERABLE);
-    }
-
-    static const unsigned int OPTION_c_CONTACT           = BITMASK(1);
-    static const unsigned int OPTION_b_BUOYANT           = BITMASK(2);
-    static const unsigned int OPTION_p_10xTOUGHER        = BITMASK(3);
-    static const unsigned int OPTION_u_INVULNERABLE      = BITMASK(4);
-    static const unsigned int OPTION_s_BUOYANT_NO_DRAG   = BITMASK(5);
-    static const unsigned int OPTION_r_BUOYANT_ONLY_DRAG = BITMASK(6);
-
-    Node::Ref nodes[3];
-    unsigned int options;
-};
-
-struct Texcoord
-{
-    Texcoord():
-        u(0),
-        v(0)
-    {}
-
-    Node::Ref node;
-    float u;
-    float v;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section TIES                                                               */
-/* -------------------------------------------------------------------------- */
-
-struct Tie
-{
-    Tie();
-
-    static const char OPTION_n_FILLER = 'n';
-    static const char OPTION_v_FILLER = 'v';
-    static const char OPTION_i_INVISIBLE = 'i';
-    static const char OPTION_s_NO_SELF_LOCK = 's';
-
-    Node::Ref root_node;
-    float max_reach_length;
-    float auto_shorten_rate;
-    float min_length;
-    float max_length;
-    bool is_invisible;
-    bool disable_self_lock;
-    float max_stress;
-    std::shared_ptr<BeamDefaults> beam_defaults;
-    int detacher_group;
-    int group;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section TORQUECURVE                                                        */
-/* -------------------------------------------------------------------------- */
-
-struct TorqueCurve
-{
-    TorqueCurve()
-    {}
-
-    struct Sample
-    {
-        Sample():
-            power(0),
-            torque_percent(0)
-        {}
-
-        float power;
-        float torque_percent;
-    };
-
-    // If func. name is empty string, sample applies.
-    Sample sample;
-    Ogre::String predefined_func_name;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section TURBOJETS                                                          */
-/* -------------------------------------------------------------------------- */
-
-struct Turbojet
-{
-    Turbojet():
-        is_reversable(0),
-        dry_thrust(0),
-        wet_thrust(0),
-        front_diameter(0),
-        back_diameter(0),
-        nozzle_length(0)
-    {}
-
-    Node::Ref front_node;
-    Node::Ref back_node;
-    Node::Ref side_node;
-    int is_reversable;
-    float dry_thrust;
-    float wet_thrust;
-    float front_diameter;
-    float back_diameter;
-    float nozzle_length;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section TURBOPROPS, TURBOPROPS2                                            */
-/* -------------------------------------------------------------------------- */
-
-struct Turboprop2
-{
-    Turboprop2():
-        turbine_power_kW(0),
-        _format_version(2)
-    {}
-
-    Node::Ref reference_node;
-    Node::Ref axis_node;
-    Node::Ref blade_tip_nodes[4];
-    float turbine_power_kW;
-    Ogre::String airfoil;
-    Node::Ref couple_node;
-    unsigned int _format_version;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section VIDEOCAMERA                                                        */
-/* -------------------------------------------------------------------------- */
-
-struct VideoCamera
-{
-    VideoCamera();
-
-    Node::Ref reference_node;
-    Node::Ref left_node;
-    Node::Ref bottom_node;
-    Node::Ref alt_reference_node;
-    Node::Ref alt_orientation_node;
-    Ogre::Vector3 offset;
-    Ogre::Vector3 rotation;
-    float field_of_view;
-    unsigned int texture_width;
-    unsigned int texture_height;
-    float min_clip_distance;
-    float max_clip_distance;
-    int camera_role;
-    int camera_mode;
-    Ogre::String material_name;
-    Ogre::String camera_name;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Section WINGS                                                              */
-/* -------------------------------------------------------------------------- */
-
-struct Wing
+struct WingsLine
 {
     static const std::string CONTROL_LEGAL_FLAGS;
 
-    Wing();
-
-    enum Control
-    {
-        CONTROL_n_NONE                  = 'n',
-        CONTROL_a_RIGHT_AILERON         = 'a',
-        CONTROL_b_LEFT_AILERON          = 'b',
-        CONTROL_f_FLAP                  = 'f',
-        CONTROL_e_ELEVATOR              = 'e',
-        CONTROL_r_RUDDER                = 'r',
-        CONTROL_S_RIGHT_HAND_STABILATOR = 'S',
-        CONTROL_T_LEFT_HAND_STABILATOR  = 'T',
-        CONTROL_c_RIGHT_ELEVON          = 'c',
-        CONTROL_d_LEFT_ELEVON           = 'd',
-        CONTROL_g_RIGHT_FLAPERON        = 'g',
-        CONTROL_h_LEFT_FLAPERON         = 'h',
-        CONTROL_U_RIGHT_HAND_TAILERON   = 'U',
-        CONTROL_V_LEFT_HAND_TAILERON    = 'V',
-        CONTROL_i_RIGHT_RUDDERVATOR     = 'i',
-        CONTROL_j_LEFT_RUDDERVATOR      = 'j',
-
-        CONTROL_INVALID                 = 0xFFFFFFFF
-    };
-
-    Node::Ref nodes[8];
-    float tex_coords[8];
-    Control control_surface;
-    float chord_point;
-    float min_deflection;
-    float max_deflection;
-    Ogre::String airfoil;
-    float efficacy_coef;
+    NodeRef_t nodes[8];
+    float tex_coords[8] = {};
+    WingControlSurface control_surface = WingControlSurface::n_NONE;
+    float chord_point = -1.f;
+    float min_deflection = -1.f;
+    float max_deflection = -1.f;
+    std::string airfoil;
+    float efficacy_coef = 1.f; //!< So-called 'liftcoef'.
 };
 
-/* -------------------------------------------------------------------------- */
-/* Root document                                                              */
-/* -------------------------------------------------------------------------- */
+
+    // --------------------------------
+    // The document
+
 
 typedef int DataPos_t; // ALWAYS use this when referencing data in truck document, for readability.
 extern const DataPos_t DATAPOS_INVALID;
@@ -2005,7 +1452,7 @@ struct Line
 
     Keyword keyword = KEYWORD_INVALID;    //!< What kind of data this line defines.
     DataPos_t data_pos = DATAPOS_INVALID; //!< Offset to the associated data array.
-    bool begins_block = false;            //!< Line with sole keyword like 'nodes' or 'wheels'.
+    bool begins_block = false;            //!< Line with only the keyword.
 };
 
 struct File
@@ -2015,104 +1462,104 @@ struct File
     bool HasKeyword(Keyword keyword);
 
     // Metadata:
-    Ogre::String name;
+    std::string name;
     std::string hash;
-    Ogre::String guid;
+    std::string guid;
     int file_format_version = 0;
     std::vector<Line> lines; //!<The format is strictly sequential; this array keeps the parsed data in correct order.
 
     // Parsed data:
     // ALWAYS use DataPos_t when referencing these entries, for readability.
-    std::vector<Ogre::String>          help_panel_material_name;
-    std::vector<Animation>             add_animation;
-    std::vector<Airbrake>              airbrakes;
-    std::vector<Animator>              animators;
-    std::vector<AntiLockBrakes>        anti_lock_brakes;
-    std::vector<Axle>                  axles;
-    std::vector<BeamDefaults>          beam_defaults;
-    std::vector<BeamDefaultsScale>     beam_defaults_scale;
-    std::vector<Beam>                  beams;
-    std::vector<Brakes>                brakes;
-    std::vector<Cab>                   cab_triangles;
-    std::vector<Camera>                cameras;
-    std::vector<Node::Ref>             camera_rails;
-    std::vector<CollisionBox>          collision_boxes;
-    std::vector<Cinecam>               cinecam;
-    std::vector<Command2>              commands_2; /* sections 'commands' & 'commands2' are unified */
-    std::vector<CruiseControl>         cruise_control;
-    std::vector<Node::Ref>             contacters;
+    std::vector<std::string>           help;
+    std::vector<AddAnimationLine>      add_animation;
+    std::vector<AirbrakesLine>         airbrakes;
+    std::vector<AnimatorsLine>         animators;
+    std::vector<AntiLockBrakesLine>    antilockbrakes;
+    std::vector<AuthorLine>            authors;
+    std::vector<AxlesLine>             axles;
+    std::vector<BeamsLine>             beams;
+    std::vector<BrakesLine>            brakes;
+    std::vector<CabLine>               cab;
+    std::vector<CamerasLine>           cameras;
+    std::vector<NodeRef_t>             camerarails;
+    std::vector<CollisionboxesLine>    collisionboxes;
+    std::vector<CinecamLine>           cinecam;
+    std::vector<CommandsLine>          commands;
+    std::vector<Commands2Line>         commands2;
+    std::vector<CruisecontrolLine>     cruisecontrol;
+    std::vector<NodeRef_t>             contacters;
+    std::vector<std::string>           description;
     std::vector<int>                   detacher_group;
-    std::vector<Engine>                engine;
-    std::vector<Engoption>             engoption;
-    std::vector<Engturbo>              engturbo;
-    std::vector<Exhaust>               exhausts;
-    std::vector<ExtCamera>             ext_camera;
-    std::vector<Node::Ref>             fixes;
-    std::vector<Flare2>                flares_2;
-    std::vector<CameraSettings>        flexbody_camera_mode;
-    std::vector<Flexbody>              flexbodies;
-    std::vector<Forset>                forset;
-    std::vector<FlexBodyWheel>         flex_body_wheels;
-    std::vector<Fusedrag>              fusedrag;
-    std::vector<Globals>               globals;
-    std::vector<GuiSettings>           gui_settings;
-    std::vector<Hook>                  hooks;
-    std::vector<Hydro>                 hydros;
-    std::vector<Inertia>               inertia_defaults;
-    std::vector<InterAxle>             interaxles;
-    std::vector<Lockgroup>             lockgroups;
-    std::vector<ManagedMaterial>       managed_materials;
-    std::vector<ManagedMaterialsOptions> managed_materials_options;
-    std::vector<MaterialFlareBinding>  material_flare_bindings;
-    std::vector<MeshWheel>             mesh_wheels;
-    std::vector<MeshWheel>             mesh_wheels_2;
-    std::vector<Minimass>              minimass;
-    std::vector<DefaultMinimass>       default_minimass;
-    std::vector<NodeDefaults>          node_defaults;
-    std::vector<Node>                  nodes; /* Nodes and Nodes2 are unified in this parser */
-    std::vector<NodeCollision>         node_collisions;
-    std::vector<Particle>              particles;
-    std::vector<Pistonprop>            pistonprops;
-    std::vector<CameraSettings>        prop_camera_mode;
-    std::vector<Prop>                  props;
-    std::vector<RailGroup>             railgroups; 
-    std::vector<Ropable>               ropables;
-    std::vector<Rope>                  ropes;
-    std::vector<Rotator>               rotators;
-    std::vector<Rotator2>              rotators_2;
-    std::vector<Screwprop>             screwprops;
-    std::vector<SectionTag>            section;
-    std::vector<Ogre::String>          section_config;
-    std::vector<Shock>                 shocks;
-    std::vector<Shock2>                shocks_2;
-    std::vector<Shock3>                shocks_3;
-    std::vector<SkeletonSettings>      skeleton_settings;
-    std::vector<SlideNode>             slidenodes;
-    std::vector<SoundSource>           soundsources;
-    std::vector<SoundSource2>          soundsources2;
-    std::vector<SpeedLimiter>          speed_limiter;
-    std::vector<Ogre::String>          submeshes_ground_model_name;
-    std::vector<Texcoord>              texcoords;
-    std::vector<Tie>                   ties;
-    std::vector<TorqueCurve>           torque_curve;
-    std::vector<TractionControl>       traction_control;
-    std::vector<TransferCase>          transfer_case;
-    std::vector<Trigger>               triggers;
-    std::vector<Turbojet>              turbojets;
-    std::vector<Turboprop2>            turboprops_2;
-    std::vector<VideoCamera>           videocameras;
-    std::vector<WheelDetacher>         wheeldetachers;
-    std::vector<Wheel>                 wheels;
-    std::vector<Wheel2>                wheels_2;
-    std::vector<Wing>                  wings;
-
-    std::vector<Ogre::String> description;
-    std::vector<float> collision_range;
-
-    std::vector<Author> authors;
-    std::vector<Fileinfo> file_info;
-    
-    std::vector<bool> minimass_skip_loaded_nodes; //!< Only apply minimum mass to nodes without "L" option.
+    std::vector<EngineLine>            engine;
+    std::vector<EngoptionLine>         engoption;
+    std::vector<EngturboLine>          engturbo;
+    std::vector<ExhaustsLine>          exhausts;
+    std::vector<ExtcameraLine>         extcamera;
+    std::vector<FileinfoLine>          file_info;
+    std::vector<NodeRef_t>             fixes;
+    std::vector<FlaresLine>            flares;
+    std::vector<Flares2Line>           flares2;
+    std::vector<FlexbodyCameraModeLine> flexbody_camera_mode;
+    std::vector<FlexbodiesLine>        flexbodies;
+    std::vector<ForsetLine>            forset;
+    std::vector<FlexbodywheelsLine>    flexbodywheels;
+    std::vector<FusedragLine>          fusedrag;
+    std::vector<GlobalsLine>           globals;
+    std::vector<GuiSettingsLine>       guisettings;
+    std::vector<HooksLine>             hooks;
+    std::vector<HydrosLine>            hydros;
+    std::vector<InteraxlesLine>        interaxles;
+    std::vector<LockgroupsLine>        lockgroups;
+    std::vector<ManagedmaterialsLine>  managed_materials;
+    std::vector<MaterialflarebindingsLine> materialflarebindings;
+    std::vector<MeshwheelsLine>        meshwheels;
+    std::vector<Meshwheels2Line>       meshwheels2;
+    std::vector<MinimassLine>          minimass;
+    std::vector<NodesLine>             nodes;
+    std::vector<Nodes2Line>            nodes2;
+    std::vector<NodecollisionLine>     nodecollision;
+    std::vector<ParticlesLine>         particles;
+    std::vector<PistonpropsLine>       pistonprops;
+    std::vector<PropCameraModeLine>    prop_camera_mode;
+    std::vector<PropsLine>             props;
+    std::vector<RailgroupsLine>        railgroups;
+    std::vector<RopablesLine>          ropables;
+    std::vector<RopesLine>             ropes;
+    std::vector<RotatorsLine>          rotators;
+    std::vector<Rotators2Line>         rotators2;
+    std::vector<ScrewpropsLine>        screwprops;
+    std::vector<SectionLine>           section;
+    std::vector<SectionconfigLine>     sectionconfig;
+    std::vector<float>                    set_collision_range;
+    std::vector<SetDefaultMinimassLine>   set_default_minimass;
+    std::vector<SetBeamDefaultsLine>      set_beam_defaults;
+    std::vector<SetBeamDefaultsScaleLine> set_beam_defaults_scale;
+    std::vector<SetInertiaDefaultsLine>   set_inertia_defaults;
+    std::vector<SetManagedmaterialsOptionsLine> set_managedmaterials_options;
+    std::vector<SetNodeDefaultsLine>      set_node_defaults;
+    std::vector<SetSkeletonSettingsLine>  set_skeleton_settings;
+    std::vector<ShocksLine>            shocks;
+    std::vector<Shocks2Line>           shocks2;
+    std::vector<Shocks3Line>           shocks3;
+    std::vector<SlidenodesLine>        slidenodes;
+    std::vector<SoundsourcesLine>      soundsources;
+    std::vector<Soundsources2Line>     soundsources2;
+    std::vector<SpeedlimiterLine>      speedlimiter;
+    std::vector<std::string>           submesh_groundmodel;
+    std::vector<TexcoordsLine>         texcoords;
+    std::vector<TiesLine>              ties;
+    std::vector<TorquecurveLine>       torquecurve;
+    std::vector<TractionControlLine>   tractioncontrol;
+    std::vector<TransfercaseLine>      transfercase;
+    std::vector<TriggersLine>          triggers;
+    std::vector<TurbojetsLine>         turbojets;
+    std::vector<TurbopropsLine>        turboprops;
+    std::vector<Turboprops2Line>       turboprops2;
+    std::vector<VideocamerasLine>      videocameras;
+    std::vector<WheeldetachersLine>    wheeldetachers;
+    std::vector<WheelsLine>            wheels;
+    std::vector<Wheels2Line>           wheels2;
+    std::vector<WingsLine>             wings;
 };
 
 } // namespace RigDef

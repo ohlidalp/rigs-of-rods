@@ -29,7 +29,6 @@
 #include "SimData.h"
 #include "CmdKeyInertia.h"
 #include "Network.h"
-#include "RigDef_Prerequisites.h"
 #include "ThreadPool.h"
 
 #include <string>

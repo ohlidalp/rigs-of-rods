@@ -26,7 +26,6 @@
 
 #pragma once
 
-#include "RigDef_Prerequisites.h"
 #include "RigDef_File.h"
 
 #include <memory>
@@ -89,14 +88,13 @@ private:
     void ParseDirectiveSetInertiaDefaults();
     void ParseDirectiveSetManagedMaterialsOptions();
     void ParseDirectiveSetNodeDefaults();
-    void LogParsedDirectiveSetNodeDefaultsData(float loadweight, float friction, float volume, float surface, unsigned int options);
 
 // --------------------------------------------------------------------------
 //  Section parsers
 // --------------------------------------------------------------------------
 
     void ParseAirbrakes();
-    void ParseAnimator();
+    void ParseAnimators();
     void ParseAntiLockBrakes();
     void ParseAuthor();
     void ParseAxles();
@@ -104,24 +102,26 @@ private:
     void ParseBrakes();
     void ParseCab();
     void ParseCameras();
-    void ParseCameraRails();
+    void ParseCamerarails();
     void ParseCinecam();
-    void ParseCollisionBox();
-    void ParseCommandsUnified();
-    void ParseContacter();
+    void ParseCollisionboxes();
+    void ParseCommands();
+    void ParseCommands2();
+    void ParseContacters();
     void ParseCruiseControl();
     void ParseDescription();
     void ParseEngine();
     void ParseEngoption();
     void ParseEngturbo();
-    void ParseExhaust();
+    void ParseExhausts();
     void ParseExtCamera();
     void ParseFileFormatVersion();
     void ParseFileinfo();
     void ParseFixes();
-    void ParseFlaresUnified();
-    void ParseFlexbody();
-    void ParseFlexBodyWheel();
+    void ParseFlares();
+    void ParseFlares2();
+    void ParseFlexbodies();
+    void ParseFlexbodywheels();
     void ParseForset();
     void ParseFusedrag();
     void ParseGlobals();
@@ -134,9 +134,11 @@ private:
     void ParseLockgroups();
     void ParseManagedMaterials();
     void ParseMaterialFlareBindings();
-    void ParseMeshWheelUnified();
+    void ParseMeshwheels();
+    void ParseMeshwheels2();
     void ParseMinimass();
-    void ParseNodesUnified();
+    void ParseNodes();
+    void ParseNodes2();
     void ParseNodeCollision();
     void ParseParticles();
     void ParsePistonprops();
@@ -144,7 +146,8 @@ private:
     void ParseRailGroups();
     void ParseRopables();
     void ParseRopes();
-    void ParseRotatorsUnified();
+    void ParseRotators();
+    void ParseRotators2();
     void ParseScrewprops();
     void ParseSetCollisionRange();
     void ParseSetSkeletonSettings();
@@ -164,7 +167,8 @@ private:
     void ParseTransferCase();
     void ParseTriggers();
     void ParseTurbojets();
-    void ParseTurbopropsUnified();
+    void ParseTurboprops();
+    void ParseTurboprops2();
     void ParseVideoCamera();
     void ParseWheelDetachers();
     void ParseWheel();
@@ -188,14 +192,13 @@ private:
     float              GetArgFloat        (int index);
     char               GetArgChar         (int index);
     bool               GetArgBool         (int index);
-    Wheels::Propulsion GetArgPropulsion   (int index);
-    Wheels::Braking    GetArgBraking      (int index);
-    int                GetArgNodeOptions  (int index);
-    Node::Ref          GetArgNodeRef      (int index);
-    Node::Ref          GetArgRigidityNode (int index);
-    Node::Ref          GetArgNullableNode (int index);
-    MeshWheel::Side    GetArgWheelSide    (int index);
-    Wing::Control      GetArgWingSurface  (int index);
+    WheelPropulsion    GetArgPropulsion   (int index);
+    WheelBraking       GetArgBraking      (int index);
+    NodeRef_t          GetArgNodeRef      (int index);
+    NodeRef_t          GetArgRigidityNode (int index);
+    NodeRef_t          GetArgNullableNode (int index);
+    WheelSide          GetArgWheelSide    (int index);
+    WingControlSurface GetArgWingSurface  (int index);
     RoR::FlareType     GetArgFlareType    (int index);
     std::string        GetArgManagedTex   (int index);
 
@@ -225,18 +228,13 @@ private:
         this->AddMessage(m_current_line, type, msg);
     }
 
-    /// Print a log INFO message.
-    void _PrintNodeDataForVerification(Ogre::String& line, Ogre::StringVector& args, int num_args, Node& node);
-
     static void _TrimTrailingComments(std::string const & line_in, std::string & line_out);
 
-    Node::Ref _ParseNodeRef(std::string const & node_id_str);
+    void _ParseCameraSettings(CameraModeCommon & camera_settings, Ogre::String input_str);
 
-    void _ParseCameraSettings(CameraSettings & camera_settings, Ogre::String input_str);
+    void ParseOptionalInertia(InertiaCommon& inertia, int index);
 
-    void _ParseNodeOptions(int & options, const std::string & options_str);
-
-    void ParseOptionalInertia(Inertia& inertia, int index);
+    void ParseCommandOptions(CommandsCommon& command, std::string const& options);
 
 // --------------------------------------------------------------------------
 

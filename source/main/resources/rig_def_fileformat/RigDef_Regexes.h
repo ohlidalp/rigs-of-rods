@@ -189,13 +189,12 @@ namespace Regexes
 
 // IMPORTANT! If you add a value here, you must also modify File::Keywords enum, it relies on positions in this regex
 #define IDENTIFY_KEYWORD_REGEX_STRING                             \
-    /* E_KEYWORD_BLOCK("advdrag") ~~ Not supported yet */         \
     E_KEYWORD_INLINE_TOLERANT("add_animation")  /* Position 1 */  \
     E_KEYWORD_BLOCK("airbrakes")       /* Position 2 */           \
     E_KEYWORD_BLOCK("animators")       /* Position 3 etc... */    \
     E_KEYWORD_INLINE("AntiLockBrakes")                            \
-    E_KEYWORD_BLOCK("axles")                                      \
     E_KEYWORD_INLINE("author")                                    \
+    E_KEYWORD_BLOCK("axles")                                      \
     E_KEYWORD_BLOCK("backmesh")                                   \
     E_KEYWORD_BLOCK("beams")                                      \
     E_KEYWORD_BLOCK("brakes")                                     \
@@ -287,7 +286,6 @@ namespace Regexes
     E_KEYWORD_BLOCK("soundsources")                               \
     E_KEYWORD_BLOCK("soundsources2")                              \
     E_KEYWORD_INLINE("speedlimiter")                              \
-    /* E_KEYWORD_BLOCK("soundsources3") ~~ Not supported yet */   \
     E_KEYWORD_BLOCK("submesh")                                    \
     E_KEYWORD_INLINE("submesh_groundmodel")                       \
     E_KEYWORD_BLOCK("texcoords")                                  \

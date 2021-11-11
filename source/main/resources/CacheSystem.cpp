@@ -707,7 +707,7 @@ void CacheSystem::FillTruckDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr str
     }
 
     /* Authors */
-    std::vector<RigDef::Author>::iterator author_itor = def->authors.begin();
+    std::vector<RigDef::AuthorLine>::iterator author_itor = def->authors.begin();
     for (; author_itor != def->authors.end(); author_itor++)
     {
         AuthorInfo author;
@@ -720,7 +720,10 @@ void CacheSystem::FillTruckDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr str
     }
 
     /* Section config */
-    entry.sectionconfigs = def->section_config;
+    for (RigDef::SectionconfigLine& def: def->sectionconfig)
+    {
+        entry.sectionconfigs.push_back(def.name);
+    }
 
     /* Engine */
     if (def->engine.size() > 0)
@@ -731,7 +734,7 @@ void CacheSystem::FillTruckDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr str
         entry.torque = def->engine[0].torque;
         entry.enginetype = 't'; /* Truck (default) */
         if (def->engoption.size() > 0 &&
-            def->engoption[0].type == RigDef::Engoption::ENGINE_TYPE_c_CAR)
+            def->engoption[0].type == RigDef::EngoptionLine::ENGINE_TYPE_c_CAR)
         {
             entry.enginetype = 'c';
         }
@@ -763,7 +766,7 @@ void CacheSystem::FillTruckDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr str
         vehicle_type = BOAT;
     }
     /* Note: Sections 'turboprops' and 'turboprops2' are unified in TruckParser2013 */
-    else if (def->turbojets.size() > 0 || def->pistonprops.size() > 0 || def->turboprops_2.size() > 0)
+    else if (def->turbojets.size() > 0 || def->pistonprops.size() > 0 || def->turboprops2.size() > 0)
     {
         vehicle_type = AIRPLANE;
     }
@@ -782,16 +785,16 @@ void CacheSystem::FillTruckDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr str
     entry.hasSubmeshs = static_cast<int>(def->texcoords.size() > 0);
     entry.nodecount = static_cast<int>(def->nodes.size());
     entry.beamcount = static_cast<int>(def->beams.size());
-    entry.shockcount = static_cast<int>(def->shocks.size() + def->shocks_2.size());
+    entry.shockcount = static_cast<int>(def->shocks.size() + def->shocks2.size());
     entry.fixescount = static_cast<int>(def->fixes.size());
     entry.hydroscount = static_cast<int>(def->hydros.size());
     entry.driveable = vehicle_type;
-    entry.commandscount = static_cast<int>(def->commands_2.size());
-    entry.flarescount = static_cast<int>(def->flares_2.size());
+    entry.commandscount = static_cast<int>(def->commands2.size());
+    entry.flarescount = static_cast<int>(def->flares2.size());
     entry.propscount = static_cast<int>(def->props.size());
     entry.wingscount = static_cast<int>(def->wings.size());
-    entry.turbopropscount = static_cast<int>(def->turboprops_2.size());
-    entry.rotatorscount = static_cast<int>(def->rotators.size() + def->rotators_2.size());
+    entry.turbopropscount = static_cast<int>(def->turboprops2.size());
+    entry.rotatorscount = static_cast<int>(def->rotators.size() + def->rotators2.size());
     entry.exhaustscount = static_cast<int>(def->exhausts.size());
     entry.custom_particles = def->particles.size() > 0;
     entry.turbojetcount = static_cast<int>(def->turbojets.size());
@@ -803,25 +806,25 @@ void CacheSystem::FillTruckDetailInfo(CacheEntry& entry, Ogre::DataStreamPtr str
     for (const auto& w : def->wheels)
     {
         entry.wheelcount++;
-        if (w.propulsion != RigDef::Wheels::PROPULSION_NONE)
+        if (w.propulsion != RigDef::WheelPropulsion::PROPULSION_NONE)
             entry.propwheelcount++;
     }
-    for (const auto& w : def->wheels_2)
+    for (const auto& w : def->wheels2)
     {
         entry.wheelcount++;
-        if (w.propulsion != RigDef::Wheels::PROPULSION_NONE)
+        if (w.propulsion != RigDef::WheelPropulsion::PROPULSION_NONE)
             entry.propwheelcount++;
     }
-    for (const auto& w : def->mesh_wheels)
+    for (const auto& w : def->meshwheels)
     {
         entry.wheelcount++;
-        if (w.propulsion != RigDef::Wheels::PROPULSION_NONE)
+        if (w.propulsion != RigDef::WheelPropulsion::PROPULSION_NONE)
             entry.propwheelcount++;
     }
-    for (const auto& w : def->flex_body_wheels)
+    for (const auto& w : def->flexbodywheels)
     {
         entry.wheelcount++;
-        if (w.propulsion != RigDef::Wheels::PROPULSION_NONE)
+        if (w.propulsion != RigDef::WheelPropulsion::PROPULSION_NONE)
             entry.propwheelcount++;
     }
 

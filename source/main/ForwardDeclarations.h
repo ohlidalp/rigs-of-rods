@@ -170,6 +170,12 @@ namespace RoRnet
     struct VehicleState;
 }
 
+namespace RigDef
+{
+    struct File;
+    struct FlexbodiesLine;
+}
+
 #ifdef USE_SOCKETW
 class SWBaseSocket;
 #endif // USE_SOCKETW
