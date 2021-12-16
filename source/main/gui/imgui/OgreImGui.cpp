@@ -138,14 +138,15 @@ void OgreImGui::renderQueueStarted(Ogre::uint8 queueGroupId,
         if(vp != NULL)
         {
             Ogre::SceneManager* sceneMgr = vp->getCamera()->getSceneManager();
+            NFEF_DEBUG(fmt::format(
+                "running OgreImGui::renderQueueStarted(): viewport:{}, overlays:{}",
+                (void*)vp, vp->getOverlaysEnabled()));
+
             if (vp->getOverlaysEnabled() && sceneMgr->_getCurrentRenderStage() != Ogre::SceneManager::IRS_RENDER_TO_TEXTURE)
             {
                 //ORIG//Ogre::OverlayManager::getSingleton()._queueOverlaysForRendering(vp->getCamera(), sceneMgr->getRenderQueue(), vp);
                 m_imgui_overlay->_findVisibleObjects(vp->getCamera(), sceneMgr->getRenderQueue(), vp);
             }
-
-            if (!vp->getOverlaysEnabled())
-               NFEF_DEBUG("running OgreImGui::renderQueueStarted(): overlays disabled!");
         }
     }
 }

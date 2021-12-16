@@ -57,6 +57,7 @@ void LoadingWindow::SetProgress(int percent, std::string const& text, bool rende
     if (render_frame)
     {
         this->Draw();
+        NFEF_DEBUG("calling renderOneFrame() from LoadingWindow::SetProgress()");
         Ogre::Root::getSingleton().renderOneFrame();
     }
 

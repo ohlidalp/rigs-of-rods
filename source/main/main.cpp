@@ -968,6 +968,7 @@ int main(int argc, char *argv[])
             }
             else
             {
+                NFEF_DEBUG("calling renderOneFrame() from main()");
                 App::GetAppContext()->GetOgreRoot()->renderOneFrame();
                 if (!render_window->isActive() && render_window->isVisible())
                 {
