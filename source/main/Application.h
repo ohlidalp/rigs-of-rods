@@ -48,6 +48,9 @@
 #define PARSEREAL(x)    Ogre::StringConverter::parseReal(x)
 #define HydraxLOG(msg)  Ogre::LogManager::getSingleton().logMessage("[Hydrax] " + Ogre::String(msg));
 
+// Temporary - imgui NewFrameEndFrame debug, see https://github.com/RigsOfRods/rigs-of-rods/pull/2834
+#define NFEF_DEBUG(String) { LOG(fmt::format(" - NFEF - {}", String)); }
+
 namespace RoR {
 
 // ------------------------------------------------------------------------------------------------

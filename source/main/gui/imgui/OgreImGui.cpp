@@ -143,6 +143,9 @@ void OgreImGui::renderQueueStarted(Ogre::uint8 queueGroupId,
                 //ORIG//Ogre::OverlayManager::getSingleton()._queueOverlaysForRendering(vp->getCamera(), sceneMgr->getRenderQueue(), vp);
                 m_imgui_overlay->_findVisibleObjects(vp->getCamera(), sceneMgr->getRenderQueue(), vp);
             }
+
+            if (!vp->getOverlaysEnabled())
+               NFEF_DEBUG("running OgreImGui::renderQueueStarted(): overlays disabled!");
         }
     }
 }

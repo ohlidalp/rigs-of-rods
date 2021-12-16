@@ -48,7 +48,10 @@ void ImGuiOverlay::initialise()
 void ImGuiOverlay::_findVisibleObjects(Camera* cam, RenderQueue* queue, Viewport* vp)
 {
     if (!mVisible)
+    {
+        NFEF_DEBUG("running ImGuiOverlay::_findVisibleObjects(): mVisible is false!");
         return;
+    }
 
     mRenderable._update();
     queue->addRenderable(&mRenderable, RENDER_QUEUE_OVERLAY, mZOrder * 100);
@@ -140,6 +143,7 @@ void ImGuiOverlay::NewFrame(const FrameEvent& evt)
     io.DisplaySize = ImVec2(oMgr.getViewportWidth(), oMgr.getViewportHeight());
 
     // Start the frame
+    NFEF_DEBUG("calling ImGui::NewFrame()");
     ImGui::NewFrame();
 }
 
@@ -176,6 +180,7 @@ bool ImGuiOverlay::ImGUIRenderable::preRender(SceneManager* sm, RenderSystem* rs
     // Instruct ImGui to Render() and process the resulting CmdList-s
     // Adopted from https://bitbucket.org/ChaosCreator/imgui-ogre2.1-binding
     // ... Commentary on OGRE forums: http://www.ogre3d.org/forums/viewtopic.php?f=5&t=89081#p531059
+    NFEF_DEBUG("calling ImGui::Render()");
     ImGui::Render();
     ImDrawData* draw_data = ImGui::GetDrawData();
     int vpWidth = vp->getActualWidth();

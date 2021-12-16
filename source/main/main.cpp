@@ -892,6 +892,7 @@ int main(int argc, char *argv[])
             }
 
             // Early GUI updates which require halted physics
+            NFEF_DEBUG("calling NewImGuiFrame()");
             App::GetGuiManager()->NewImGuiFrame(dt);
             if (App::app_state->getEnum<AppState>() == AppState::SIMULATION)
             {
