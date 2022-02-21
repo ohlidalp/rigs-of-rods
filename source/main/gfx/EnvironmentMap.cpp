@@ -236,6 +236,7 @@ void RoR::GfxEnvmap::UpdateEnvMap(Ogre::Vector3 center, GfxActor* gfx_actor, boo
             App::GetSimTerrain()->getSkyManager()->NotifySkyCameraChanged(m_cameras[m_update_round]);
         }
 #endif // USE_CAELUM
+        NFEF_DEBUG("EnvMap: calling Ogre::RenderTarget::update()");
         m_render_targets[m_update_round]->update();
         m_update_round = (m_update_round + 1) % NUM_FACES;
     }

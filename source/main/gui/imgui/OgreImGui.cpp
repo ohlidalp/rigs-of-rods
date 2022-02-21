@@ -25,7 +25,9 @@
 
 #include "OgreImGui.h"
 
+#include "AppContext.h"
 #include "ContentManager.h"
+#include "GUIManager.h"
 #include "OgreImGuiOverlay.h"
 
 #include <imgui.h>
@@ -134,18 +136,26 @@ void OgreImGui::renderQueueStarted(Ogre::uint8 queueGroupId,
     // Shamelessly copy-pasted from `Ogre::OverlaySystem::renderQueueStarted()`
     if(queueGroupId == Ogre::RENDER_QUEUE_OVERLAY)
     {
-        Ogre::Viewport* vp = Ogre::Root::getSingletonPtr()->getRenderSystem()->_getViewport();
-        if(vp != NULL)
+        Ogre::Viewport* vp_active = Ogre::Root::getSingletonPtr()->getRenderSystem()->_getViewport();
+        Ogre::Viewport* vp = App::GetAppContext()->GetViewport();
+        if(vp != nullptr)
         {
             Ogre::SceneManager* sceneMgr = vp->getCamera()->getSceneManager();
-            NFEF_DEBUG(fmt::format(
-                "running OgreImGui::renderQueueStarted(): viewport:{}, overlays:{}",
-                (void*)vp, vp->getOverlaysEnabled()));
 
-            if (vp->getOverlaysEnabled() && sceneMgr->_getCurrentRenderStage() != Ogre::SceneManager::IRS_RENDER_TO_TEXTURE)
+            // Checking `sceneMgr->_getCurrentRenderStage() == Ogre::SceneManager::IRS_RENDER_TO_TEXTURE`
+            // doesn't do the trick if the RTT is updated by calling `Ogre::RenderTarget::update()` directly
+            // which we do frequently.
+            // Instead, we check if the active viewport matches our screen viewport.
+
+            NFEF_DEBUG(fmt::format(
+                "running OgreImGui::renderQueueStarted(): viewport:{}, overlays:{}, active:{}",
+                (void*)vp, vp->getOverlaysEnabled(), vp==vp_active));
+
+            if (vp->getOverlaysEnabled() && vp_active==vp)
             {
                 //ORIG//Ogre::OverlayManager::getSingleton()._queueOverlaysForRendering(vp->getCamera(), sceneMgr->getRenderQueue(), vp);
                 m_imgui_overlay->_findVisibleObjects(vp->getCamera(), sceneMgr->getRenderQueue(), vp);
+                App::GetGuiManager()->ClearImGuiFrameActive();
             }
         }
     }

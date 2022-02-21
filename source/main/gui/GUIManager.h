@@ -130,6 +130,8 @@ public:
     void ApplyGuiCaptureKeyboard(); //!< Call after rendered frame to apply queued value
 
     void NewImGuiFrame(float dt);
+    bool IsImGuiFrameActive() const { return m_imgui_frame_active; }
+    void ClearImGuiFrameActive() { m_imgui_frame_active = false; }
     void DrawMainMenuGui();
     void DrawSimulationGui(float dt); //!< Touches live data; must be called in sync with sim. thread
     void DrawSimGuiBuffered(GfxActor* player_gfx_actor); //!< Reads data from simbuffer
@@ -167,6 +169,7 @@ private:
     bool               m_gui_kb_capture_requested = false; //!< Effective value, persistent
     Ogre::Timer        m_last_mousemove_time;
     bool               m_is_cursor_supressed      = false; //!< True if cursor was manually hidden.
+    bool               m_imgui_frame_active       = false; //!< Guard for ImGui:: NewFrame()/EndFrame()
 };
 
 } // namespace RoR

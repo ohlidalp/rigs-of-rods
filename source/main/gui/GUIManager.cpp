@@ -383,6 +383,18 @@ void GUIManager::UpdateMouseCursorVisibility()
 
 void GUIManager::NewImGuiFrame(float dt)
 {
+    // **THIS TURNED OUT NOT TO BE NEEDED, the viewport check did the trick**
+    // Safety guard, honestly a workaround for debug Assert()s about NewFrame/EndFrame mismatch.
+    // - the way OGRE's builtin DearIMGUI works requires all GUI to be drawn in
+    //    `RenderTargetListener::preViewportUpdate()` callback, invoked from `renderOneFrame()`,
+    //    and we need it available anytime in the main loop (debug views, scripting, but also convenience).
+    //    see https://github.com/OGRECave/ogre/commit/6ea11c9aefae745543801b4c6e6522e75fcfac46#diff-ba044a06f13f5520d6a7f71483b63942b77482b9f1c948fac74fc8159eec544a
+    if (m_imgui_frame_active)
+    {
+        NFEF_DEBUG("GUIManager: calling EndFrame()");
+        ImGui::EndFrame();
+    }
+
     ImGuiIO& io = ImGui::GetIO();
     OIS::Keyboard* kb = App::GetInputEngine()->GetOisKeyboard();
 
@@ -396,6 +408,7 @@ void GUIManager::NewImGuiFrame(float dt)
     Ogre::FrameEvent ev;
     ev.timeSinceLastFrame = dt;
     Ogre::ImGuiOverlay::NewFrame(ev);
+    m_imgui_frame_active = true;
 
     // Reset state
     m_gui_kb_capture_queued = false;
