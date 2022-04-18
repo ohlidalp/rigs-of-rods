@@ -369,7 +369,7 @@ if (UNIX)
     #  include_directories(${GTK_INCLUDE_DIRS})
     set(OS_LIBS "X11 -l${CMAKE_DL_LIBS} -lrt")
 endif ()
-target_link_libraries(${BINNAME} PRIVATE ${OS_LIBS} version_info)
+target_link_libraries(${BINNAME} PRIVATE ${OS_LIBS} version_info enet)
 
 # --- Threading support (still needed for GCC even with C++11)
 set(CMAKE_THREAD_PREFER_PTHREAD YES)

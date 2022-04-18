@@ -124,6 +124,7 @@ resolve_conan_dependencies()
 # Recurse into subdirectories
 ################################################################################
 add_subdirectory(external/angelscript_addons)
+add_subdirectory(external/enet)
 add_subdirectory(source/version_info)
 add_subdirectory(source/main)
 add_subdirectory(doc)
