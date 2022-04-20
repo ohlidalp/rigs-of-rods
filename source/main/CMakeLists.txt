@@ -301,6 +301,7 @@ endif ()
 
 target_include_directories(${BINNAME} PRIVATE
         ${CMAKE_SOURCE_DIR}/external/header_only
+        ${CMAKE_SOURCE_DIR}/external/enet/include
         .
         audio
         datatypes

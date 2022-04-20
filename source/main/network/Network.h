@@ -38,6 +38,7 @@
 #include <thread>
 #include <vector>
 #include <OgreUTFString.h>
+#include <enet/enet.h>
 
 namespace RoR {
 
@@ -78,12 +79,6 @@ struct NetCharacterMsgAttach
     int32_t position;
 };
 
-struct NetSendPacket
-{
-    char buffer[RORNET_MAX_MESSAGE_LENGTH];
-    int size;
-};
-
 struct NetRecvPacket
 {
     RoRnet::Header header;
@@ -93,6 +88,14 @@ struct NetRecvPacket
 #pragma pack(pop)
 
 // ------------------------ End of network messages --------------------------
+
+enum class NetProgress
+{
+    INVALID,
+    AWAITING_HELLO_RESPONSE,
+    AWAITING_USER_AUTH_RESPONSE,
+    PLAYING
+};
 
 class Network
 {
@@ -131,18 +134,20 @@ private:
     void                 PushNetMessage(MsgType type, std::string const & message);
     void                 SetNetQuality(int quality);
     bool                 SendMessageRaw(char *buffer, int msgsize);
-    bool                 SendNetMessage(int type, unsigned int streamid, int len, char* content);
+    bool                 SendMessageTcp(int type, unsigned int streamid, int len, char* content);
     void                 QueueStreamData(RoRnet::Header &header, char *buffer, size_t buffer_len);
-    int                  ReceiveMessage(RoRnet::Header *head, char* content, int bufferlen);
+    int                  ReceiveMessageTcp(RoRnet::Header *head, char* content, int bufferlen);
     void                 CouldNotConnect(std::string const & msg, bool close_socket = true);
 
     bool                 ConnectThread();
-    void                 SendThread();
-    void                 RecvThread();
+    void                 OnPacketReceived(ENetPacket* packet);
 
     // Variables
 
     SWInetSocket         m_socket;
+    ENetHost*            m_host = nullptr;
+    ENetPeer*            m_peer = nullptr;
+    NetProgress          m_progress = NetProgress::INVALID;
 
     RoRnet::ServerInfo   m_server_settings;
     RoRnet::UserInfo     m_userdata;
@@ -169,12 +174,9 @@ private:
     std::mutex           m_users_mutex;
     std::mutex           m_userdata_mutex;
     std::mutex           m_recv_packetqueue_mutex;
-    std::mutex           m_send_packetqueue_mutex;
 
-    std::condition_variable m_send_packet_available_cv;
 
     std::vector<NetRecvPacket> m_recv_packet_buffer;
-    std::deque <NetSendPacket> m_send_packet_buffer;
 };
 
 /// @}   //addtogroup Network
