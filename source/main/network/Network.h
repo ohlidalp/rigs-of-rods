@@ -37,6 +37,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <enet/enet.h>
 
 namespace RoR {
 
@@ -53,6 +54,13 @@ struct CurlFailInfo
 // ----------------------- Network messages (packed) -------------------------
 
 #pragma pack(push, 1)
+
+struct NetSendPacket
+{
+    char buffer[RORNET_MAX_MESSAGE_LENGTH];
+    int size;
+    int type;
+};
 
 enum NetCharacterCmd
 {
@@ -84,12 +92,6 @@ struct NetCharacterMsgAttach
     int32_t position;
 };
 
-struct NetSendPacket
-{
-    char buffer[RORNET_MAX_MESSAGE_LENGTH];
-    int size;
-};
-
 struct NetRecvPacket
 {
     RoRnet::Header header;
@@ -107,12 +109,21 @@ struct PeerOptionsRequest
     BitMask_t por_peeropts; //!< See `RoRnet::PeerOptions`.
 };
 
+enum class NetProgress
+{
+    INVALID,
+    AWAITING_HELLO_RESPONSE,
+    AWAITING_USER_AUTH_RESPONSE,
+    PLAYING,
+    AWAITING_DISCONNECT
+};
+
 class Network
 {
 public:
-    bool                 StartConnecting();    //!< Launches connecting on background.
-    void                 StopConnecting();
+    bool                 Connect();    //!< Launches connecting on background.
     void                 Disconnect();
+    NetProgress          GetProgress();
 
     void                 AddPacket(int streamid, int type, int len, const char *content);
     void                 AddLocalStream(RoRnet::StreamRegister *reg, int size);
@@ -148,18 +159,22 @@ private:
     void                 PushNetMessage(MsgType type, std::string const & message);
     void                 SetNetQuality(int quality);
     bool                 SendMessageRaw(char *buffer, int msgsize);
-    bool                 SendNetMessage(int type, unsigned int streamid, int len, char* content);
+    bool                 SendMessageTcp(int type, unsigned int streamid, int len, char* content);
+    void                 DisconnectENet();
     void                 QueueStreamData(RoRnet::Header &header, char *buffer, size_t buffer_len);
-    int                  ReceiveMessage(RoRnet::Header *head, char* content, int bufferlen);
+    int                  ReceiveMessageTcp(RoRnet::Header *head, char* content, int bufferlen);
     void                 CouldNotConnect(std::string const & msg, bool close_socket = true);
 
     bool                 ConnectThread();
-    void                 SendThread();
-    void                 RecvThread();
+    void                 OnPacketReceived(ENetPacket* packet);
 
     // Variables
 
     SWInetSocket         m_socket;
+    ENetHost*            m_host = nullptr;
+    ENetPeer*            m_peer = nullptr;
+    NetProgress          m_progress = NetProgress::INVALID;
+    std::mutex           m_enet_mutex;
 
     RoRnet::ServerInfo   m_server_settings;
     RoRnet::UserInfo     m_userdata;
@@ -167,7 +182,7 @@ private:
     std::vector<BitMask_t> m_users_peeropts;  //!< See `RoRnet::PeerOptions`.
     std::vector<RoRnet::UserInfo> m_disconnected_users;
 
-    std::string      m_username; // Shadows GVar 'mp_player_name' for multithreaded access.
+    std::string          m_username; // Shadows GVar 'mp_player_name' for multithreaded access.
     std::string          m_net_host; // Shadows GVar 'mp_server_host' for multithreaded access.
     std::string          m_password; // Shadows GVar 'mp_server_password' for multithreaded access.
     std::string          m_token;    // Shadows GVar 'mp_player_token' for multithreaded access.
@@ -189,7 +204,6 @@ private:
     std::mutex           m_recv_packetqueue_mutex;
     std::mutex           m_send_packetqueue_mutex;
 
-    std::condition_variable m_send_packet_available_cv;
 
     std::vector<NetRecvPacket> m_recv_packet_buffer;
     std::deque <NetSendPacket> m_send_packet_buffer;

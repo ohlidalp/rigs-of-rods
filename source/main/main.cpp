@@ -78,6 +78,10 @@ int main(int argc, char *argv[])
     curl_global_init(CURL_GLOBAL_ALL); // MUST init before any threads are started
 #endif
 
+#ifdef USE_SOCKETW
+    enet_initialize();
+#endif
+
 #ifndef _DEBUG
     try
     {
@@ -544,7 +548,7 @@ int main(int argc, char *argv[])
 #if USE_SOCKETW
                     try
                     {
-                        App::GetNetwork()->StartConnecting();
+                        App::GetNetwork()->Connect();
                     }
                     catch (...) 
                     {
@@ -559,7 +563,8 @@ int main(int argc, char *argv[])
 #if USE_SOCKETW
                     try
                     {
-                        if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED)
+                        if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED ||
+                            App::mp_state->getEnum<MpState>() == MpState::CONNECTING)
                         {
                             App::GetNetwork()->Disconnect();
                             if (App::app_state->getEnum<AppState>() == AppState::MAIN_MENU)
@@ -609,6 +614,12 @@ int main(int argc, char *argv[])
                     break;
                 }
 
+                case MSG_NET_USER_DISCONNECT:
+                    App::GetGameContext()->PushMessage(Message(MSG_NET_DISCONNECT_REQUESTED));
+                    App::GetGameContext()->PushMessage(Message(MSG_SIM_UNLOAD_TERRN_REQUESTED));
+                    App::GetGameContext()->PushMessage(Message(MSG_GUI_OPEN_MENU_REQUESTED));
+                    break;
+
                 case MSG_NET_CONNECT_STARTED:
                 {
                     try
@@ -643,7 +654,6 @@ int main(int argc, char *argv[])
                     try
                     {
                         App::GetGuiManager()->LoadingWindow.SetVisible(false);
-                        App::GetNetwork()->StopConnecting();
                         App::mp_state->setVal((int)RoR::MpState::CONNECTED);
                         RoR::ChatSystem::SendStreamSetup();
                         if (!App::GetMumble())
@@ -683,7 +693,6 @@ int main(int argc, char *argv[])
                     try
                     {
                         App::GetGuiManager()->LoadingWindow.SetVisible(false);
-                        App::GetNetwork()->StopConnecting();
                         App::GetGameContext()->PushMessage(Message(MSG_NET_DISCONNECT_REQUESTED));
                         App::GetGameContext()->PushMessage(Message(MSG_GUI_OPEN_MENU_REQUESTED));
                         App::GetGuiManager()->ShowMessageBox(
