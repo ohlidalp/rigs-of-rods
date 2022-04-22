@@ -233,6 +233,8 @@ void Network::OnPacketReceived(ENetPacket* packet)
     // Update client state
     if (m_progress == NetProgress::AWAITING_HELLO_RESPONSE)
     {
+        LOG("[RoR|Networking|ENet] received response to RoRnet HELLO");
+
         if (header.command == MSG2_WRONG_VER)
         {
             this->PushNetMessage(MSG_NET_CONNECT_FAILURE, _L("server uses a different protocol version"));
@@ -258,7 +260,7 @@ void Network::OnPacketReceived(ENetPacket* packet)
             std::string country = App::app_country->getStr().substr(0, 2);
             strncpy(c.language, (language + std::string("_") + country).c_str(), 5);
             strcpy(c.sessiontype, "normal");
-            this->AddPacket(MSG2_USER_INFO, 0, sizeof(RoRnet::UserInfo), (char*)&c);
+            this->AddPacket(0, MSG2_USER_INFO, sizeof(RoRnet::UserInfo), (char*)&c);
 
             m_progress = NetProgress::AWAITING_USER_AUTH_RESPONSE;
         }
@@ -272,6 +274,8 @@ void Network::OnPacketReceived(ENetPacket* packet)
 
     if (m_progress == NetProgress::AWAITING_USER_AUTH_RESPONSE)
     {
+        LOG("[RoR|Networking|ENet] received response to RoRnet USER_INFO");
+
         if (header.command==MSG2_FULL)
         {
             this->PushNetMessage(MSG_NET_CONNECT_FAILURE, _L("Establishing network session: sorry, server has too many players"));
@@ -540,8 +544,12 @@ bool Network::ConnectThread()
     }
 
     ENetAddress address;
-    enet_address_set_host(&address, m_net_host.c_str());
-    address.port = m_net_port;
+    if (enet_address_set_host(&address, m_net_host.c_str()) != 0)
+    {
+        this->PushNetMessage(MSG_NET_CONNECT_FAILURE, _L("Establishing network session: ENet rejected the server IP"));
+        return false;
+    }
+    address.port = m_net_port + 1;
 
     this->PushNetMessage(MSG_NET_CONNECT_PROGRESS, _LC("Network", "Connecting via UDP..."));
     size_t num_channels = 1;
@@ -554,22 +562,34 @@ bool Network::ConnectThread()
         return false;
     }
 
-    this->PushNetMessage(MSG_NET_CONNECT_PROGRESS, _LC("Network", "Getting server info..."));
-
-    // Send HELLO again, this time using ENet
-    this->AddPacket(MSG2_HELLO, 0, (int)strlen(RORNET_VERSION), (char *)RORNET_VERSION);
-    m_progress = NetProgress::AWAITING_HELLO_RESPONSE;
-
     // Spin the ENet dispatch loop
+    LOG("[RoR|Networking|ENet] dispatch loop is running...");
     while (!m_shutdown)
     {
         ENetEvent ev;
         enet_uint32 timeout_milisec = 500;
-        enet_host_service(m_host, &ev, timeout_milisec);
+        int result = enet_host_service(m_host, &ev, timeout_milisec);
+        if (result < 0)
+        {
+            m_shutdown = true; // Atomic; instruct dispatch loop to quit.
+            this->PushNetMessage(
+                (m_progress == NetProgress::PLAYING) ? MSG_NET_RECV_ERROR : MSG_NET_CONNECT_FAILURE,
+                _L("connection error"));
+            continue;
+        }
+
         switch (ev.type)
         {
+            case ENET_EVENT_TYPE_CONNECT:
+                LOG("[RoR|Networking|ENet] received event CONNECT");
+                // Send HELLO again, this time using ENet
+                this->AddPacket(0, MSG2_HELLO, (int)strlen(RORNET_VERSION), (char *)RORNET_VERSION);
+                m_progress = NetProgress::AWAITING_HELLO_RESPONSE;
+                this->PushNetMessage(MSG_NET_CONNECT_PROGRESS, _LC("Network", "Getting server info..."));
+                break;
+
             case ENET_EVENT_TYPE_DISCONNECT:
-                LOG("[RoR|Networking] received ENET_EVENT_TYPE_DISCONNECT");
+                LOG("[RoR|Networking|ENet] received event DISCONNECT");
                 m_shutdown = true; // Atomic; instruct dispatch loop to quit.
                 this->PushNetMessage(
                     (m_progress == NetProgress::PLAYING) ? MSG_NET_RECV_ERROR : MSG_NET_CONNECT_FAILURE,
@@ -603,7 +623,7 @@ bool Network::ConnectThread()
 void Network::Disconnect()
 {
     LOG("[RoR|Networking] Disconnect() called.");
-    this->AddPacket(MSG2_USER_LEAVE, 0, 0, 0);
+    this->AddPacket(0, MSG2_USER_LEAVE, 0, 0);
     enet_peer_disconnect(m_peer, 0); // cleanup will be done on ENET_EVENT_TYPE_DISCONNECT
 }
 

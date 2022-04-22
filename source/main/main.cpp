@@ -76,6 +76,10 @@ int main(int argc, char *argv[])
     curl_global_init(CURL_GLOBAL_ALL); // MUST init before any threads are started
 #endif
 
+#ifdef USE_SOCKETW
+    enet_initialize();
+#endif
+
 #ifndef _DEBUG
     try
     {
@@ -433,7 +437,6 @@ int main(int argc, char *argv[])
 
                 case MSG_NET_CONNECT_SUCCESS:
                     App::GetGuiManager()->GetLoadingWindow()->SetVisible(false);
-                    App::GetNetwork()->StopConnecting();
                     App::mp_state->setVal((int)RoR::MpState::CONNECTED);
                     RoR::ChatSystem::SendStreamSetup();
                     if (!App::GetMumble())
