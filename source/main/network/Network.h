@@ -94,15 +94,16 @@ enum class NetProgress
     INVALID,
     AWAITING_HELLO_RESPONSE,
     AWAITING_USER_AUTH_RESPONSE,
-    PLAYING
+    PLAYING,
+    AWAITING_DISCONNECT
 };
 
 class Network
 {
 public:
-    bool                 StartConnecting();    //!< Launches connecting on background.
-    void                 StopConnecting();
+    bool                 Connect();    //!< Launches connecting on background.
     void                 Disconnect();
+    NetProgress          GetProgress();
 
     void                 AddPacket(int streamid, int type, int len, const char *content);
     void                 AddLocalStream(RoRnet::StreamRegister *reg, int size);
@@ -135,6 +136,7 @@ private:
     void                 SetNetQuality(int quality);
     bool                 SendMessageRaw(char *buffer, int msgsize);
     bool                 SendMessageTcp(int type, unsigned int streamid, int len, char* content);
+    void                 SendMessageEnet(int type, int streamid, int len, const char *content); //!< `m_enet_mutex` must be locked!
     void                 QueueStreamData(RoRnet::Header &header, char *buffer, size_t buffer_len);
     int                  ReceiveMessageTcp(RoRnet::Header *head, char* content, int bufferlen);
     void                 CouldNotConnect(std::string const & msg, bool close_socket = true);
@@ -148,6 +150,7 @@ private:
     ENetHost*            m_host = nullptr;
     ENetPeer*            m_peer = nullptr;
     NetProgress          m_progress = NetProgress::INVALID;
+    std::mutex           m_enet_mutex;
 
     RoRnet::ServerInfo   m_server_settings;
     RoRnet::UserInfo     m_userdata;

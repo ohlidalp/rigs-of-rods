@@ -394,11 +394,12 @@ int main(int argc, char *argv[])
                 // -- Network events --
 
                 case MSG_NET_CONNECT_REQUESTED:
-                    App::GetNetwork()->StartConnecting();
+                    App::GetNetwork()->Connect();
                     break;
 
                 case MSG_NET_DISCONNECT_REQUESTED:
-                    if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED)
+                    if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED ||
+                        App::mp_state->getEnum<MpState>() == MpState::CONNECTING)
                     {
                         App::GetNetwork()->Disconnect();
                         if (App::app_state->getEnum<AppState>() == AppState::MAIN_MENU)
@@ -423,6 +424,12 @@ int main(int argc, char *argv[])
                     App::GetGameContext()->PushMessage(Message(MSG_GUI_OPEN_MENU_REQUESTED));
                     App::GetGuiManager()->ShowMessageBox(
                         _L("Network fatal error: "), m.description.c_str());
+                    break;
+
+                case MSG_NET_USER_DISCONNECT:
+                    App::GetGameContext()->PushMessage(Message(MSG_NET_DISCONNECT_REQUESTED));
+                    App::GetGameContext()->PushMessage(Message(MSG_SIM_UNLOAD_TERRN_REQUESTED));
+                    App::GetGameContext()->PushMessage(Message(MSG_GUI_OPEN_MENU_REQUESTED));
                     break;
 
                 case MSG_NET_CONNECT_STARTED:
@@ -464,10 +471,9 @@ int main(int argc, char *argv[])
                     break;
 
                 case MSG_NET_CONNECT_FAILURE:
-                    App::GetGuiManager()->GetLoadingWindow()->SetVisible(false);
-                    App::GetNetwork()->StopConnecting();
                     App::GetGameContext()->PushMessage(Message(MSG_NET_DISCONNECT_REQUESTED));
                     App::GetGameContext()->PushMessage(Message(MSG_GUI_OPEN_MENU_REQUESTED));
+                    App::GetGuiManager()->GetLoadingWindow()->SetVisible(false);
                     App::GetGuiManager()->ShowMessageBox(
                         _LC("Network", "Multiplayer: connection failed"), m.description.c_str());
                     break;
@@ -576,24 +582,32 @@ int main(int argc, char *argv[])
                     {
                         App::GetSimTerrain()->GetTerrainEditor()->WriteOutputFile();
                     }
-                    App::GetGameContext()->SaveScene("autosave.sav");
-                    App::GetGameContext()->ChangePlayerActor(nullptr);
-                    App::GetGameContext()->GetActorManager()->CleanUpSimulation();
-                    App::GetGameContext()->GetCharacterFactory()->DeleteAllCharacters();
-                    App::GetGameContext()->GetSceneMouse().DiscardVisuals();
-                    App::DestroyOverlayWrapper();
-                    App::GetCameraManager()->ResetAllBehaviors();
-                    App::GetGuiManager()->GetMainSelector()->Close();
-                    App::GetGuiManager()->SetVisible_LoadingWindow(false);
-                    App::GetGuiManager()->SetVisible_MenuWallpaper(true);
-                    App::sim_state->setVal((int)SimState::OFF);
-                    App::app_state->setVal((int)AppState::MAIN_MENU);
-                    delete App::GetSimTerrain();
-                    App::SetSimTerrain(nullptr);
-                    App::GetGfxScene()->ClearScene();
-                    App::sim_terrain_name->setStr("");
-                    App::sim_terrain_gui_name->setStr("");
-                    App::GetOutGauge()->Close();
+                    if (App::sim_terrain_name->getStr() != "")
+                    {
+                        App::GetGameContext()->SaveScene("autosave.sav");
+                        App::GetGameContext()->ChangePlayerActor(nullptr);
+                        App::GetGameContext()->GetActorManager()->CleanUpSimulation();
+                        App::GetGameContext()->GetCharacterFactory()->DeleteAllCharacters();
+                        App::GetGameContext()->GetSceneMouse().DiscardVisuals();
+                        App::DestroyOverlayWrapper();
+                        App::GetCameraManager()->ResetAllBehaviors();
+                        App::GetGuiManager()->GetMainSelector()->Close();
+                        App::GetGuiManager()->SetVisible_LoadingWindow(false);
+                        App::GetGuiManager()->SetVisible_MenuWallpaper(true);
+                        App::sim_state->setVal((int)SimState::OFF);
+                        App::app_state->setVal((int)AppState::MAIN_MENU);
+                        delete App::GetSimTerrain();
+                        App::SetSimTerrain(nullptr);
+                        App::GetGfxScene()->ClearScene();
+                        App::sim_terrain_name->setStr("");
+                        App::sim_terrain_gui_name->setStr("");
+                        App::GetOutGauge()->Close();
+                    }
+                    else
+                    {
+                        LOG(fmt::format("[RoR] Internal error: Got MSG_SIM_UNLOAD_TERRN_REQUESTED while no terrain was loaded."));
+                        failed_m = true;
+                    }
                     break;
 
                 case MSG_SIM_LOAD_SAVEGAME_REQUESTED:
