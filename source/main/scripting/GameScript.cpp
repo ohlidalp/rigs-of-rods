@@ -1243,7 +1243,9 @@ bool GameScript::pushMessage(MsgType type, AngelScript::CScriptDictionary* dict)
             // Make sure config exists
             if (rq->asr_config != "")
             {
-                auto result = std::find(rq->asr_cache_entry->sectionconfigs.begin(), rq->asr_cache_entry->sectionconfigs.end(), rq->asr_config);
+                auto result = std::find_if(
+                    rq->asr_cache_entry->sectionconfigs.begin(), rq->asr_cache_entry->sectionconfigs.end(),
+                    [rq](CacheActorConfigInfo& conf) { return conf.config_name == rq->asr_config; });
                 if (result == rq->asr_cache_entry->sectionconfigs.end())
                 {
                     this->log(fmt::format("{}: WARNING, configuration '{}' does not exist in '{}'.", log_msg, rq->asr_config, rq->asr_filename));
@@ -1253,7 +1255,7 @@ bool GameScript::pushMessage(MsgType type, AngelScript::CScriptDictionary* dict)
             // If no config given (or was invalid), use the first available (classic behavior).
             if (rq->asr_config == "" && rq->asr_cache_entry->sectionconfigs.size() > 0)
             {
-                rq->asr_config = rq->asr_cache_entry->sectionconfigs[0];
+                rq->asr_config = rq->asr_cache_entry->sectionconfigs[0].config_name;
             }
 
             // Enter or not?
