@@ -150,6 +150,7 @@ enum {
 	OPT_VER,
 	OPT_CHECKCACHE,
 	OPT_TRUCKCONFIG,
+	OPT_TRUCKSPAWNPOS,
 	OPT_ENTERTRUCK,
 	OPT_BENCH,
 	OPT_STREAMCACHEGEN,
@@ -179,6 +180,7 @@ CSimpleOpt::SOption cmdline_options[] = {
 	{ OPT_SETUP,          ("-setup"),       SO_NONE    },
 	{ OPT_CONFIG,         ("-config"),      SO_NONE    },
 	{ OPT_TRUCKCONFIG,    ("-truckconfig"), SO_REQ_SEP    },
+	{ OPT_TRUCKSPAWNPOS,  ("-truckspawnpos"), SO_REQ_SEP    },
 	{ OPT_HELP,           ("--help"),       SO_NONE    },
 	{ OPT_HELP,           ("-help"),        SO_NONE    },
 	{ OPT_CHECKCACHE,     ("-checkcache"),  SO_NONE    },
@@ -262,6 +264,8 @@ int main(int argc, char *argv[])
 				SETTINGS.setSetting("Preselected Truck", String(args.OptionArg()));
 			} else if (args.OptionId() == OPT_TRUCKCONFIG) {
 				SETTINGS.setSetting("Preselected TruckConfig", String(args.OptionArg()));
+			} else if (args.OptionId() == OPT_TRUCKSPAWNPOS) {
+				SETTINGS.setSetting("Preselected TruckSpawnPosition", String(args.OptionArg()));
 			} else if (args.OptionId() == OPT_MAP) {
 				SETTINGS.setSetting("Preselected Map", String(args.OptionArg()));
 			} else if (args.OptionId() == OPT_CMD) {

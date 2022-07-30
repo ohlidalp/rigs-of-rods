@@ -166,7 +166,7 @@ public: // public methods
 	void checkRemoteStreamResultsChanged();
 	void hideGUI(bool visible);
 	void hideMap();
-	void initTrucks(bool loadmanual, Ogre::String selected, Ogre::String selectedExtension = "", const std::vector<Ogre::String> *truckconfig = 0, bool enterTruck = false, Skin *skin = NULL);
+	void initTrucks(bool loadmanual, Ogre::String selected, Ogre::Vector3 spawnpos, Ogre::String selectedExtension = "", const std::vector<Ogre::String> *truckconfig = 0, bool enterTruck = false, Skin *skin = NULL);
 	
 	void loadTerrain(Ogre::String terrainfile);
 

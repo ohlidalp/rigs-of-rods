@@ -927,13 +927,13 @@ RoRFrameListener::RoRFrameListener(AppState *parentState, String inputhwnd) :
 	String preselected_map = SSETTING("Preselected Map", "");
 	String preselected_truck = SSETTING("Preselected Truck", "");
 	String preselected_truckConfig = SSETTING("Preselected TruckConfig", "");
+	String preselected_truckSpawnPosition = SSETTING("Preselected TruckSpawnPosition", "");
 	bool enterTruck = (BSETTING("Enter Preselected Truck", false));
 
 	if (preselected_map != "") LOG("Preselected Map: " + (preselected_map));
 	if (preselected_truck != "") LOG("Preselected Truck: " + (preselected_truck));
 	if (preselected_truckConfig != "") LOG("Preselected Truck Config: " + (preselected_truckConfig));
-
-	//LOG("huette debug 1");
+	if (preselected_truckSpawnPosition != "") LOG("Preselected Truck Spawn Position: " + (preselected_truckSpawnPosition));
 
 	// initiate player colours
 	PlayerColours::getSingleton();
@@ -1086,14 +1086,19 @@ RoRFrameListener::RoRFrameListener(AppState *parentState, String inputhwnd) :
 			} else
 			{
 				// init no trucks
-				initTrucks(false, preselected_map);
+				initTrucks(false, preselected_map, gEnv->terrainManager->getSpawnPos());
 			}
 		} else if (!preselected_truck.empty() && preselected_truck != "none")
 		{
 			// load preselected truck
 			const std::vector<String> truckConfig = std::vector<String>(1, preselected_truckConfig);
 			loading_state = TERRAIN_LOADED;
-			initTrucks(true, preselected_truck, "", &truckConfig, enterTruck);
+			Ogre::Vector3 spawnpos = gEnv->terrainManager->getSpawnPos();
+			if (preselected_truckSpawnPosition != "")
+			{
+				spawnpos = Ogre::StringConverter::parseVector3(preselected_truckSpawnPosition);
+			}
+			initTrucks(true, preselected_truck, spawnpos, "", &truckConfig, enterTruck);
 		}
 	} else
 	{
@@ -2493,7 +2498,7 @@ bool RoRFrameListener::updateEvents(float dt)
 					} else
 					{
 						// init no trucks
-						initTrucks(false, sel->fname, "", 0, false, skin);
+						initTrucks(false, sel->fname, gEnv->terrainManager->getSpawnPos(), "", 0, false, skin);
 					}
 				}
 			} else if (loading_state==TERRAIN_LOADED)
@@ -2504,9 +2509,9 @@ bool RoRFrameListener::updateEvents(float dt)
 				std::vector<String> *configptr = &config;
 				if (config.size() == 0) configptr = 0;
 				if (selection)
-					initTrucks(true, selection->fname, selection->fext, configptr, false, skin);
+					initTrucks(true, selection->fname, gEnv->terrainManager->getSpawnPos(), selection->fext, configptr, false, skin);
 				else
-					initTrucks(false, "");
+					initTrucks(false, "", gEnv->terrainManager->getSpawnPos());
 
 			} else if (loading_state==RELOADING)
 			{
@@ -2738,7 +2743,7 @@ void RoRFrameListener::loadTerrain(String terrainfile)
 #endif //USE_MYGUI
 }
 
-void RoRFrameListener::initTrucks(bool loadmanual, Ogre::String selected, Ogre::String selectedExtension /* = "" */, const std::vector<Ogre::String> *truckconfig /* = 0 */, bool enterTruck /* = false */, Skin *skin /* = NULL */)
+void RoRFrameListener::initTrucks(bool loadmanual, Ogre::String selected, Ogre::Vector3 spawnpos, Ogre::String selectedExtension /* = "" */, const std::vector<Ogre::String> *truckconfig /* = 0 */, bool enterTruck /* = false */, Skin *skin /* = NULL */)
 {
 	//we load truck
 	char *selectedchr = const_cast< char *> (selected.c_str());
@@ -2746,7 +2751,6 @@ void RoRFrameListener::initTrucks(bool loadmanual, Ogre::String selected, Ogre::
 	if (loadmanual)
 	{
 		Beam *b = 0;
-		Vector3 spawnpos = gEnv->terrainManager->getSpawnPos();
 		Quaternion spawnrot = Quaternion::ZERO;
 
 		b = BeamFactory::getSingleton().createLocal(spawnpos, spawnrot, selectedchr, 0, false, flaresMode, truckconfig, skin);
