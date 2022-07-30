@@ -6619,6 +6619,10 @@ void Beam::writeDiagnosticDump(Ogre::String fileName)
 			<< "  pos:"              << std::setw(3) << nodes[i].pos // indicated pos in node buffer
 					                    << ((nodes[i].pos != i) ? " !!sync " : "") // warn if the indicated pos doesn't match
 			<< " (nodes)"
+			<< " RelPosition:{"
+				<< " X=" << std::setw(10) << nodes[i].RelPosition.x
+				<< " Y=" << std::setw(10) << nodes[i].RelPosition.y
+				<< " Z=" << std::setw(10) << nodes[i].RelPosition.z << " }"
 			<< " id:"                << std::setw(3) << nodes[i].id
 			<< " name:"              << std::setw(dbg_node_names_top_length) << dbg_node_names[i]
 			<< ", buoyancy:"         << std::setw(8) << nodes[i].buoyancy
