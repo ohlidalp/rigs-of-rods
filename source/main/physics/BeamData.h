@@ -372,6 +372,34 @@ enum {
 	DEFAULT_DETACHER_GROUP  = 0, // default for detaching beam group
 };
 
+/* Enumeration strings */
+inline const char* beamTypeToString(int val) // BEAM_*
+{
+	switch (val)
+	{
+	case BEAM_NORMAL: return "NORMAL";
+	case BEAM_HYDRO: return "HYDRO";
+	case BEAM_VIRTUAL: return "VIRTUAL";
+	case BEAM_MARKED: return "MARKED";
+	case BEAM_INVISIBLE: return "NORMAL"; // INVISIBLE* isn't used in 2022+
+	case BEAM_INVISIBLE_HYDRO: return "HYDRO"; // INVISIBLE* isn't used in 2022+
+	default: return "";
+	}
+}
+
+inline const char* boundedBeamToString(int val)
+{
+	switch (val)
+	{
+	case NOSHOCK: return "NOSHOCK";
+	case SHOCK1: return "SHOCK1";
+	case SHOCK2: return "SHOCK2";
+	case SUPPORTBEAM: return "SUPPORT";
+	case ROPE: return "ROPE";
+	default: return "";
+	}
+}
+
 /* some info holding arrays */
 static const float flapangles[6] = {0.0, -0.07, -0.17, -0.33, -0.67, -1.0};
 

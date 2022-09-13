@@ -6656,10 +6656,15 @@ void Beam::writeDiagnosticDump(Ogre::String fileName)
 			<< " spring:"            << std::setw(8) << beams[i].k //param1 default_spring
 			<< ", damp:"             << std::setw(8) << beams[i].d //param2 default_damp
 			<< ", default_deform:"   << std::setw(8) << beams[i].default_deform //param3 default_deform
-			<< ", strength:"         << std::setw(8) << beams[i].strength //param4 default_break
+			<< ", strength:"         << std::setw(11) << beams[i].strength //param4 default_break
 				                        //param5 default_beam_diameter ~ only visual
 				                        //param6 default_beam_material2 ~ only visual
 			<< ", plastic_coef:"     << std::setw(8) << beams[i].plastic_coef //param7 default_plastic_coef
+			// bounded beams (hydros, shocks, commands)
+			<< ", bounded:"          << std::setw(7) << boundedBeamToString(beams[i].bounded)
+			<< ", type:"             << std::setw(11) << beamTypeToString(beams[i].type)
+			<< ", shortbound:"       << std::setw(8) << beams[i].shortbound
+			<< ", longbound:"        << std::setw(8) << beams[i].longbound
 			<< std::endl;
 	}
 
