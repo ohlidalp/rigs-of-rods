@@ -6668,6 +6668,48 @@ void Beam::writeDiagnosticDump(Ogre::String fileName)
 			<< std::endl;
 	}
 
+	buf << "[wings]" << std::endl;
+	for (int i = 0; i < free_wing; i++)
+	{
+		buf
+			// Public:
+			<< "  liftcoef:" << std::setw(11) << wings[i].fa->liftcoef
+			<< ", aoa:" << std::setw(11) << wings[i].fa->aoa
+			<< ", type:" << std::setw(2) << wings[i].fa->type
+			<< ", breakable:"  << wings[i].fa->breakable // bool
+			<< ", broken:"  << wings[i].fa->broken // bool
+
+			// Nodes:
+			<< ", nfld:" << std::setw(6) << wings[i].fa->nfld
+			<< ", nfrd:" << std::setw(6) << wings[i].fa->nfrd
+			<< ", nflu:" << std::setw(6) << wings[i].fa->nflu
+			<< ", nfru:" << std::setw(6) << wings[i].fa->nfru
+			<< ", nbld:" << std::setw(6) << wings[i].fa->nbld
+			<< ", nbrd:" << std::setw(6) << wings[i].fa->nbrd
+			<< ", nblu:" << std::setw(6) << wings[i].fa->nblu
+			<< ", nbru:" << std::setw(6) << wings[i].fa->nbru
+			
+			// Private:
+			<< ", sref:" << std::setw(11)   << wings[i].fa->sref            //float 
+			<< ", deflection:" << std::setw(11) << wings[i].fa->deflection		 //float 
+			<< ", chordratio:" << std::setw(11) << wings[i].fa->chordratio		 //float 
+			<< ", lratio:" << std::setw(11) << wings[i].fa->lratio			 //float 
+			<< ", rratio:" << std::setw(11) << wings[i].fa->rratio			 //float 
+			<< ", mindef:" << std::setw(11) << wings[i].fa->mindef			 //float 
+			<< ", maxdef:" << std::setw(11) << wings[i].fa->maxdef			 //float 
+			<< ", thickness:" << std::setw(11) << wings[i].fa->thickness		 //float 
+			<< ", idSpan:" << std::setw(11) << wings[i].fa->idSpan			 //float 
+			<< ", idArea:" << std::setw(11) << wings[i].fa->idArea			 //float 
+
+			<< ", idLeft:"  << wings[i].fa->idLeft			 //bool  
+			<< ", hascontrol:"  << wings[i].fa->hascontrol		 //bool  
+			<< ", isstabilator:"  << wings[i].fa->isstabilator	 //bool  
+			<< ", stabilleft:"  << wings[i].fa->stabilleft		 //bool  
+			<< ", useInducedDrag:"  << wings[i].fa->useInducedDrag	 //bool  
+			<< std::endl;
+	}
+
+
 	if (nodetonodeconnections.size() == (size_t)free_node
 		&& nodebeamconnections.size() == (size_t)free_node) // not present when dumping 'raw'
 	{
