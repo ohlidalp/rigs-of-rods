@@ -6628,6 +6628,9 @@ void Beam::writeDiagnosticDump(Ogre::String fileName)
 			<< ", buoyancy:"         << std::setw(8) << nodes[i].buoyancy
 			<< ", loaded:"           << (int)(nodes[i].masstype == NODE_LOADED)
 			<< " (wheels)"
+			// `iswheel` (has no equivalent in upstream):
+			// outer ring has wheelid%2 != 0
+			// inner ring has wheelid%2 == 0
 			<< " iswheel:"           << std::setw(2) << nodes[i].iswheel
 			<< ", wheelid:"          << std::setw(2) << nodes[i].wheelid
 			<< " (set_node_defaults)"
