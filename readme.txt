@@ -50,7 +50,19 @@ Only tested on Windows10 + MSVC2019/MSVC2022, needs a lot of manual adjustments.
 
 4. select build config: RelWithDebInfo
     
+RUNNING
+-------
     
+To effectivelly compare debug dumps using diff-tool, you must spawn the same vehicle at exactly the same position.
+
+Command line hints:
+```
+# Git master:
+RoR -terrain simple2 -truck semi.truck -enter -truckspawnpos "0 0 0"
+
+# Git retro-0407: 
+RoR -terrain simple2 -truck semi.truck -enter -pos "0 0 0"
+```
 
 LICENSE
 -------
