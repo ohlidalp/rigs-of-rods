@@ -85,11 +85,15 @@ public:
                        /// @param override_rg If not set, the ResourcePack's RG is used -> resources won't unload until shutdown
     void               AddResourcePack(ResourcePack const& resource_pack, std::string const& override_rgn = "");
     void               InitManagedMaterials(std::string const & rg_name);
+    void               InitRtShaderSystem();
     void               InitContentManager();
     void               InitModCache(CacheValidity validity);
     void               LoadGameplayResources();  //!< Checks GVar settings and loads required resources.
     std::string        ListAllUserContent(); //!< Used by ModCache for quick detection of added/removed content
     bool               DeleteDiskFile(std::string const& filename, std::string const& rg_name);
+
+    // RTSS:
+    void               ForcePerPixelLighting(Ogre::MaterialPtr mat);
 
     // JSON:
     bool               LoadAndParseJson(std::string const& filename, std::string const& rg_name, rapidjson::Document& j_doc);
