@@ -23,7 +23,7 @@ it's intended for comparsion using diff tool.
 BUILDING
 --------
 
-Only tested on Windows10 + MSVC2019, needs a lot of manual adjustments.
+Only tested on Windows10 + MSVC2019/MSVC2022, needs a lot of manual adjustments.
 
 1. run cmake; build outside the source tree
 
