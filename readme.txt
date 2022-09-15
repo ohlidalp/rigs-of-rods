@@ -14,11 +14,14 @@ in the current upstream parser.
 EXTRAS
 ------
 
-RoR.cfg setting "diag_actor_dump" (bool) writes 2 files to /logs:
+RoR.cfg setting "diag_actor_dump" (bool, default true) writes 2 files to /logs:
  1. truckname_dump_raw.txt ~ original data from truck file
  2. truckname_dump_recalc.txt ~ after recalc. masses, pressurizing tires and other adjustments
 The output is equivalent to the same setting in upstream,
 it's intended for comparsion using diff tool.
+
+RoR.cfg setting "stable_physics_tick" (bool, default true) fixates physics tick rate to 2khz,
+same as used in upstream repository.
  
 BUILDING
 --------

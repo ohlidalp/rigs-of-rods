@@ -460,7 +460,7 @@ Beam::Beam(int tnum, Ogre::Vector3 pos, Ogre::Quaternion rot, const char* fname,
 	}
 
 	// Added retroactively in 2021
- 	if (BSETTING("diag_actor_dump", ""))
+ 	if (BSETTING("diag_actor_dump", true))
 	{
 		Ogre::String out_basename, out_ext, out_path;
 		Ogre::StringUtil::splitFullFilename(fname, out_basename, out_ext, out_path);
@@ -5765,7 +5765,7 @@ int Beam::loadTruck2(String filename, SceneNode *parent, Vector3 pos, Quaternion
 	if (res) return res;
 
 	// Added retroactively in 2021
- 	if (BSETTING("diag_actor_dump", ""))
+ 	if (BSETTING("diag_actor_dump", true))
 	{
 		Ogre::String out_basename, out_ext, out_path;
 		Ogre::StringUtil::splitFullFilename(filename, out_basename, out_ext, out_path);
