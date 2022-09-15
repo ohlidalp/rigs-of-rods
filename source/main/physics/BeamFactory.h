@@ -31,6 +31,8 @@ along with Rigs of Rods.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <pthread.h>
 
+#define PHYSICS_DT 0.0005f // fixed dt of 0.5 ms
+
 class BeamFactory : public StreamableFactory < BeamFactory, Beam >, public ZeroedMemoryAllocator
 {
 	friend class Network;
@@ -127,6 +129,7 @@ protected:
 	TwoDReplay *tdr;
 
 	unsigned long physFrame;
+	float physDtRemainder;
 
 	bool checkForActive(int j, std::bitset<MAX_TRUCKS> &sleepyList);
 	void recursiveActivation(int j);

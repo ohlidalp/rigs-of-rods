@@ -58,6 +58,7 @@ BeamFactory::BeamFactory() :
 	, free_truck(0)
 	, num_cpu_cores(pthread_num_processors_np())
 	, physFrame(0)
+	, physDtRemainder(0.f)
 	, previous_truck(-1)
 	, tdr(0)
 	, thread_done(true)
@@ -741,6 +742,21 @@ void BeamFactory::calcPhysics(float dt)
 
 	// do not allow dt > 1/20
 	dt = std::min(dt, 1.0f / 20.0f);
+
+	if (BSETTING("stable_physics_tick", true))
+	{
+		// Equivalent to upstream, see `ActorManager::UpdateActors()`
+
+		dt += physDtRemainder;
+		int physics_steps = dt / PHYSICS_DT;
+		if (physics_steps == 0)
+		{
+			return;
+		}
+		physDtRemainder = dt - (physics_steps * PHYSICS_DT);
+		dt = PHYSICS_DT * physics_steps;
+	}
+
 	gEnv->mrTime += dt;
 
 	simulatedTruck = current_truck;

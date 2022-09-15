@@ -2083,7 +2083,7 @@ bool Beam::frameStep(Real dt)
 	if (mTimeUntilNextToggle > -1)
 		mTimeUntilNextToggle -= dt;
 	
-	int steps = 2000.0 * dt;
+	int steps = dt / PHYSICS_DT;
 
 	// TODO: move this to the correct spot
 	// update all dashboards
