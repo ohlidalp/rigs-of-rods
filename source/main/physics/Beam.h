@@ -338,6 +338,7 @@ protected:
 	void calcRopes();
 	void calcShocks2(int beam_i, Ogre::Real difftoBeamL, Ogre::Real &k, Ogre::Real &d, Ogre::Real dt, int update);
 	void calcAnimators(int flagstate, float &cstate, int &div, float timer, float opt1, float opt2, float opt3);
+	void traceNodeForces(int, int, Ogre::Vector3, int);
 
 	void SyncReset(); //this one should be called only synchronously (without physics running in background)
 

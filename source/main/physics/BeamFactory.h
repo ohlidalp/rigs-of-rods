@@ -78,6 +78,7 @@ public:
 	void updateVisual(float dt);
 	void updateAI(float dt);
 
+	void addPhysFrame() { physFrame++; }
 	inline unsigned long getPhysFrame() { return physFrame; };
 
 	void calcPhysics(float dt);
@@ -100,6 +101,12 @@ public:
 	void prepareShutdown();
 
 	void windowResized();
+
+	bool shouldTraceNodeForces(int nodenum) //!< Helper for RoR.cfg setting 'diag_trace_node_forces'		
+	{
+		return diag_trace_node_forces.size() > 0
+			&& std::find(diag_trace_node_forces.begin(), diag_trace_node_forces.end(), nodenum) != diag_trace_node_forces.end();
+	}
 
 	bool thread_done;
 	pthread_cond_t thread_done_cv;
@@ -130,6 +137,8 @@ protected:
 
 	unsigned long physFrame;
 	float physDtRemainder;
+
+	std::vector<int> diag_trace_node_forces; // RoR.cfg setting 'diag_trace_node_forces'
 
 	bool checkForActive(int j, std::bitset<MAX_TRUCKS> &sleepyList);
 	void recursiveActivation(int j);

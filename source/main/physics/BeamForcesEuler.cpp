@@ -36,6 +36,7 @@ along with Rigs of Rods.  If not, see <http://www.gnu.org/licenses/>.
 #include "InputEngine.h"
 #include "Replay.h"
 #include "ScrewProp.h"
+#include "Settings.h"
 #include "SoundScriptManager.h"
 #include "Water.h"
 #include "TerrainManager.h"
@@ -1668,8 +1669,29 @@ void Beam::calcForcesEulerFinal(int doUpdate, Ogre::Real dt, int step, int maxst
 	BES_STOP(BES_CORE_WholeTruckCalc);
 }
 
+void Beam::traceNodeForces(int node, int beamID, Vector3 f, int othernode)
+{
+	const size_t BUFLEN = 1000;
+	char buf[BUFLEN];
+	snprintf(buf, BUFLEN, "diag_trace_node_forces: node %4d gets force (%10.3f, %10.3f, %10.3f) from beamID %5d (%7s, %7s, other node being %4d)",
+		node, f.x, f.y, f.z, beamID, beamTypeToString(beams[beamID].type), boundedBeamToString(beams[beamID].bounded), othernode);
+	LOG(buf);
+}
+
 void Beam::calcBeams(int doUpdate, Ogre::Real dt, int step, int maxsteps, int chunk_index, int chunk_number)
 {
+	// NOTE: the chunk_ params are never used.
+
+	// Extreme diag logging
+	if (SSETTING("diag_trace_node_forces", "") != "")
+	{
+		const size_t BUFLEN = 500;
+		char buf[BUFLEN];
+		snprintf(buf, BUFLEN, "diag_trace_node_forces: ---------- PhysFrame: %lu ----------",
+			BeamFactory::getSingleton().getPhysFrame());
+		LOG(buf);
+	}
+
 	BES_START(BES_CORE_Beams);
 	// Springs
 	int chunk_size = free_beam / chunk_number;
@@ -1909,6 +1931,16 @@ void Beam::calcBeams(int doUpdate, Ogre::Real dt, int step, int maxsteps, int ch
 			f *= (slen * inverted_dislen);
 			beams[i].p1->Forces += f;
 			beams[i].p2->Forces -= f;
+
+			// Extreme diagnostic logging
+			if (BeamFactory::getSingleton().shouldTraceNodeForces(beams[i].p1->pos))
+			{
+				traceNodeForces((int)beams[i].p1->pos, (int)i, f, (int)beams[i].p2->pos);
+			}
+			if (BeamFactory::getSingleton().shouldTraceNodeForces(beams[i].p2->pos))
+			{
+				traceNodeForces((int)beams[i].p2->pos, (int)i, -f, (int)beams[i].p1->pos);
+			}
 		}
 	}
 	BES_STOP(BES_CORE_Beams);

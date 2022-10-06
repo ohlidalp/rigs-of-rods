@@ -111,6 +111,17 @@ BeamFactory::BeamFactory() :
 			exit(1);
 		}
 	}
+
+	if (SSETTING("diag_trace_node_forces", "") != "")
+	{
+		StringVector toks = StringUtil::split(SSETTING("diag_trace_node_forces", ""), " ,");
+		for (String tok : toks)
+		{
+			this->diag_trace_node_forces.push_back(PARSEINT(tok));
+		}
+	}
+
+	diag_trace_node_forces; // RoR.cfg setting 'diag_trace_node_forces'
 }
 
 BeamFactory::~BeamFactory()
@@ -738,8 +749,6 @@ void BeamFactory::updateAI(float dt)
 
 void BeamFactory::calcPhysics(float dt)
 {
-	physFrame++;
-
 	// do not allow dt > 1/20
 	dt = std::min(dt, 1.0f / 20.0f);
 

@@ -1992,6 +1992,8 @@ void Beam::threadentry()
 
 	for (curtstep=0; curtstep<tsteps; curtstep++)
 	{
+		BeamFactory::getSingleton().addPhysFrame();
+
 		num_simulated_trucks = 0;
 
 		for (int t=0; t<tnumtrucks; t++)
@@ -2155,6 +2157,8 @@ bool Beam::frameStep(Real dt)
 			
 			for (int i=0; i<steps; i++)
 			{
+				BeamFactory::getSingleton().addPhysFrame();
+
 				int num_simulated_trucks = 0;
 
 				for (int t=0; t<numtrucks; t++)
