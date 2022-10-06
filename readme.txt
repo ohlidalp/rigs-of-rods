@@ -14,6 +14,11 @@ in the current upstream parser.
 EXTRAS
 ------
 
+New RoR.cfg options:
+ * diag_actor_dump
+ * stable_physics_tick
+ * diag_trace_node_forces
+
 RoR.cfg setting "diag_actor_dump" (bool, default true) writes 2 files to /logs:
  1. truckname_dump_raw.txt ~ original data from truck file
  2. truckname_dump_recalc.txt ~ after recalc. masses, pressurizing tires and other adjustments
@@ -22,6 +27,15 @@ it's intended for comparsion using diff tool.
 
 RoR.cfg setting "stable_physics_tick" (bool, default true) fixates physics tick rate to 2khz,
 same as used in upstream repository.
+
+RoR.cfg setting "diag_trace_node_forces" (string, comma-delimited list of node numbers, default empty)
+writes extremely detailed diagnostic to RoR.log, example:
+```
+12:26:48: diag_trace_node_forces: ---------- PhysFrame: 19 ----------
+12:26:48: diag_trace_node_forces: node  147 gets force (   184.782,    300.745,   -369.794) from beamID   896 ( NORMAL, NOSHOCK, other node being  126)
+12:26:48: diag_trace_node_forces: node  148 gets force (  -228.722,   -170.450,    482.222) from beamID   897 ( NORMAL, NOSHOCK, other node being  127)
+12:26:48: diag_trace_node_forces: node  147 gets force (    -0.060,     -0.015,   -204.832) from beamID   900 ( NORMAL, NOSHOCK, other node being  148)
+```
  
 BUILDING
 --------
