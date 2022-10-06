@@ -5407,48 +5407,39 @@ void Beam::setDebugOverlayState(int mode)
 		// add node labels
 		for (int i=0; i<free_node; i++)
 		{
+			// INIT
 			debugtext_t t;
 			char nodeName[256]="", entName[256]="";
 			sprintf(nodeName, "%s-nodesDebug-%d", truckname, i);
 			sprintf(entName, "%s-nodesDebug-%d-Ent", truckname, i);
 			t.id=i;
+
+			// NODE LABEL
 			t.txt = new MovableText(nodeName, "n"+TOSTRING(i));
 			t.txt->setFontName("highcontrast_black");
 			t.txt->setTextAlignment(MovableText::H_LEFT, MovableText::V_BELOW);
-			//t.txt->setAdditionalHeight(0);
 			t.txt->showOnTop(true);
-			t.txt->setCharacterHeight(0.5f);
+			t.txt->setCharacterHeight(0.3f);
 			t.txt->setColor(ColourValue::White);
 			t.txt->setRenderingDistance(2);
-
 			t.node = gEnv->sceneManager->getRootSceneNode()->createChildSceneNode();
 			deletion_sceneNodes.emplace_back(t.node);
 			t.node->attachObject(t.txt);
 			t.node->setPosition(nodes[i].smoothpos);
-			t.node->setScale(Vector3(0.5,0.5,0.5));
+			float textSize = 0.3f;
+			t.node->setScale(Vector3(textSize, textSize, textSize));
 
-			// collision nodes debug, also mimics as node visual
+			// NODE VISUAL
 			SceneNode *s = t.node->createChildSceneNode();
 			deletion_sceneNodes.emplace_back(s);
 			Entity *b = gEnv->sceneManager->createEntity(entName, "sphere.mesh");
 			deletion_Entities.emplace_back(b);
-			b->setMaterialName("tracks/transgreen");
+			b->setMaterialName("tracks/transred");
 			s->attachObject(b);
-			float f = 0.005f;
+			float f = 0.0004f;
 			s->setScale(f,f,f);
 
-			/*
-			// collision nodes
-			if (nodes[i].collRadius > 0.00001)
-			{
-				b->setMaterialName("tracks/transred");
-				f = nodes[i].collRadius;
-			} else
-			{
-				b->setMaterialName("tracks/transgreen");
-			}
-			*/
-
+			// SUBMIT
 			nodes_debug.push_back(t);
 		}
 
