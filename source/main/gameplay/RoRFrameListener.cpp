@@ -1044,6 +1044,9 @@ RoRFrameListener::RoRFrameListener(AppState *parentState, String inputhwnd) :
 	// new beam factory
 	new BeamFactory();
 
+	// Make RoRFrameListener available globally now (needed by `initTrucks()`).
+	gEnv->frameListener = this;
+
 	// now continue to load everything...
 	if (!preselected_map.empty())
 	{
