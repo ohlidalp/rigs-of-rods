@@ -25,6 +25,7 @@ using namespace Ogre;
 
 Airfoil::Airfoil(char* fname)
 {
+	dbg_name = fname;
 	for (int i=0; i<3601; i++) //init in case of bad things
 	{
 		cl[i]=0;

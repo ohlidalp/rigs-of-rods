@@ -6728,6 +6728,14 @@ void Beam::writeDiagnosticDump(Ogre::String fileName)
 		}
 	}
 
+	buf << "[aerodynamics]" << std::endl;
+	buf << "fuse airfoil: " << (fuseAirfoil ? fuseAirfoil->dbg_name : "null")
+		<< ", fuse front: " << (fuseFront ? (int)fuseFront->pos : -1)
+		<< ", fuse back:" << (fuseBack ? (int)fuseBack->pos : -1)
+		<< ", fuse width:" << fuseWidth
+		<< ", disable aerodyn drag:" << disableDrag
+		<< std::endl;
+
 	// Write out to 'logs' using OGRE resource system - complicated, but works with Unicode paths on Windows
 	Ogre::String rgName = "dumpRG";
 	Ogre::ResourceGroupManager::getSingleton().addResourceLocation(

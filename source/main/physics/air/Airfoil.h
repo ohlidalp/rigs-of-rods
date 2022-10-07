@@ -31,6 +31,8 @@ public:
 
 	void getparams(float a, float cratio, float cdef, float* ocl, float* ocd, float* ocm);
 
+	std::string dbg_name;
+
 private:
 
 	float cl[3601];
