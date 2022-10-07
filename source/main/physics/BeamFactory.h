@@ -102,6 +102,7 @@ public:
 
 	void windowResized();
 
+	void setupTraceNodeForces();
 	bool shouldTraceNodeForces(int nodenum) //!< Helper for RoR.cfg setting 'diag_trace_node_forces'		
 	{
 		return diag_trace_node_forces.size() > 0

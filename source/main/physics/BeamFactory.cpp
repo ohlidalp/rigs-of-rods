@@ -112,16 +112,7 @@ BeamFactory::BeamFactory() :
 		}
 	}
 
-	if (SSETTING("diag_trace_node_forces", "") != "")
-	{
-		StringVector toks = StringUtil::split(SSETTING("diag_trace_node_forces", ""), " ,");
-		for (String tok : toks)
-		{
-			this->diag_trace_node_forces.push_back(PARSEINT(tok));
-		}
-	}
-
-	diag_trace_node_forces; // RoR.cfg setting 'diag_trace_node_forces'
+	this->setupTraceNodeForces();
 }
 
 BeamFactory::~BeamFactory()
@@ -962,4 +953,16 @@ void* threadstart(void* vid)
 
 	pthread_exit(NULL);
 	return NULL;
+}
+
+void BeamFactory::setupTraceNodeForces()
+{
+	if (SSETTING("diag_trace_node_forces", "") != "")
+	{
+		StringVector toks = StringUtil::split(SSETTING("diag_trace_node_forces", ""), " ,");
+		for (String tok : toks)
+		{
+			this->diag_trace_node_forces.push_back(PARSEINT(tok));
+		}
+	}
 }
