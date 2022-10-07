@@ -1669,12 +1669,14 @@ void Beam::calcForcesEulerFinal(int doUpdate, Ogre::Real dt, int step, int maxst
 	BES_STOP(BES_CORE_WholeTruckCalc);
 }
 
-void Beam::traceNodeForces(int node, int beamID, Vector3 f, int othernode)
+void Beam::traceNodeForces(int node, int beamID, Vector3 f, int othernode, Vector3 before)
 {
 	const size_t BUFLEN = 1000;
 	char buf[BUFLEN];
-	snprintf(buf, BUFLEN, "diag_trace_node_forces: node %4d gets force (%10.3f, %10.3f, %10.3f) from beamID %5d (%7s, %7s, other node being %4d)",
-		node, f.x, f.y, f.z, beamID, beamTypeToString(beams[beamID].type), boundedBeamToString(beams[beamID].bounded), othernode);
+	snprintf(buf, BUFLEN, "diag_trace_node_forces: node %4d gets force (%10.3f, %10.3f, %10.3f) from beamID %5d (%7s, %7s, other node being %4d);"
+						  " node forces before (%10.3f, %10.3f, %10.3f) and after (%10.3f, %10.3f, %10.3f)",
+		node, f.x, f.y, f.z, beamID, beamTypeToString(beams[beamID].type), boundedBeamToString(beams[beamID].bounded), othernode,
+		before.x, before.y, before.z, nodes[node].Forces.x, nodes[node].Forces.y, nodes[node].Forces.z);
 	LOG(buf);
 }
 
@@ -1929,17 +1931,24 @@ void Beam::calcBeams(int doUpdate, Ogre::Real dt, int step, int maxsteps, int ch
 			// At last update the beam forces
 			Vector3 f = dis;
 			f *= (slen * inverted_dislen);
+			Vector3 p1ForcesBefore = beams[i].p1->Forces;
+			Vector3 p2ForcesBefore = beams[i].p2->Forces;
 			beams[i].p1->Forces += f;
 			beams[i].p2->Forces -= f;
 
 			// Extreme diagnostic logging
-			if (BeamFactory::getSingleton().shouldTraceNodeForces(beams[i].p1->pos))
+			if (SSETTING("diag_trace_node_forces", "") != "")
 			{
-				traceNodeForces((int)beams[i].p1->pos, (int)i, f, (int)beams[i].p2->pos);
-			}
-			if (BeamFactory::getSingleton().shouldTraceNodeForces(beams[i].p2->pos))
-			{
-				traceNodeForces((int)beams[i].p2->pos, (int)i, -f, (int)beams[i].p1->pos);
+				if (BeamFactory::getSingleton().shouldTraceNodeForces(beams[i].p1->pos)
+					|| p1ForcesBefore == Ogre::Vector3::ZERO)
+				{
+					traceNodeForces((int)beams[i].p1->pos, (int)i, f, (int)beams[i].p2->pos, p1ForcesBefore);
+				}
+				if (BeamFactory::getSingleton().shouldTraceNodeForces(beams[i].p2->pos)
+					|| p2ForcesBefore == Ogre::Vector3::ZERO)
+				{
+					traceNodeForces((int)beams[i].p2->pos, (int)i, -f, (int)beams[i].p1->pos, p2ForcesBefore);
+				}
 			}
 		}
 	}
