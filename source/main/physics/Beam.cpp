@@ -6736,6 +6736,71 @@ void Beam::writeDiagnosticDump(Ogre::String fileName)
 		<< ", disable aerodyn drag:" << disableDrag
 		<< std::endl;
 
+	buf << "[hydros/animators]" << std::endl;
+	// upstream version has `struct hydrobeam_t` which references `struct beam_t` by index
+	// retro-branch has all params directly in `struct beam_t`
+	for (int i = 0; i < free_beam; i++)
+	{
+		if (beams[i].type == BEAM_HYDRO || beams[i].type == BEAM_INVISIBLE_HYDRO)
+		{
+			// Skip shocks (seek matching beam ID in shocks array - if present, skip the hydro)
+			bool is_shock = false;
+			for (int j = 0; j < free_shock; j++)
+			{
+				if (shocks[j].beamid == i)
+				{
+					is_shock = true;
+					break;
+				}
+			}
+			// Skip commands
+			bool is_command = beams[i].commandRatioLong != 0.f || beams[i].commandRatioShort != 0.f;
+
+			if (is_shock || is_command)
+			{
+				continue;
+			}
+
+			buf
+				<< "beamID: " << std::setw(5) << i
+				<< " (nodes "
+					<<std::setw(3) << beams[i].p1->pos << ","
+					<<std::setw(3) << beams[i].p2->pos << ")"
+				<< ", ref_length: " << std::setw(11) << beams[i].refL //!< float     - Idle length in meters
+				<< ", speed: " << std::setw(11) << beams[i].hydroRatio     //!< float     - Rate of change
+				<< ", flags: " << std::setw(3) << beams[i].hydroFlags       //    int       - 
+				<< ", anim_flags: " << std::setw(3) << beams[i].animFlags //!< int       - Animators (beams updating length based on simulation variables)
+				<< ", anim_param: " << std::setw(11) << beams[i].animOption //!< float     - Animators (beams updating length based on simulation variables)
+				<< std::endl;
+		}
+	}
+
+	buf << "[shocks]" << std::endl;
+    for (int i = 0; i < free_shock; i++)
+    {
+        buf
+        << "beamID: " << shocks[i].beamid // int
+        << ", flags: " << shocks[i].flags // int
+
+        << ", trigger_enabled:" << shocks[i].trigger_enabled      //!< bool  - general trigger,switch and blocker state
+        << ", trigger_switch_state:" << std::setw(11) << shocks[i].trigger_switch_state //!< float - needed to avoid doubleswitch, bool and timer in one
+        << ", trigger_boundary_t:" << std::setw(11) << shocks[i].trigger_boundary_t   //!< float - optional value to tune trigger_switch_state autorelease
+        << ", trigger_cmdlong:" << std::setw(3) << shocks[i].trigger_cmdlong      //!< int   - F-key for trigger injection longbound-check
+        << ", trigger_cmdshort:" << std::setw(3) << shocks[i].trigger_cmdshort     //!< int   - F-key for trigger injection shortbound-check
+        << ", springin:" << std::setw(11) << shocks[i].springin             //!< float - shocks2 & shocks3
+        << ", dampin:" << std::setw(11) << shocks[i].dampin               //!< float - shocks2 & shocks3
+        << ", springout:" << std::setw(11) << shocks[i].springout            //!< float - shocks2 & shocks3
+        << ", dampout:" << std::setw(11) << shocks[i].dampout              //!< float - shocks2 & shocks3            
+        << ", sprogin:" << std::setw(11) << shocks[i].sprogin              //!< float - shocks2
+        << ", dprogin:" << std::setw(11) << shocks[i].dprogin              //!< float - shocks2
+        << ", sprogout:" << std::setw(11) << shocks[i].sprogout             //!< float - shocks2
+        << ", dprogout:" << std::setw(11) << shocks[i].dprogout             //!< float - shocks2
+
+        << ", sbd_spring:" << std::setw(11) << shocks[i].sbd_spring           //!< float - set beam default for spring
+        << ", sbd_damp:" << std::setw(11) << shocks[i].sbd_damp             //!< float - set beam default for damping
+			<< std::endl;
+    }
+
 	// Write out to 'logs' using OGRE resource system - complicated, but works with Unicode paths on Windows
 	Ogre::String rgName = "dumpRG";
 	Ogre::ResourceGroupManager::getSingleton().addResourceLocation(

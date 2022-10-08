@@ -1848,7 +1848,7 @@ int SerializedRig::loadTruck(Ogre::String filename, Ogre::SceneNode *parent, Ogr
 					{
 						case 'i':	// invisible
 							htype = BEAM_INVISIBLE_HYDRO;
-							shockflag |= SHOCK_FLAG_INVISIBLE;
+							//shockflag |= SHOCK_FLAG_INVISIBLE; -- never read (10/2022)
 							break;
 						case 'x':	// this trigger is disabled on startup, default is enabled
 							shocks[free_shock].trigger_enabled = false;
@@ -2004,7 +2004,7 @@ int SerializedRig::loadTruck(Ogre::String filename, Ogre::SceneNode *parent, Ogr
 					{
 						case 'i':	// invisible
 							htype=BEAM_INVISIBLE_HYDRO;
-							shockflag |= SHOCK_FLAG_INVISIBLE;
+							//shockflag |= SHOCK_FLAG_INVISIBLE; -- never read (10/2022)
 							break;
 						case 'l':
 						case 'L':
@@ -2084,7 +2084,7 @@ int SerializedRig::loadTruck(Ogre::String filename, Ogre::SceneNode *parent, Ogr
 
 				// options
 				int htype=BEAM_HYDRO;
-				int shockflag = SHOCK_FLAG_NORMAL | SHOCK_FLAG_ISSHOCK2;
+				int shockflag = SHOCK_FLAG_NORMAL; // | SHOCK_FLAG_ISSHOCK2; -- never read (10/2022)
 
 				// now 'parse' the options
 				char *options_pointer = options;
@@ -2096,7 +2096,7 @@ int SerializedRig::loadTruck(Ogre::String filename, Ogre::SceneNode *parent, Ogr
 						{
 							// invisible
 							htype=BEAM_INVISIBLE_HYDRO;
-							shockflag |= SHOCK_FLAG_INVISIBLE;
+							//shockflag |= SHOCK_FLAG_INVISIBLE; -- never read (10/2022)
 							break;
 						}
 						case 's':
