@@ -20,8 +20,8 @@
 */
 
 #include "Actor.h"
-#include "Application.h"
 #include "AppContext.h"
+#include "Application.h"
 #include "CacheSystem.h"
 #include "CameraManager.h"
 #include "ChatSystem.h"
@@ -30,20 +30,20 @@
 #include "ContentManager.h"
 #include "DiscordRpc.h"
 #include "ErrorUtils.h"
-#include "GameContext.h"
-#include "GfxScene.h"
 #include "GUI_DirectionArrow.h"
 #include "GUI_FrictionSettings.h"
 #include "GUI_GameControls.h"
 #include "GUI_LoadingWindow.h"
 #include "GUI_MainSelector.h"
 #include "GUI_MessageBox.h"
-#include "GUI_MultiplayerSelector.h"
 #include "GUI_MultiplayerClientList.h"
+#include "GUI_MultiplayerSelector.h"
 #include "GUI_RepositorySelector.h"
 #include "GUI_VehicleInfoTPanel.h"
 #include "GUIManager.h"
 #include "GUIUtils.h"
+#include "GameContext.h"
+#include "GfxScene.h"
 #include "InputEngine.h"
 #include "Language.h"
 #include "MumbleIntegration.h"
@@ -58,9 +58,13 @@
 #include "Utils.h"
 #include <Overlay/OgreOverlaySystem.h>
 #include <ctime>
+#include <fstream>
 #include <iomanip>
 #include <string>
-#include <fstream>
+
+#ifdef USE_REMOTERY
+#include "Remotery.h"
+#endif //USE_REMOTERY
 
 #ifdef USE_CURL
 #   include <curl/curl.h>
@@ -130,7 +134,10 @@ int main(int argc, char *argv[])
         {
             return -1; // Error already displayed
         }
-
+#ifdef USE_REMOTERY
+        Remotery* rmt;
+        rmt_CreateGlobalInstance(&rmt);
+#endif
         // Make sure config directory exists - to save 'ogre.cfg'
         CreateFolder(App::sys_config_dir->getStr());
 
@@ -327,6 +334,9 @@ int main(int argc, char *argv[])
 
         while (App::app_state->getEnum<AppState>() != AppState::SHUTDOWN)
         {
+#ifdef USE_REMOTERY
+            rmt_ScopedCPUSample(MainLoop, 0);
+#endif
             OgreBites::WindowEventUtilities::messagePump();
 
             // Halt physics (wait for async tasks to finish)
