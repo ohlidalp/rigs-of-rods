@@ -553,12 +553,12 @@ void TopMenubar::Draw(float dt)
             float slowmotion = std::min(App::GetGameContext()->GetActorManager()->GetSimulationSpeed(), 1.0f);
             if (ImGui::SliderFloat(_LC("TopMenubar", "Slow motion"), &slowmotion, 0.01f, 1.0f))
             {
-                App::GetGameContext()->GetActorManager()->SetSimulationSpeed(slowmotion);
+                App::GetGameContext()->PushMessage(Message(MSG_SIM_SET_SIMULATION_SPEED_REQUESTED, (void*)new float(slowmotion)));
             }
             float timelapse = std::max(App::GetGameContext()->GetActorManager()->GetSimulationSpeed(), 1.0f);
             if (ImGui::SliderFloat(_LC("TopMenubar", "Time lapse"), &timelapse, 1.0f, 10.0f))
             {
-                App::GetGameContext()->GetActorManager()->SetSimulationSpeed(timelapse);
+                App::GetGameContext()->PushMessage(Message(MSG_SIM_SET_SIMULATION_SPEED_REQUESTED, (void*)new float(timelapse)));
             }
             if (App::GetCameraManager()->GetCurrentBehavior() == CameraManager::CAMERA_BEHAVIOR_STATIC)
             {

@@ -854,6 +854,11 @@ int main(int argc, char *argv[])
                     break;
                 }
 
+                case MSG_SIM_SET_SIMULATION_SPEED_REQUESTED:
+                    App::GetGameContext()->GetActorManager()->SetSimulationSpeed(*reinterpret_cast<float*>(m.payload));
+                    delete reinterpret_cast<float*>(m.payload);
+                    break;
+
                 // -- GUI events ---
 
                 case MSG_GUI_OPEN_MENU_REQUESTED:

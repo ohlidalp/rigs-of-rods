@@ -1377,7 +1377,7 @@ void ActorManager::UpdateInputEvents(float dt)
         if (App::GetInputEngine()->getEventBoolValue(EV_COMMON_ACCELERATE_SIMULATION))
         {
             float simulation_speed = this->GetSimulationSpeed() * pow(2.0f, dt / 2.0f);
-            this->SetSimulationSpeed(simulation_speed);
+            App::GetGameContext()->PushMessage(Message(MSG_SIM_SET_SIMULATION_SPEED_REQUESTED, (void*)new float(simulation_speed)));
             String ssmsg = _L("New simulation speed: ") + TOSTRING(Round(simulation_speed * 100.0f, 1)) + "%";
             App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_INFO, Console::CONSOLE_SYSTEM_NOTICE, ssmsg);
         }
@@ -1386,7 +1386,7 @@ void ActorManager::UpdateInputEvents(float dt)
         if (App::GetInputEngine()->getEventBoolValue(EV_COMMON_DECELERATE_SIMULATION))
         {
             float simulation_speed = this->GetSimulationSpeed() * pow(0.5f, dt / 2.0f);
-            this->SetSimulationSpeed(simulation_speed);
+            App::GetGameContext()->PushMessage(Message(MSG_SIM_SET_SIMULATION_SPEED_REQUESTED, (void*)new float(simulation_speed)));
             String ssmsg = _L("New simulation speed: ") + TOSTRING(Round(simulation_speed * 100.0f, 1)) + "%";
             App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_INFO, Console::CONSOLE_SYSTEM_NOTICE, ssmsg);
         }
@@ -1398,13 +1398,13 @@ void ActorManager::UpdateInputEvents(float dt)
             if (simulation_speed != 1.0f)
             {
                 m_last_simulation_speed = simulation_speed;
-                this->SetSimulationSpeed(1.0f);
+                App::GetGameContext()->PushMessage(Message(MSG_SIM_SET_SIMULATION_SPEED_REQUESTED, (void*)new float(1.f)));
                 UTFString ssmsg = _L("Simulation speed reset.");
                 App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_INFO, Console::CONSOLE_SYSTEM_NOTICE, ssmsg);
             }
             else if (m_last_simulation_speed != 1.0f)
             {
-                this->SetSimulationSpeed(m_last_simulation_speed);
+                App::GetGameContext()->PushMessage(Message(MSG_SIM_SET_SIMULATION_SPEED_REQUESTED, (void*)new float(m_last_simulation_speed)));
                 String ssmsg = _L("New simulation speed: ") + TOSTRING(Round(m_last_simulation_speed * 100.0f, 1)) + "%";
                 App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_INFO, Console::CONSOLE_SYSTEM_NOTICE, ssmsg);
             }
@@ -1414,7 +1414,7 @@ void ActorManager::UpdateInputEvents(float dt)
         if (App::GetGameContext()->GetRaceSystem().IsRaceInProgress() && this->GetSimulationSpeed() != 1.0f)
         {
             m_last_simulation_speed = this->GetSimulationSpeed();
-            this->SetSimulationSpeed(1.f);
+            App::GetGameContext()->PushMessage(Message(MSG_SIM_SET_SIMULATION_SPEED_REQUESTED, (void*)new float(1.f)));
         }
     }
 
