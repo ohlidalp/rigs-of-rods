@@ -432,10 +432,6 @@ private:
     float                    m_wing_area;
     NodeNum_t                m_airplane_left_light  = NODENUM_INVALID;
     NodeNum_t                m_airplane_right_light = NODENUM_INVALID;
-    float                    m_fuse_z_min;
-    float                    m_fuse_z_max;
-    float                    m_fuse_y_min;
-    float                    m_fuse_y_max;
     int                      m_first_wing_index;
     std::vector<CabTexcoord>       m_oldstyle_cab_texcoords;
     std::vector<CabSubmesh>        m_oldstyle_cab_submeshes;
