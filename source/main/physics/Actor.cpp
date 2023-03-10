@@ -1512,6 +1512,9 @@ void Actor::reset(bool keep_position)
 
 void Actor::SoftReset()
 {
+    if (ar_state == ActorState::DISPOSED)
+        return;
+
     TRIGGER_EVENT_ASYNC(SE_TRUCK_RESET, ar_instance_id);
 
     float agl = this->getHeightAboveGroundBelow(this->getMaxHeight(true), true);
@@ -1536,6 +1539,9 @@ void Actor::SoftReset()
 
 void Actor::SyncReset(bool reset_position)
 {
+    if (ar_state == ActorState::DISPOSED)
+        return;
+
     TRIGGER_EVENT_ASYNC(SE_TRUCK_RESET, ar_instance_id);
 
     m_reset_timer.reset();
