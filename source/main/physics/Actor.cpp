@@ -1267,11 +1267,24 @@ void Actor::resetPosition(Ogre::Vector3 translation, bool setInitPosition)
     calculateAveragePosition();
 }
 
-void Actor::mouseMove(NodeNum_t node, Vector3 pos, float force)
+void Actor::addNodeEffectConstantForce(NodeNum_t nodenum, Ogre::Vector3 force)
 {
-    m_mouse_grab_node = node;
-    m_mouse_grab_move_force = force * std::pow(m_total_mass / 3000.0f, 0.75f);
-    m_mouse_grab_pos = pos;
+    ar_node_effects_constant_force.push_back({ nodenum, force });
+}
+
+void Actor::clearNodeEffectConstantForce(NodeNum_t nodenum)
+{
+    EraseIf(ar_node_effects_constant_force, [nodenum](const NodeEffectConstantForce& e) {return e.nodenum == nodenum; });
+}
+
+void Actor::addNodeEffectForceTowardsPoint(NodeNum_t nodenum, Ogre::Vector3 pos, float force)
+{
+    ar_node_effects_force_towards_point.push_back({nodenum, pos, force});
+}
+
+void Actor::clearNodeEffectForceTowardsPoint(NodeNum_t nodenum)
+{
+    EraseIf(ar_node_effects_force_towards_point, [nodenum](const NodeEffectForceTowardsPoint& e) {return e.nodenum == nodenum; });
 }
 
 void Actor::toggleWheelDiffMode()

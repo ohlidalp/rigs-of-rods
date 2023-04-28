@@ -127,8 +127,12 @@ public:
     void              antilockbrakeToggle();
     void              toggleCustomParticles();
     bool              getCustomParticleMode();
+    void              addNodeEffectConstantForce(NodeNum_t nodenum, Ogre::Vector3 force);
+    void              clearNodeEffectConstantForce(NodeNum_t nodenum);
+    void              addNodeEffectForceTowardsPoint(NodeNum_t nodenum, Ogre::Vector3 point, float force);
+    void              clearNodeEffectForceTowardsPoint(NodeNum_t nodenum);
+    void              clearNodeEffects(NodeNum_t nodenum);
     // not exported to scripting:
-    void              mouseMove(NodeNum_t node, Ogre::Vector3 pos, float force);
     void              tieToggle(int group=-1);
     bool              isTied();
     void              hookToggle(int group=-1, HookAction mode=HOOK_TOGGLE, NodeNum_t mousenode=NODENUM_INVALID);
@@ -454,6 +458,10 @@ public:
     std::map<int,int> ar_net_stream_results;
     Ogre::Timer       ar_net_timer;
     unsigned long     ar_net_last_update_time = 0;
+    // Node effects
+    std::vector<NodeEffectConstantForce> ar_node_effects_constant_force;
+    std::vector<NodeEffectForceTowardsPoint> ar_node_effects_force_towards_point;
+
 
     // Realtime node/beam structure editing helpers
     bool                    ar_nb_initialized = false;
@@ -502,7 +510,7 @@ private:
     void              CalcFuseDrag();                      
     void              CalcHooks();                         
     void              CalcHydros();                        
-    void              CalcMouse();                         
+    void              CalcNodeEffects();                         
     void              CalcNodes();
     void              CalcEventBoxes();
     void              CalcReplay();                        
@@ -556,9 +564,6 @@ private:
     float             m_stabilizer_shock_sleep = 0.f;     //!< Sim state
     Replay*           m_replay_handler = nullptr;
     float             m_total_mass = 0.f;            //!< Physics state; total mass in Kg
-    NodeNum_t         m_mouse_grab_node = NODENUM_INVALID;  //!< Sim state; node currently being dragged by user
-    Ogre::Vector3     m_mouse_grab_pos = Ogre::Vector3::ZERO;
-    float             m_mouse_grab_move_force = 0.f;
     float             m_spawn_rotation = 0.f;
     Ogre::Timer       m_reset_timer;
     Ogre::Vector3     m_rotation_request_center = Ogre::Vector3::ZERO;
