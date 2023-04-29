@@ -37,6 +37,7 @@
 #endif
 
 using namespace Ogre;
+using namespace RoR;
 
 String RoR::sha1sum(const char *key, int len)
 {
@@ -188,4 +189,3 @@ std::string RoR::PrintMeshInfo(std::string const& title, MeshPtr mesh)
 
     return text.ToCStr();
 }
-

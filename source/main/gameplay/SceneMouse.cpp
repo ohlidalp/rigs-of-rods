@@ -29,6 +29,8 @@
 #include "Application.h"
 #include "GameContext.h"
 #include "GfxScene.h"
+#include "GUIUtils.h"
+#include "InputEngine.h"
 #include "ScriptEngine.h"
 
 #include <Ogre.h>
@@ -105,8 +107,6 @@ void SceneMouse::reset()
     mindist = 99999;
     mouseGrabState = 0;
     lastgrabpos = Vector3::ZERO;
-    lastMouseX = 0;
-    lastMouseY = 0;
 
     mouseGrabState = 0;
 }
@@ -118,47 +118,12 @@ bool SceneMouse::mouseMoved(const OIS::MouseEvent& _arg)
     // experimental mouse hack
     if (ms.buttonDown(OIS::MB_Left) && mouseGrabState == 0)
     {
-        lastMouseY = ms.Y.abs;
-        lastMouseX = ms.X.abs;
 
-        Ray mouseRay = getMouseRay();
-
-        // walk all trucks
-        minnode = NODENUM_INVALID;
-        grab_truck = NULL;
-        for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
-        {
-            if (actor->ar_state == ActorState::LOCAL_SIMULATED)
-            {
-                // check if our ray intersects with the bounding box of the truck
-                std::pair<bool, Real> pair = mouseRay.intersects(actor->ar_bounding_box);
-                if (!pair.first)
-                    continue;
-
-                for (int j = 0; j < static_cast<int>(actor->ar_nodes.size()); j++)
-                {
-                    if (actor->ar_nodes[j].nd_no_mouse_grab)
-                        continue;
-
-                    // check if our ray intersects with the node
-                    std::pair<bool, Real> pair = mouseRay.intersects(Sphere(actor->ar_nodes[j].AbsPosition, 0.1f));
-                    if (pair.first)
-                    {
-                        // we hit it, check if its the nearest node
-                        if (pair.second < mindist)
-                        {
-                            mindist = pair.second;
-                            minnode = (NodeNum_t)j;
-                            grab_truck = actor;
-                        }
-                    }
-                }
-            }
-        }
-
+        // mouse selection is updated every frame in `update()`
         // check if we hit a node
-        if (grab_truck && minnode != NODENUM_INVALID)
+        if (mintruck && minnode != NODENUM_INVALID)
         {
+            grab_truck = mintruck;
             mouseGrabState = 1;            
 
             for (std::vector<hook_t>::iterator it = grab_truck->ar_hooks.begin(); it != grab_truck->ar_hooks.end(); it++)
@@ -180,8 +145,7 @@ bool SceneMouse::mouseMoved(const OIS::MouseEvent& _arg)
     else if (ms.buttonDown(OIS::MB_Left) && mouseGrabState == 1)
     {
         // force applying and so forth happens in update()
-        lastMouseY = ms.Y.abs;
-        lastMouseX = ms.X.abs;
+
         // not fixed
         return false;
     }
@@ -195,17 +159,71 @@ bool SceneMouse::mouseMoved(const OIS::MouseEvent& _arg)
     return false;
 }
 
+void SceneMouse::updateMouseHighlights(ActorPtr actor)
+{
+    ROR_ASSERT(actor != nullptr);
+    ROR_ASSERT(actor->ar_state == ActorState::LOCAL_SIMULATED);
+
+    Ray mouseRay = getMouseRay();
+
+    // check if our ray intersects with the bounding box of the truck
+    std::pair<bool, Real> pair = mouseRay.intersects(actor->ar_bounding_box);
+    if (!pair.first)
+        return;
+
+    for (int j = 0; j < actor->ar_num_nodes; j++)
+    {
+        // skip nodes with grabbing disabled
+        if (actor->ar_nodes[j].nd_no_mouse_grab)
+            continue;
+
+        // check if our ray intersects with the node
+        std::pair<bool, Real> pair = mouseRay.intersects(Sphere(actor->ar_nodes[j].AbsPosition, GRAB_SPHERE_SIZE));
+        if (pair.first)
+        {
+            // we hit it, check if its the nearest node
+            if (pair.second < mindist)
+            {
+                mindist = pair.second;
+                minnode = static_cast<NodeNum_t>(j);
+                mintruck = actor;
+            }
+        }
+
+        // check if the node is close enough to be highlighted
+        std::pair<bool, Real> highlight_result = mouseRay.intersects(Sphere(actor->ar_nodes[j].AbsPosition, this->HIGHLIGHT_SPHERE_SIZE));
+        if (highlight_result.first)
+        {
+            highlightedNodes.push_back({ highlight_result.second, static_cast<NodeNum_t>(j) });
+            highlightedNodesTopDistance = std::max(highlightedNodesTopDistance, highlight_result.second);
+        }
+    }
+}
+
 void SceneMouse::UpdateSimulation()
 {
+    Ray mouseRay = getMouseRay();
+    highlightedNodes.clear(); // clear every frame - highlights are not displayed when grabbing
+
     if (mouseGrabState == 1 && grab_truck)
     {
         // get values
-        Ray mouseRay = getMouseRay();
         lastgrabpos = mouseRay.getPoint(mindist);
 
         // add forces
         grab_truck->clearNodeEffectForceTowardsPoint(minnode);
         grab_truck->addNodeEffectForceTowardsPoint(minnode, lastgrabpos, MOUSE_GRAB_FORCE);
+    }
+    else
+    {
+        // refresh mouse highlight        
+        for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
+        {
+            if (actor->ar_state == ActorState::LOCAL_SIMULATED)
+            {
+                this->updateMouseHighlights(actor);
+            }
+        }
     }
 }
 
@@ -214,6 +232,30 @@ void SceneMouse::UpdateVisuals()
     if (grab_truck == nullptr)
     {
         pickLineNode->setVisible(false);   // Hide the line     
+
+        // draw highlights
+        if (mintruck)
+        {
+            ImDrawList* drawlist = GetImDummyFullscreenWindow("Mouse-grab node highlights");
+            Vector2 screenPos;
+            for (const HighlightedNode& hnode : highlightedNodes)
+            {
+                if (GetScreenPosFromWorldPos(mintruck->ar_nodes[hnode.nodenum].AbsPosition, /*out:*/screenPos))
+                {
+                    if (hnode.nodenum == minnode)
+                    {
+                        drawlist->AddCircleFilled(ImVec2(screenPos.x, screenPos.y), MINNODE_RADIUS, ImColor(MINNODE_COLOR));
+                    }
+                    else
+                    {
+                        float animRatio = 1.f - (hnode.distance / highlightedNodesTopDistance); // the closer the bigger
+                        float radius = (HIGHLIGHTED_NODE_RADIUS_MAX - HIGHLIGHTED_NODE_RADIUS_MIN) * animRatio;
+                        ImVec4 color = HIGHLIGHTED_NODE_COLOR * animRatio;
+                        drawlist->AddCircleFilled(ImVec2(screenPos.x, screenPos.y), radius, ImColor(color));
+                    }
+                }
+            }
+        }
     }
     else
     {
@@ -234,8 +276,6 @@ bool SceneMouse::mousePressed(const OIS::MouseEvent& _arg, OIS::MouseButtonID _i
 
     if (ms.buttonDown(OIS::MB_Middle))
     {
-        lastMouseY = ms.Y.abs;
-        lastMouseX = ms.X.abs;
         Ray mouseRay = getMouseRay();
 
         if (App::sim_state->getEnum<SimState>() == SimState::EDITOR_MODE)
@@ -316,6 +356,9 @@ bool SceneMouse::mouseReleased(const OIS::MouseEvent& _arg, OIS::MouseButtonID _
 
 Ray SceneMouse::getMouseRay()
 {
+    int lastMouseX = App::GetInputEngine()->getMouseState().X.abs;
+    int lastMouseY = App::GetInputEngine()->getMouseState().Y.abs;
+
     Viewport* vp = App::GetCameraManager()->GetCamera()->getViewport();
 
     return App::GetCameraManager()->GetCamera()->getCameraToViewportRay((float)lastMouseX / (float)vp->getActualWidth(), (float)lastMouseY / (float)vp->getActualHeight());
