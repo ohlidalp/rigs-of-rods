@@ -87,6 +87,7 @@ protected:
     // surrounding nodes
     std::vector<HighlightedNode> highlightedNodes;
     float highlightedNodesTopDistance;
+    ActorPtr highlightedTruck;
 
     /// @}
 
@@ -94,6 +95,7 @@ protected:
     Ogre::Ray getMouseRay();
     void reset();
     void updateMouseHighlights(ActorPtr actor);
+    void drawMouseHighlights();
 };
 
 /// @}
