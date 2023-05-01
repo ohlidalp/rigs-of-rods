@@ -5853,6 +5853,15 @@ void ActorSpawner::ProcessCinecam(RigDef::Cinecam & def)
     // NOTE: Not applying the 'node_mass' value here for backwards compatibility - this node must go through initial `Actor::RecalculateNodeMasses()` pass with default weight.
 
     m_actor->ar_nodes_aux[camera_node.pos].nda_minimass = m_state.global_minimass;
+    
+    // node GFX
+    NodeGfx nfx(camera_node.pos);
+    nfx.nx_no_particles = BITMASK_IS_1(def.node_defaults->options, RigDef::Node::OPTION_p_NO_PARTICLES);
+    nfx.nx_may_get_wet  = BITMASK_IS_0(def.node_defaults->options, RigDef::Node::OPTION_c_NO_GROUND_CONTACT);
+    nfx.nx_no_particles = BITMASK_IS_1(def.node_defaults->options, RigDef::Node::OPTION_p_NO_PARTICLES);
+    nfx.nx_no_sparks    = BITMASK_IS_1(def.node_defaults->options, RigDef::Node::OPTION_f_NO_SPARKS);
+    m_actor->m_gfx_actor->m_gfx_nodes.push_back(nfx);
+
 
     m_actor->ar_cinecam_node[m_actor->ar_num_cinecams] = camera_node.pos;
     m_actor->ar_num_cinecams++;
