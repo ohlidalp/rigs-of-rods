@@ -95,6 +95,10 @@ protected:
     float highlightedNodesTopDistance;
     ActorPtr highlightedTruck;
 
+    // Highlight of neighbour beams
+    std::vector<uint8_t> highlightedBeamsNodeProximity;
+    std::vector<int> highlightedBeamIDs;
+
     /// @}
 
     void releaseMousePick();
@@ -102,11 +106,10 @@ protected:
     void reset();
     void updateMouseNodeHighlights(ActorPtr& actor);
     void updateMouseBeamHighlights();
-    void updateMouseBeamHighlightsRecursive(NodeNum_t nodenum, float remTraversalLen, float maxTraversalLen);
+    void updateMouseBeamHighlightsRecursive(NodeNum_t nodenum, float traversalLen, float maxTraversalLen);
     void updateMouseEffectHighlights(ActorPtr& actor);
     void drawMouseNodeHighlights();
     void drawMouseBeamHighlights();
-    void drawBeamHighlightsRecursive(ImDrawList* drawlist, NodeNum_t node);
     void drawNodeEffects();
 };
 
