@@ -130,20 +130,15 @@ void SceneMouse::updateMouseNodeHighlights(ActorPtr& actor)
     ROR_ASSERT(actor != nullptr);
     ROR_ASSERT(actor->ar_state == ActorState::LOCAL_SIMULATED);
 
-    ImGui::Text("DBG updateMouseHighlights()");
-
     Ray mouseRay = getMouseRay();
 
     // check if our ray intersects with the bounding box of the truck
     std::pair<bool, Real> pair = mouseRay.intersects(actor->ar_bounding_box);
     if (!pair.first)
     {
-        ImGui::Text("DBG AABB intersection fail!");
         return;
     }
 
-    int numGrabHits = 0;
-    int numHighlightHits = 0;
     for (int j = 0; j < actor->ar_num_nodes; j++)
     {
         // skip nodes with grabbing disabled
@@ -156,7 +151,6 @@ void SceneMouse::updateMouseNodeHighlights(ActorPtr& actor)
         std::pair<bool, Real> pair = mouseRay.intersects(Sphere(actor->ar_nodes[j].AbsPosition, GRAB_SPHERE_SIZE));
         if (pair.first)
         {
-            numGrabHits++;
 
             // we hit it, check if its the nearest node
             if (pair.second < mindist)
@@ -171,14 +165,12 @@ void SceneMouse::updateMouseNodeHighlights(ActorPtr& actor)
         std::pair<bool, Real> highlight_result = mouseRay.intersects(Sphere(actor->ar_nodes[j].AbsPosition, this->HIGHLIGHT_SPHERE_SIZE));
         if (highlight_result.first)
         {
-            numHighlightHits++;
             highlightedTruck = actor;
 
             highlightedNodes.push_back({ highlight_result.second, static_cast<NodeNum_t>(j) });
             highlightedNodesTopDistance = std::max(highlightedNodesTopDistance, highlight_result.second);
         }
     }
-    ImGui::Text("DBG numGrabHits: %4d, numHighlightHits: %4d", numGrabHits, numHighlightHits);
 }
 
 void SceneMouse::updateMouseEffectHighlights(ActorPtr& actor)
@@ -207,6 +199,48 @@ void SceneMouse::updateMouseEffectHighlights(ActorPtr& actor)
             f2pEffect_minnode = e.nodenum;
             f2pEffect_mindist = result.second;
             f2pEffect_mintruck = actor;
+        }
+    }
+}
+
+void SceneMouse::updateMouseBeamHighlights()
+{
+    if (mintruck)
+    {
+        // Reset traversal records
+        for (NodeGfx& n: mintruck->GetGfxActor()->getNodes())
+        {
+            n.nx_mouse_traversal_result_perc = -1.f;
+        }
+
+        // Fire up the recursive update
+        const GUIManager::GuiTheme& theme = App::GetGuiManager()->GetTheme();
+        this->updateMouseBeamHighlightsRecursive(
+            minnode, theme.mouse_beam_traversal_length, theme.mouse_beam_traversal_length);
+    }
+}
+
+void SceneMouse::updateMouseBeamHighlightsRecursive(NodeNum_t nodenum, float remTraversalLen, float maxTraversalLen)
+{
+    ROR_ASSERT(mintruck);
+
+    // Always record the highest result
+    float traversalResult = remTraversalLen / maxTraversalLen;
+    if (traversalResult > mintruck->GetGfxActor()->getNodes()[minnode].nx_mouse_traversal_result_perc)
+    {
+        mintruck->GetGfxActor()->getNodes()[minnode].nx_mouse_traversal_result_perc = traversalResult;
+    }
+
+    if (remTraversalLen > 0)
+    {
+        // Traverse connected beams and for each node visited, record it's traversal state (1=closest, 0=furthest)
+        for (int beamID: mintruck->ar_node_to_beam_connections[nodenum])
+        {
+            const beam_t& b = mintruck->ar_beams[beamID];
+
+            NodeNum_t nodenumFar = (b.p1->pos == nodenum) ? b.p2->pos : nodenum;
+            float remTraversalLenFar = remTraversalLen - b.L;
+            this->updateMouseBeamHighlightsRecursive(nodenumFar, remTraversalLenFar, maxTraversalLen);
         }
     }
 }
@@ -251,6 +285,7 @@ void SceneMouse::UpdateSimulation()
                 this->updateMouseNodeHighlights(actor);
             }
         }
+        this->updateMouseBeamHighlights();
 
         // refresh mouse highlight of effects
         cfEffect_mintruck = nullptr;
@@ -269,7 +304,49 @@ void SceneMouse::UpdateSimulation()
     }
 }
 
-void SceneMouse::drawMouseHighlights()
+void SceneMouse::drawBeamHighlightsRecursive(ImDrawList* drawlist, NodeNum_t nodenum)
+{
+    // Traverse connected beams and draw them based on pre-assigned distance values
+
+    ROR_ASSERT(mintruck);
+
+    const GUIManager::GuiTheme& theme = App::GetGuiManager()->GetTheme();
+    float t = mintruck->GetGfxActor()->getNodes()[nodenum].nx_mouse_traversal_result_perc;
+    ImVec4 color = ImLerp(theme.mouse_beam_close_color, theme.mouse_beam_far_color, t);
+
+    for (int beamID: mintruck->ar_node_to_beam_connections[nodenum])
+    {
+        const beam_t& b = mintruck->ar_beams[beamID];
+
+        NodeNum_t nodenumFar = (b.p1->pos == nodenum) ? b.p2->pos : nodenum;
+        float tFar = mintruck->GetGfxActor()->getNodes()[nodenumFar].nx_mouse_traversal_result_perc;
+        ImVec4 colorFar = ImLerp(theme.mouse_beam_close_color, theme.mouse_beam_far_color, tFar);
+
+        Vector2 screenPos, screenPosFar;
+        if (GetScreenPosFromWorldPos(mintruck->ar_nodes[nodenum].AbsPosition, screenPos)
+            && GetScreenPosFromWorldPos(mintruck->ar_nodes[nodenumFar].AbsPosition, screenPosFar))
+        {
+            ImAddLineColorGradient(drawlist,
+                ImVec2(screenPos.x, screenPos.y), ImVec2(screenPosFar.x, screenPosFar.y),
+                ImColor(color), ImColor(colorFar), theme.mouse_beam_thickness);
+        }
+    }
+}
+
+void SceneMouse::drawMouseBeamHighlights()
+{
+    if (!mintruck)
+        return; // nothing to draw
+
+    ImDrawList* drawlist = GetImDummyFullscreenWindow("Mouse-grab beam highlights");
+    // line drawingtest
+    ImAddLineColorGradient(drawlist, ImVec2(100, 100), ImVec2(200, 200),
+        ImColor(255, 0, 0, 255), ImColor(0, 0, 255, 255), 10);
+    // END test
+    this->drawBeamHighlightsRecursive(drawlist, minnode);
+}
+
+void SceneMouse::drawMouseNodeHighlights()
 {
     ActorPtr actor = (mintruck != nullptr) ? mintruck : highlightedTruck;
     if (!actor)
@@ -366,10 +443,11 @@ void SceneMouse::UpdateVisuals()
 {
     if (grab_truck == nullptr)
     {
-        this->drawMouseHighlights();
+        this->drawMouseNodeHighlights();
     }
 
     this->drawNodeEffects();
+    this->drawMouseBeamHighlights();
 }
 
 bool SceneMouse::mousePressed(const OIS::MouseEvent& _arg, OIS::MouseButtonID _id)
