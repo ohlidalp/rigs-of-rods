@@ -125,6 +125,11 @@ bool SceneMouse::mouseMoved(const OIS::MouseEvent& _arg)
     return false;
 }
 
+Ogre::AxisAlignedBox InflateAABB(Ogre::AxisAlignedBox box, float extra)
+{
+    return Ogre::AxisAlignedBox(box.getMinimum() - extra, box.getMaximum() + extra);
+}
+
 void SceneMouse::updateMouseNodeHighlights(ActorPtr& actor)
 {
     ROR_ASSERT(actor != nullptr);
@@ -133,7 +138,8 @@ void SceneMouse::updateMouseNodeHighlights(ActorPtr& actor)
     Ray mouseRay = getMouseRay();
 
     // check if our ray intersects with the bounding box of the truck
-    std::pair<bool, Real> pair = mouseRay.intersects(actor->ar_bounding_box);
+    AxisAlignedBox inflated_aabb = InflateAABB(actor->ar_bounding_box, App::GetGuiManager()->GetTheme().mouse_node_highlight_aabb_padding);
+    std::pair<bool, Real> pair = mouseRay.intersects(inflated_aabb);
     if (!pair.first)
     {
         return;
@@ -242,9 +248,8 @@ void SceneMouse::updateMouseBeamHighlightsRecursive(NodeNum_t nodenum, float tra
             if (proximity > highlightedBeamsNodeProximity[nodenumFar])
             {
                 highlightedBeamsNodeProximity[nodenumFar] = proximity;
+                this->updateMouseBeamHighlightsRecursive(nodenumFar, traversalLenFar, maxTraversalLen);
             }
-
-            this->updateMouseBeamHighlightsRecursive(nodenumFar, traversalLenFar, maxTraversalLen);
         }
     }
 }
@@ -265,6 +270,7 @@ void SceneMouse::UpdateSimulation()
 {
     Ray mouseRay = getMouseRay();
     highlightedNodes.clear(); // clear every frame - highlights are not displayed when grabbing
+    highlightedNodesTopDistance = 0.f;
     highlightedTruck = nullptr;
 
     if (mouseGrabState == 1 && grab_truck)
@@ -276,7 +282,9 @@ void SceneMouse::UpdateSimulation()
         grab_truck->clearNodeEffectForceTowardsPoint(minnode);
         grab_truck->addNodeEffectForceTowardsPoint(minnode, lastgrabpos, MOUSE_GRAB_FORCE);
     }
-    else
+    else if (!App::GetGuiManager()->IsGuiCaptureKeyboardRequested()
+        && !ImGui::GetIO().WantCaptureKeyboard
+        && !ImGui::GetIO().WantCaptureMouse)
     {
         // refresh mouse highlight of nodes
         mintruck = nullptr;
@@ -355,7 +363,7 @@ void SceneMouse::drawMouseNodeHighlights()
     {
         if (GetScreenPosFromWorldPos(actor->ar_nodes[hnode.nodenum].AbsPosition, /*out:*/screenPos))
         {
-            float animRatio = 1.f - (hnode.distance / highlightedNodesTopDistance); // the closer the bigger
+            float animRatio = (1.f - hnode.distance / theme.mouse_node_highlight_ref_distance); // the closer the bigger
             float radius = (theme.mouse_highlighted_node_radius_max - theme.mouse_highlighted_node_radius_min) * animRatio;
 
             if (hnode.nodenum == minnode)
