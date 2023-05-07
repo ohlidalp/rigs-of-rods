@@ -159,7 +159,7 @@ void GUIManager::DrawSimulationGui(float dt)
 
     if (this->RigEditor.IsVisible())
     {
-        this->RigEditor.Draw();
+        this->RigEditor.DrawSidePanel();
     }
 };
 

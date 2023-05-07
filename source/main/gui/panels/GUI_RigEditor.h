@@ -43,7 +43,8 @@ public:
     bool IsVisible() const { return m_is_visible; }
     bool IsHovered() const { return IsVisible() && m_is_hovered; }
 
-    void Draw();
+    void DrawSidePanel();
+    void DrawSelectedNodeHighlights();
     void UpdateInputEvents(float dt);
 
 private:
@@ -51,7 +52,6 @@ private:
     bool m_is_hovered = false;
 
     void DrawNodesTable(ActorPtr& actor, CacheEntry* cache_entry);
-    void DrawSelectedNodeHighlights();
 
     std::vector<bool> m_node_selected;
     std::vector<bool> m_node_highlight_drawn;

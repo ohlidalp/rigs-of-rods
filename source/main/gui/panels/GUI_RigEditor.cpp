@@ -38,17 +38,18 @@ using namespace RoR;
 using namespace GUI;
 using namespace Ogre;
 
-void RigEditor::Draw()
+void RigEditor::DrawSidePanel()
 {
     ActorPtr actor = App::GetGameContext()->GetPlayerActor();
-    if (!actor)
+    if (!actor) // should never happen
     {
-   //     m_is_visible = false;
+        m_is_visible = false;
         return;
     }
     m_node_selected.resize(actor->ar_num_nodes);
 
     ImGui::SetNextWindowContentWidth(500.f);
+    ImGui::SetNextWindowPos(ImVec2(10.f, 10.f));
     if (!ImGui::Begin(actor->getTruckName().c_str(), &m_is_visible))
     {
         ImGui::End(); // The window is collapsed
@@ -137,8 +138,6 @@ void RigEditor::Draw()
     {
         App::GetGameContext()->GetSceneMouse().SetMouseHoveredNode(actor, m_hovered_node);
     }
-
-    this->DrawSelectedNodeHighlights();
 }
 
 void RigEditor::UpdateInputEvents(float dt)
@@ -180,7 +179,10 @@ void RigEditor::DrawNodesTable(ActorPtr& actor, CacheEntry* cache_entry)
     ImGui::PushID("RigEditorNodes");
     m_num_nodes_selected = 0;
 
-    ImGui::TextDisabled("`*` means live data (others are from definition)");
+    ImGui::TextDisabled("This is a dump from memory, including all generated nodes");
+    ImGui::TextDisabled("Columns marked `*` contain live data (other values are from definition file)");
+    ImGui::TextDisabled("The '*Opt' column only supports flags `l` and `m`");
+    ImGui::TextDisabled("Note that 'set_node_defaults' values are merged into the nodes.");
 
     ImGui::Columns(8); // live pos, live Kg, live options, from, name, id, options, `l`Kg (load weight override)
 
@@ -282,6 +284,9 @@ void RigEditor::DrawNodesTable(ActorPtr& actor, CacheEntry* cache_entry)
 
 void RigEditor::DrawSelectedNodeHighlights()
 {
+    if (m_node_selected.size() == 0)
+        return; // Nothing to draw yet
+
     ActorPtr actor = App::GetGameContext()->GetPlayerActor();
     m_node_highlight_drawn.clear();
     m_node_highlight_drawn.resize(actor->ar_num_nodes, /*val:*/false); 
