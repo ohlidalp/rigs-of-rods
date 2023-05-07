@@ -25,6 +25,7 @@
 #include "Actor.h"
 #include "GameContext.h"
 #include "GUIManager.h"
+#include "GUIUtils.h"
 #include "InputEngine.h"
 #include "Language.h"
 #include "RigDef_File.h"
@@ -35,6 +36,7 @@
 
 using namespace RoR;
 using namespace GUI;
+using namespace Ogre;
 
 void RigEditor::Draw()
 {
@@ -57,7 +59,7 @@ void RigEditor::Draw()
     // Find this actor in modcache
     CacheEntry* cache_entry = App::GetCacheSystem()->FindEntryByFilename(RoR::LT_AllBeam, /*partial:*/false, actor->getTruckFileName());
 
-    NodeNum_t highlightNode = NODENUM_INVALID;
+    m_hovered_node = NODENUM_INVALID;
 
     if (cache_entry && ImGui::CollapsingHeader(_LC("RigEditor", "Nodes"), ImGuiTreeNodeFlags_DefaultOpen))
     {
@@ -127,19 +129,48 @@ void RigEditor::Draw()
             ImGui::TextDisabled("%s", _LC("VehicleDescription", "(no author information available) "));
         }
     }
-
-    App::GetGuiManager()->RequestGuiCaptureKeyboard(ImGui::IsWindowHovered());
+    m_is_hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
+    App::GetGuiManager()->RequestGuiCaptureKeyboard(m_is_hovered);
     ImGui::End();
+
+    if (m_is_hovered)
+    {
+        App::GetGameContext()->GetSceneMouse().SetMouseHoveredNode(actor, m_hovered_node);
+    }
+
+    this->DrawSelectedNodeHighlights();
 }
 
 void RigEditor::UpdateInputEvents(float dt)
 {
     if (App::sim_state->getEnum<SimState>() == SimState::TRUCK_EDITOR)
     {
-        // truck editor toggle
-        if (App::GetGameContext()->GetPlayerActor() && App::GetInputEngine()->getEventBoolValueBounce(EV_COMMON_TOGGLE_TRUCK_EDITOR))
+        // truck editor toggle (logs a warning if not driving a vehicle)
+        if (App::GetInputEngine()->getEventBoolValueBounce(EV_COMMON_TOGGLE_TRUCK_EDITOR))
         {
             App::GetGameContext()->PushMessage(MSG_EDI_LEAVE_TRUCK_EDITOR_REQUESTED);
+        }
+    }
+
+    ActorPtr player_actor = App::GetGameContext()->GetPlayerActor();
+    if (player_actor)
+    {
+        if (App::GetInputEngine()->getEventBoolValueBounce(EV_COMMON_TOGGLE_DEBUG_VIEW))
+        {
+            player_actor->GetGfxActor()->ToggleDebugView();
+            for (ActorPtr actor : player_actor->getAllLinkedActors())
+            {
+                actor->GetGfxActor()->SetDebugView(player_actor->GetGfxActor()->GetDebugView());
+            }
+        }
+
+        if (App::GetInputEngine()->getEventBoolValueBounce(EV_COMMON_CYCLE_DEBUG_VIEWS))
+        {
+            player_actor->GetGfxActor()->CycleDebugViews();
+            for (ActorPtr actor : player_actor->getAllLinkedActors())
+            {
+                actor->GetGfxActor()->SetDebugView(player_actor->GetGfxActor()->GetDebugView());
+            }
         }
     }
 }
@@ -147,6 +178,7 @@ void RigEditor::UpdateInputEvents(float dt)
 void RigEditor::DrawNodesTable(ActorPtr& actor, CacheEntry* cache_entry)
 {
     ImGui::PushID("RigEditorNodes");
+    m_num_nodes_selected = 0;
 
     ImGui::Columns(9); // pos, from, name, num, X, Y, Z, options, loadweight
 
@@ -199,7 +231,13 @@ void RigEditor::DrawNodesTable(ActorPtr& actor, CacheEntry* cache_entry)
         {
             m_node_selected[i] = selected;
         }
+        if (ImGui::IsItemHovered())
+        {
+            m_hovered_node = (NodeNum_t)i;
+        }
         ImGui::SameLine();
+        if (m_node_selected[i])
+            m_num_nodes_selected++;
         // The selection checkbox - just informational
         ImGui::Checkbox(num.ToCStr(), &selected);
 
@@ -246,4 +284,52 @@ void RigEditor::DrawNodesTable(ActorPtr& actor, CacheEntry* cache_entry)
     ImGui::Columns(1);
 
     ImGui::PopID();// "RigEditorNodes"
+}
+
+void RigEditor::DrawSelectedNodeHighlights()
+{
+    ActorPtr actor = App::GetGameContext()->GetPlayerActor();
+    m_node_highlight_drawn.clear();
+    m_node_highlight_drawn.resize(actor->ar_num_nodes, /*val:*/false); 
+    auto& theme = App::GetGuiManager()->GetTheme();
+
+    ImDrawList* drawlist = GetImDummyFullscreenWindow("RigEditorNodeHighlights");
+    for (int i = 0; i < actor->ar_num_beams; i++)
+    {
+        if (m_node_selected[actor->ar_beams[i].p1->pos]
+            || m_node_selected[actor->ar_beams[i].p2->pos])
+        {
+            Vector2 p1screen, p2screen;
+            if (GetScreenPosFromWorldPos(actor->ar_beams[i].p1->AbsPosition, p1screen)
+                && GetScreenPosFromWorldPos(actor->ar_beams[i].p2->AbsPosition, p2screen))
+            {
+                // Draw the beam highlight (faded if only 1 node is selected)
+
+                ImVec4 p1color = theme.editor_selected_node_color;
+                if (!m_node_selected[actor->ar_beams[i].p1->pos])
+                    p1color.w = 0.f; // Unselected node = full transparency
+                ImVec4 p2color = theme.editor_selected_node_color;
+                if (!m_node_selected[actor->ar_beams[i].p2->pos])
+                    p2color.w = 0.f; // Unselected node = full transparency
+
+                ImAddLineColorGradient(drawlist, p1screen, p2screen, p1color, p2color, theme.editor_selected_node_beam_thickness);
+
+                // Draw node circles (if not already drawn)
+
+                ImVec2 im_p1screen(p1screen.x, p1screen.y);
+                if (!m_node_highlight_drawn[actor->ar_beams[i].p1->pos])
+                {
+                    drawlist->AddCircleFilled(im_p1screen, theme.editor_selected_node_radius, ImColor(theme.editor_selected_node_color), theme.node_circle_num_segments);
+                    m_node_highlight_drawn[actor->ar_beams[i].p1->pos] = true;
+                }
+
+                ImVec2 im_p2screen(p2screen.x, p2screen.y);
+                if (!m_node_highlight_drawn[actor->ar_beams[i].p2->pos])
+                {
+                    drawlist->AddCircleFilled(im_p2screen, theme.editor_selected_node_radius, ImColor(theme.editor_selected_node_color), theme.node_circle_num_segments);
+                    m_node_highlight_drawn[actor->ar_beams[i].p2->pos] = true;
+                }
+            }
+        }
+    }
 }

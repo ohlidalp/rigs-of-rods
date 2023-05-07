@@ -428,10 +428,11 @@ void RoR::ImAddLineColorGradient(ImDrawList* drawlist, const ImVec2& p1, const I
     // Note that DearIMGUI archieves antialiasing by drawing semitransparent tris around the line tris.
     // ------------------------------------------------------------------------------------------------
 
-    // Draw the line using color c1
-    drawlist->AddLine(p1, p2, c1, thickness);
+    // Draw the line using flat white color (because c1 may be fully transparent which means ImGui would ignore it)
+    drawlist->AddLine(p1, p2, 0xFFFFFFFF, thickness);
 
-    // Prepare the c2 AA color ~ see `ImDrawList::AddPolyLine()` in 'imgui_draw.cpp', around line 610
+    // Prepare the AA colors ~ see `ImDrawList::AddPolyLine()` in 'imgui_draw.cpp', around line 610
+    const ImU32 c1aa = c1 & ~IM_COL32_A_MASK;
     const ImU32 c2aa = c2 & ~IM_COL32_A_MASK;
 
     // Inject the colors to draw list ~ see `ImDrawList::AddPolyLine()` in 'imgui_draw.cpp', around line 770
@@ -439,4 +440,9 @@ void RoR::ImAddLineColorGradient(ImDrawList* drawlist, const ImVec2& p1, const I
     (drawlist->_VtxWritePtr - 2)->col = c2; // end right
     (drawlist->_VtxWritePtr - 3)->col = c2; // end left
     (drawlist->_VtxWritePtr - 4)->col = c2aa; // end left AA
+
+    (drawlist->_VtxWritePtr - 5)->col = c1aa; // start right AA
+    (drawlist->_VtxWritePtr - 6)->col = c1; // start right
+    (drawlist->_VtxWritePtr - 7)->col = c1; // start left
+    (drawlist->_VtxWritePtr - 8)->col = c1aa; // start left AA
 }

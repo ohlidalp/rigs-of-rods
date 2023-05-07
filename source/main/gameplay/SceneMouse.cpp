@@ -284,7 +284,8 @@ void SceneMouse::UpdateSimulation()
     }
     else if (!App::GetGuiManager()->IsGuiCaptureKeyboardRequested()
         && !ImGui::GetIO().WantCaptureKeyboard
-        && !ImGui::GetIO().WantCaptureMouse)
+        && !ImGui::GetIO().WantCaptureMouse
+        && App::GetGuiManager()->AreStaticMenusAllowed())
     {
         // refresh mouse highlight of nodes
         mintruck = nullptr;
@@ -339,9 +340,7 @@ void SceneMouse::drawMouseBeamHighlights()
             const ImVec4 color1 = ImLerp(theme.mouse_beam_close_color, theme.mouse_beam_far_color, 1.f - t1);
             const ImVec4 color2 = ImLerp(theme.mouse_beam_close_color, theme.mouse_beam_far_color, 1.f - t2);
 
-            ImAddLineColorGradient(drawlist,
-                ImVec2(screenPos1.x, screenPos1.y), ImVec2(screenPos2.x, screenPos2.y),
-                ImColor(color1), ImColor(color2), theme.mouse_beam_thickness);
+            ImAddLineColorGradient(drawlist, screenPos1, screenPos2, color1, color2, theme.mouse_beam_thickness);
         }
     }
 }
@@ -557,4 +556,15 @@ Ray SceneMouse::getMouseRay()
     Viewport* vp = App::GetCameraManager()->GetCamera()->getViewport();
 
     return App::GetCameraManager()->GetCamera()->getCameraToViewportRay((float)lastMouseX / (float)vp->getActualWidth(), (float)lastMouseY / (float)vp->getActualHeight());
+}
+
+void SceneMouse::SetMouseHoveredNode(ActorPtr& actor, NodeNum_t nodenum)
+{
+    this->reset();
+    minnode = nodenum;
+    mintruck = actor;
+    if (minnode != NODENUM_INVALID)
+    {
+        this->updateMouseBeamHighlights();
+    }
 }

@@ -84,5 +84,9 @@ void ImAddItemToComboboxString(std::string& target, std::string const& item);
 void ImTerminateComboboxString(std::string& target);
 
 void ImAddLineColorGradient(ImDrawList* drawlist, const ImVec2& p1, const ImVec2& p2, ImU32 c1, ImU32 c2, float thickness);
+inline void ImAddLineColorGradient(ImDrawList* drawlist, const Ogre::Vector2& p1, const Ogre::Vector2& p2, const ImVec4& c1, const ImVec4& c2, float thickness)
+{
+    ImAddLineColorGradient(drawlist, ImVec2(p1.x, p1.y), ImVec2(p2.x, p2.y), ImColor(c1), ImColor(c2), thickness);
+}
 
 } // namespace RoR

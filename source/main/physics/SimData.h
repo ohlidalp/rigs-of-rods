@@ -326,7 +326,7 @@ struct node_t
     float           volume_coef = 0.f;
 
     NodeNum_t       pos = NODENUM_INVALID;             //!< This node's index in Actor::ar_nodes array.
-    NodeNum_t       def_pos;                           //!< This node's `RigDef::Node` index in `RigDef::Module::nodes` vector.
+    NodeNum_t       def_pos;                           //!< Editor: This node's `RigDef::Node` index in `RigDef::Module::nodes` vector.
     BboxID_t        nd_coll_bbox_id = BBOXID_INVALID;  //!< Optional attribute (-1 = none) - multiple collision bounding boxes defined in truckfile
     int16_t         nd_lockgroup = NODE_LOCKGROUP_DEFAULT; //!< Optional attribute (-1 = default, 9999 = deny lock) - used in the hook lock logic
 

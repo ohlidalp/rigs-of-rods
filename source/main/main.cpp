@@ -1083,6 +1083,12 @@ int main(int argc, char *argv[])
                 App::GetOutGauge()->Update(dt, App::GetGameContext()->GetPlayerActor());
             }
 
+            if (App::sim_state->getEnum<SimState>() == SimState::RUNNING
+                || App::sim_state->getEnum<SimState>() == SimState::TRUCK_EDITOR)
+            {
+                App::GetGameContext()->GetSceneMouse().UpdateSimulation();
+            }
+
             // Early GUI updates which require halted physics
             App::GetGuiManager()->NewImGuiFrame(dt);
             if (App::app_state->getEnum<AppState>() == AppState::SIMULATION)
@@ -1121,12 +1127,6 @@ int main(int argc, char *argv[])
                 App::sim_state->getEnum<SimState>() == SimState::RUNNING)
             {
                 App::GetAppContext()->GetForceFeedback().Update();
-            }
-
-            if (App::sim_state->getEnum<SimState>() == SimState::RUNNING
-                || App::sim_state->getEnum<SimState>() == SimState::TRUCK_EDITOR)
-            {
-                App::GetGameContext()->GetSceneMouse().UpdateSimulation();
             }
 
             // Create snapshot of simulation state for Gfx/GUI updates

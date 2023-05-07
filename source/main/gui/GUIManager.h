@@ -66,7 +66,7 @@ namespace RoR {
 
 inline ImVec4 RGBAv4(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255)
 {
-    return ImVec4(static_cast<float>(r)/255.f, static_cast<float>(g)/255.f, static_cast<float>(b)/255.f, static_cast<float>(b)/255.f);
+    return ImVec4(static_cast<float>(r)/255.f, static_cast<float>(g)/255.f, static_cast<float>(b)/255.f, static_cast<float>(a)/255.f);
 }
 
 class GUIManager
@@ -108,6 +108,11 @@ public:
         ImVec4 mouse_beam_far_color               = RGBAv4(38, 54, 51, 180);
         float  mouse_beam_thickness               = 2.f; //!< in pixels
         float  mouse_beam_traversal_length        = 0.8f; //!< in meters
+
+        // Truck editor node selection
+        ImVec4 editor_selected_node_color         = RGBAv4(252, 126, 15, 255); // Blender-style orange
+        float  editor_selected_node_radius        = 2.f;
+        float  editor_selected_node_beam_thickness = 1.5f;
 
         // Node effects
         ImVec4 node_effect_force_line_color       = ImVec4(0.3f, 0.2f, 1.f, 1.f);

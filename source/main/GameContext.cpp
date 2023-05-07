@@ -1335,24 +1335,6 @@ void GameContext::UpdateCommonInputEvents(float dt)
         m_player_actor->toggleCustomParticles();
     }
 
-    if (App::GetInputEngine()->getEventBoolValueBounce(EV_COMMON_TOGGLE_DEBUG_VIEW))
-    {
-        m_player_actor->GetGfxActor()->ToggleDebugView();
-        for (ActorPtr actor : m_player_actor->ar_linked_actors)
-        {
-            actor->GetGfxActor()->SetDebugView(m_player_actor->GetGfxActor()->GetDebugView());
-        }
-    }
-
-    if (App::GetInputEngine()->getEventBoolValueBounce(EV_COMMON_CYCLE_DEBUG_VIEWS))
-    {
-        m_player_actor->GetGfxActor()->CycleDebugViews();
-        for (ActorPtr actor : m_player_actor->ar_linked_actors)
-        {
-            actor->GetGfxActor()->SetDebugView(m_player_actor->GetGfxActor()->GetDebugView());
-        }
-    }
-
     if (App::GetInputEngine()->getEventBoolValueBounce(EV_COMMON_RESCUE_TRUCK, 0.5f) &&
         App::mp_state->getEnum<MpState>() != MpState::CONNECTED &&
         m_player_actor->ar_driveable != AIRPLANE)

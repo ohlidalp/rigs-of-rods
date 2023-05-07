@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include "SimData.h"
+
 #include <imgui.h>
 
 #include <vector>
@@ -49,8 +51,12 @@ private:
     bool m_is_hovered = false;
 
     void DrawNodesTable(ActorPtr& actor, CacheEntry* cache_entry);
+    void DrawSelectedNodeHighlights();
 
     std::vector<bool> m_node_selected;
+    std::vector<bool> m_node_highlight_drawn;
+    int m_num_nodes_selected = 0;
+    NodeNum_t m_hovered_node = NODENUM_INVALID;
 };
 
 } // namespace GUI

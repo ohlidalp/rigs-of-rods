@@ -53,6 +53,7 @@ public:
     void UpdateVisuals();
     void DiscardVisuals();
     void UpdateInputEvents();
+    void SetMouseHoveredNode(ActorPtr& actor, NodeNum_t nodenum);
 
 protected:
 
