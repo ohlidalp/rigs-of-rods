@@ -567,4 +567,5 @@ void SceneMouse::SetMouseHoveredNode(ActorPtr& actor, NodeNum_t nodenum)
     {
         this->updateMouseBeamHighlights();
     }
+    highlightedNodes.push_back({ 0.f, nodenum });
 }

@@ -180,20 +180,17 @@ void RigEditor::DrawNodesTable(ActorPtr& actor, CacheEntry* cache_entry)
     ImGui::PushID("RigEditorNodes");
     m_num_nodes_selected = 0;
 
-    ImGui::Columns(9); // pos, from, name, num, X, Y, Z, options, loadweight
+    ImGui::TextDisabled("`*` means live data (others are from definition)");
 
-    /* ImGui::SetColumnWidth(0, ImGui::CalcTextSize("000").x);
-     ImGui::SetColumnWidth(1, ImGui::CalcTextSize("0000000").x);
-     static float nameColWidth = static_cast<float>(std::max(ImGui::CalcTextSize("0").x * actor->ar_nodes_name_top_length, ImGui::CalcTextSize("00000").x));
-     ImGui::SetColumnWidth(2, nameColWidth);
-     ImGui::SetColumnWidth(3, ImGui::CalcTextSize("000").x);
-     ImGui::SetColumnWidth(4, ImGui::CalcTextSize("-000.00").x);
-     ImGui::SetColumnWidth(5, ImGui::CalcTextSize("-000.00").x);
-     ImGui::SetColumnWidth(6, ImGui::CalcTextSize("-000.00").x);
-     ImGui::SetColumnWidth(7, ImGui::CalcTextSize("abcd").x);
-     ImGui::SetColumnWidth(8, ImGui::CalcTextSize("000").x);*/
+    ImGui::Columns(8); // live pos, live Kg, live options, from, name, id, options, `l`Kg (load weight override)
 
-    ImGui::Text("###");
+    ImGui::Text("*###");
+
+    ImGui::NextColumn();
+    ImGui::Text("*Kg");
+
+    ImGui::NextColumn();
+    ImGui::Text("*Opt");
 
     ImGui::NextColumn();
     ImGui::Text("From");
@@ -202,27 +199,20 @@ void RigEditor::DrawNodesTable(ActorPtr& actor, CacheEntry* cache_entry)
     ImGui::Text("Name");
 
     ImGui::NextColumn();
-    ImGui::Text("Num");
-
-    ImGui::NextColumn();
-    ImGui::Text("X");
-    ImGui::NextColumn();
-    ImGui::Text("Y");
-    ImGui::NextColumn();
-    ImGui::Text("Z");
+    ImGui::Text("Id");
 
     ImGui::NextColumn();
     ImGui::Text("Opt");
 
     ImGui::NextColumn();
-    ImGui::Text("Kg");
+    ImGui::Text("`l`Kg");
 
     for (int i = 0; i < actor->ar_num_nodes; i++)
     {
         ROR_ASSERT(actor->ar_nodes[i].pos == (NodeNum_t)i);
         ImGui::PushID(i);
 
-        ImGui::NextColumn(); // Pos    
+        ImGui::NextColumn(); // *Pos    
         Str<50> num;
         num << i;
         bool selected = m_node_selected[i];
@@ -239,7 +229,18 @@ void RigEditor::DrawNodesTable(ActorPtr& actor, CacheEntry* cache_entry)
         if (m_node_selected[i])
             m_num_nodes_selected++;
         // The selection checkbox - just informational
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, 0.f));
         ImGui::Checkbox(num.ToCStr(), &selected);
+        ImGui::PopStyleVar(); // ImGuiStyleVar_FramePadding
+
+        ImGui::NextColumn(); // *Kg
+        ImGui::Text("%.2f", actor->ar_nodes[i].mass);
+
+        ImGui::NextColumn(); // *Opt
+        Str<25> liveOpt;
+        if (actor->ar_nodes[i].nd_loaded_mass) liveOpt << "l";
+        if (actor->ar_nodes[i].nd_no_mouse_grab) liveOpt << "m";
+        ImGui::Text(liveOpt.ToCStr());
 
         ImGui::NextColumn(); // From
         ImGui::Text(RigDef::KeywordToString(actor->ar_nodes_aux[i].nda_source_keyword));
@@ -256,26 +257,19 @@ void RigEditor::DrawNodesTable(ActorPtr& actor, CacheEntry* cache_entry)
 
             RigDef::Node& def = cache_entry->actor_def->root_module->nodes[actor->ar_nodes_aux[i].nda_source_datapos];
 
-            ImGui::NextColumn(); // X
-
-            ImGui::Text("%f", def.position.x);
-            ImGui::NextColumn(); // Y
-            ImGui::Text("%f", def.position.y);
-            ImGui::NextColumn(); // Z
-            ImGui::Text("%f", def.position.z);
-
             ImGui::NextColumn(); // options
             ImGui::Text(RigDef::Serializer::ProcessNodeOptions(def.options).c_str());
 
-            ImGui::NextColumn(); // load weight
+            ImGui::NextColumn(); // load weight override
+            if (def._has_load_weight_override)
+            {
+                ImGui::Text("%.2f", def.load_weight_override);
+            }
         }
         else
         {
-            ImGui::NextColumn(); // X
-            ImGui::NextColumn(); // Y
-            ImGui::NextColumn(); // Z
             ImGui::NextColumn(); // options
-            ImGui::NextColumn(); // load weight
+            ImGui::NextColumn(); // load weight override
         }
 
         ImGui::PopID(); // i
@@ -296,8 +290,11 @@ void RigEditor::DrawSelectedNodeHighlights()
     ImDrawList* drawlist = GetImDummyFullscreenWindow("RigEditorNodeHighlights");
     for (int i = 0; i < actor->ar_num_beams; i++)
     {
-        if (m_node_selected[actor->ar_beams[i].p1->pos]
-            || m_node_selected[actor->ar_beams[i].p2->pos])
+        NodeNum_t p1pos = actor->ar_beams[i].p1->pos;
+        NodeNum_t p2pos = actor->ar_beams[i].p2->pos;
+
+        if (m_node_selected[p1pos]
+            || m_node_selected[p2pos])
         {
             Vector2 p1screen, p2screen;
             if (GetScreenPosFromWorldPos(actor->ar_beams[i].p1->AbsPosition, p1screen)
@@ -306,10 +303,10 @@ void RigEditor::DrawSelectedNodeHighlights()
                 // Draw the beam highlight (faded if only 1 node is selected)
 
                 ImVec4 p1color = theme.editor_selected_node_color;
-                if (!m_node_selected[actor->ar_beams[i].p1->pos])
+                if (!m_node_selected[p1pos])
                     p1color.w = 0.f; // Unselected node = full transparency
                 ImVec4 p2color = theme.editor_selected_node_color;
-                if (!m_node_selected[actor->ar_beams[i].p2->pos])
+                if (!m_node_selected[p2pos])
                     p2color.w = 0.f; // Unselected node = full transparency
 
                 ImAddLineColorGradient(drawlist, p1screen, p2screen, p1color, p2color, theme.editor_selected_node_beam_thickness);
@@ -319,14 +316,20 @@ void RigEditor::DrawSelectedNodeHighlights()
                 ImVec2 im_p1screen(p1screen.x, p1screen.y);
                 if (!m_node_highlight_drawn[actor->ar_beams[i].p1->pos])
                 {
-                    drawlist->AddCircleFilled(im_p1screen, theme.editor_selected_node_radius, ImColor(theme.editor_selected_node_color), theme.node_circle_num_segments);
+                    if (m_node_selected[p1pos])
+                    {
+                        drawlist->AddCircleFilled(im_p1screen, theme.editor_selected_node_radius, ImColor(theme.editor_selected_node_color), theme.node_circle_num_segments);
+                    }
                     m_node_highlight_drawn[actor->ar_beams[i].p1->pos] = true;
                 }
 
                 ImVec2 im_p2screen(p2screen.x, p2screen.y);
                 if (!m_node_highlight_drawn[actor->ar_beams[i].p2->pos])
                 {
-                    drawlist->AddCircleFilled(im_p2screen, theme.editor_selected_node_radius, ImColor(theme.editor_selected_node_color), theme.node_circle_num_segments);
+                    if (m_node_selected[p2pos])
+                    {
+                        drawlist->AddCircleFilled(im_p2screen, theme.editor_selected_node_radius, ImColor(theme.editor_selected_node_color), theme.node_circle_num_segments);
+                    }
                     m_node_highlight_drawn[actor->ar_beams[i].p2->pos] = true;
                 }
             }
