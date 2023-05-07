@@ -242,7 +242,8 @@ void CameraManager::UpdateCurrentBehavior()
 void CameraManager::UpdateInputEvents(float dt) // Called every frame
 {
     if (App::sim_state->getEnum<SimState>() != SimState::RUNNING &&
-        App::sim_state->getEnum<SimState>() != SimState::EDITOR_MODE)
+        App::sim_state->getEnum<SimState>() != SimState::TERRN_EDITOR &&
+        App::sim_state->getEnum<SimState>() != SimState::TRUCK_EDITOR)
     {
         return;
     }

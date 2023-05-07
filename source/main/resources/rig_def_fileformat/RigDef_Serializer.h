@@ -47,6 +47,8 @@ public:
 
     void Serialize();
 
+    static std::string ProcessNodeOptions(unsigned int options);
+
 protected:
 
     void ProcessAuthors(Document::Module* module);
@@ -64,7 +66,6 @@ protected:
     void ProcessNodes(Document::Module*);
     void ProcessNode(Node & node);
     void ProcessNodeDefaults(NodeDefaults* node_defaults);
-    void ProcessNodeOptions(unsigned int options);
     
     void ProcessBeams(Document::Module*);
     void ProcessBeamDefaults(BeamDefaults* beam_defaults, const char* prefix = "");

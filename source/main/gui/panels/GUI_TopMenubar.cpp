@@ -1545,10 +1545,20 @@ void TopMenubar::DrawSpecialStateBox(float top_offset)
              App::GetGameContext()->GetPlayerActor()->ar_physics_paused &&
              !App::GetGuiManager()->IsGuiHidden())
     {
-        special_color = GREEN_TEXT;
-        special_text = fmt::format(_LC("TopMenubar", "Vehicle physics paused, press {} to resume"),
-                                   App::GetInputEngine()->getEventCommandTrimmed(EV_TRUCK_TOGGLE_PHYSICS));
-        content_width = ImGui::CalcTextSize(special_text.c_str()).x;
+        if (App::sim_state->getEnum<SimState>() == SimState::TRUCK_EDITOR)
+        {
+            special_color = GREEN_TEXT;
+            special_text = fmt::format(_LC("TopMenubar", "Truck editing mode, press {} to save and exit"),
+                App::GetInputEngine()->getEventCommandTrimmed(EV_COMMON_TOGGLE_TRUCK_EDITOR));
+            content_width = ImGui::CalcTextSize(special_text.c_str()).x;
+        }
+        else
+        {
+            special_color = GREEN_TEXT;
+            special_text = fmt::format(_LC("TopMenubar", "Vehicle physics paused, press {} to resume"),
+                App::GetInputEngine()->getEventCommandTrimmed(EV_TRUCK_TOGGLE_PHYSICS));
+            content_width = ImGui::CalcTextSize(special_text.c_str()).x;
+        }
     }
     else if (App::GetGameContext()->GetPlayerActor() &&
             App::GetGameContext()->GetPlayerActor()->ar_state == ActorState::LOCAL_REPLAY)
@@ -1594,7 +1604,7 @@ void TopMenubar::DrawSpecialStateBox(float top_offset)
             special_text_d = fmt::format("{:02d}.{:02d}.{:02d}", (int)(best_time) / 60, (int)(best_time) % 60, (int)(best_time * 100.0) % 100);
         }
     }
-    else if (App::sim_state->getEnum<SimState>() == SimState::EDITOR_MODE)
+    else if (App::sim_state->getEnum<SimState>() == SimState::TERRN_EDITOR)
     {
         special_color = GREEN_TEXT;
         special_text = fmt::format(_LC("TopMenubar", "Terrain editing mode, press {} to save and exit"),

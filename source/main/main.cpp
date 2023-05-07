@@ -595,7 +595,7 @@ int main(int argc, char *argv[])
                     break;
 
                 case MSG_SIM_UNLOAD_TERRN_REQUESTED:
-                    if (App::sim_state->getEnum<SimState>() == SimState::EDITOR_MODE)
+                    if (App::sim_state->getEnum<SimState>() == SimState::TERRN_EDITOR)
                     {
                         App::GetGameContext()->GetTerrain()->GetTerrainEditor()->WriteOutputFile();
                     }
@@ -869,9 +869,9 @@ int main(int argc, char *argv[])
                 }
 
                 case MSG_EDI_ENTER_TERRN_EDITOR_REQUESTED:
-                    if (App::sim_state->getEnum<SimState>() != SimState::EDITOR_MODE)
+                    if (App::sim_state->getEnum<SimState>() != SimState::TERRN_EDITOR)
                     {
-                        App::sim_state->setVal((int)SimState::EDITOR_MODE);
+                        App::sim_state->setVal((int)SimState::TERRN_EDITOR);
                         App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_INFO, Console::CONSOLE_SYSTEM_NOTICE,
                                                       _L("Entered terrain editing mode"));
                         App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_INFO, Console::CONSOLE_SYSTEM_NOTICE,
@@ -881,7 +881,7 @@ int main(int argc, char *argv[])
                     break;
 
                 case MSG_EDI_LEAVE_TERRN_EDITOR_REQUESTED:
-                    if (App::sim_state->getEnum<SimState>() == SimState::EDITOR_MODE)
+                    if (App::sim_state->getEnum<SimState>() == SimState::TERRN_EDITOR)
                     {
                         App::GetGameContext()->GetTerrain()->GetTerrainEditor()->WriteOutputFile();
                         App::GetGameContext()->GetTerrain()->GetTerrainEditor()->ClearSelection();
@@ -917,6 +917,42 @@ int main(int argc, char *argv[])
                         failed_m = true;
                     }
                     //DO NOT `delete` the payload - it's a weak pointer, data are owned by `RoR::CacheSystem`; See `enum MsgType` in file 'Application.h'.
+                    break;
+                }
+
+                case MSG_EDI_ENTER_TRUCK_EDITOR_REQUESTED:
+                {
+                    if (App::sim_state->getEnum<SimState>() != SimState::TRUCK_EDITOR)
+                    {
+                        // Put truck to physics-paused mode
+                        if (App::GetGameContext()->GetPlayerActor())
+                        {
+                            App::GetGameContext()->GetPlayerActor()->SyncReset(/*reset_position:*/false);
+                            App::GetGameContext()->GetPlayerActor()->ar_physics_paused = true;
+                            App::GetGuiManager()->RigEditor.SetVisible(true);
+                            App::sim_state->setVal(SimState::TRUCK_EDITOR);
+                        }
+                        else
+                        {
+                            App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_INFO, Console::CONSOLE_SYSTEM_NOTICE,
+                                _L("Cannot enter vehicle editor without a vehicle"));
+                        }
+                    }
+                    break;
+                }
+
+                case MSG_EDI_LEAVE_TRUCK_EDITOR_REQUESTED:
+                {
+                    if (App::sim_state->getEnum<SimState>() == SimState::TRUCK_EDITOR)
+                    {
+                        // Unpause truck physics
+                        if (App::GetGameContext()->GetPlayerActor())
+                        {
+                            App::GetGameContext()->GetPlayerActor()->ar_physics_paused = false;
+                            App::GetGuiManager()->RigEditor.SetVisible(false);
+                            App::sim_state->setVal(SimState::RUNNING);
+                        }
+                    }
                     break;
                 }
 
@@ -986,10 +1022,15 @@ int main(int argc, char *argv[])
 
                     if (App::app_state->getEnum<AppState>() == AppState::SIMULATION)
                     {
-                        if (App::sim_state->getEnum<SimState>() == SimState::EDITOR_MODE)
+                        if (App::sim_state->getEnum<SimState>() == SimState::TERRN_EDITOR)
                         {
                             App::GetGameContext()->UpdateSkyInputEvents(dt);
                             App::GetGameContext()->GetTerrain()->GetTerrainEditor()->UpdateInputEvents(dt);
+                        }
+                        else if (App::sim_state->getEnum<SimState>() == SimState::TRUCK_EDITOR)
+                        {
+                            App::GetGameContext()->UpdateSkyInputEvents(dt);
+                            App::GetGuiManager()->RigEditor.UpdateInputEvents(dt);
                         }
                         else
                         {
@@ -1082,14 +1123,16 @@ int main(int argc, char *argv[])
                 App::GetAppContext()->GetForceFeedback().Update();
             }
 
-            if (App::sim_state->getEnum<SimState>() == SimState::RUNNING)
+            if (App::sim_state->getEnum<SimState>() == SimState::RUNNING
+                || App::sim_state->getEnum<SimState>() == SimState::TRUCK_EDITOR)
             {
                 App::GetGameContext()->GetSceneMouse().UpdateSimulation();
             }
 
             // Create snapshot of simulation state for Gfx/GUI updates
-            if (App::sim_state->getEnum<SimState>() == SimState::RUNNING ||   // Obviously
-                App::sim_state->getEnum<SimState>() == SimState::EDITOR_MODE) // Needed for character movement
+            if (App::sim_state->getEnum<SimState>() == SimState::RUNNING ||
+                App::sim_state->getEnum<SimState>() == SimState::TERRN_EDITOR || // Needed for character movement
+                App::sim_state->getEnum<SimState>() == SimState::TRUCK_EDITOR)
             {
                 App::GetGfxScene()->BufferSimulationData();
             }

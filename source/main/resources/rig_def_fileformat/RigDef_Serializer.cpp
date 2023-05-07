@@ -2446,9 +2446,10 @@ void Serializer::ProcessNodeDefaults(NodeDefaults* node_defaults)
     m_stream << endl;
 }
 
-void Serializer::ProcessNodeOptions(unsigned int options)
+std::string Serializer::ProcessNodeOptions(unsigned int options)
 {
     // Mouse grab
+    std::stringstream m_stream;
     m_stream << (BITMASK_IS_1(options, Node::OPTION_m_NO_MOUSE_GRAB) ? "m" : "n");
 
     if (BITMASK_IS_1(options, Node::OPTION_b_EXTRA_BUOYANCY))
@@ -2487,6 +2488,8 @@ void Serializer::ProcessNodeOptions(unsigned int options)
     {
         m_stream << "y";
     }
+
+    return m_stream.str();
 }
 
 void Serializer::ProcessNode(Node & node)
@@ -2498,7 +2501,7 @@ void Serializer::ProcessNode(Node & node)
         << std::setw(m_float_width) << node.position.y << ", " 
         << std::setw(m_float_width) << node.position.z << ", ";
     
-    ProcessNodeOptions(node.options);
+    m_stream << ProcessNodeOptions(node.options);
     
     // Load mass
     if (node._has_load_weight_override)

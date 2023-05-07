@@ -245,6 +245,7 @@ void registerEventTypeEnum(asIScriptEngine* engine)
     result = engine->RegisterEnumValue("inputEvents", "EV_COMMON_TOGGLE_DEBUG_VIEW",       EV_COMMON_TOGGLE_DEBUG_VIEW     ); ROR_ASSERT(result >= 0);
     result = engine->RegisterEnumValue("inputEvents", "EV_COMMON_CYCLE_DEBUG_VIEWS",       EV_COMMON_CYCLE_DEBUG_VIEWS     ); ROR_ASSERT(result >= 0);
     result = engine->RegisterEnumValue("inputEvents", "EV_COMMON_TOGGLE_TERRAIN_EDITOR",   EV_COMMON_TOGGLE_TERRAIN_EDITOR ); ROR_ASSERT(result >= 0);
+    result = engine->RegisterEnumValue("inputEvents", "EV_COMMON_TOGGLE_TRUCK_EDITOR",     EV_COMMON_TOGGLE_TRUCK_EDITOR   ); ROR_ASSERT(result >= 0);
     result = engine->RegisterEnumValue("inputEvents", "EV_COMMON_TOGGLE_CUSTOM_PARTICLES", EV_COMMON_TOGGLE_CUSTOM_PARTICLES); ROR_ASSERT(result >= 0);
     result = engine->RegisterEnumValue("inputEvents", "EV_COMMON_TOGGLE_MAT_DEBUG",        EV_COMMON_TOGGLE_MAT_DEBUG      ); ROR_ASSERT(result >= 0);
     result = engine->RegisterEnumValue("inputEvents", "EV_COMMON_TOGGLE_REPLAY_MODE",      EV_COMMON_TOGGLE_REPLAY_MODE    ); ROR_ASSERT(result >= 0);

@@ -4027,6 +4027,7 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
             outer_node.nd_rim_node = true;
             AdjustNodeBuoyancy(outer_node, def.node_defaults);
             m_actor->ar_nodes_aux[outer_node.pos].nda_minimass = m_state.global_minimass;
+            m_actor->ar_nodes_aux[outer_node.pos].nda_source_keyword = RigDef::Keyword::WHEELS;
 
             wheel.wh_rim_nodes.push_back(outer_node.pos);
             m_actor->m_gfx_actor->m_gfx_nodes.push_back(NodeGfx(outer_node.pos));
@@ -4045,6 +4046,7 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
             inner_node.nd_rim_node = true;
             AdjustNodeBuoyancy(inner_node, def.node_defaults);
             m_actor->ar_nodes_aux[inner_node.pos].nda_minimass = m_state.global_minimass;
+            m_actor->ar_nodes_aux[inner_node.pos].nda_source_keyword = (RigDef::Keyword::WHEELS);
 
             wheel.wh_rim_nodes.push_back(inner_node.pos);
             m_actor->m_gfx_actor->m_gfx_nodes.push_back(NodeGfx(inner_node.pos));
@@ -4075,6 +4077,7 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
             outer_node.nd_contacter = true;
             outer_node.nd_tyre_node = true;
             AdjustNodeBuoyancy(outer_node, def.node_defaults);
+            m_actor->ar_nodes_aux[outer_node.pos].nda_source_keyword = (RigDef::Keyword::WHEELS);
 
             wheel.wh_tire_nodes.push_back(outer_node.pos);
             m_actor->m_gfx_actor->m_gfx_nodes.push_back(NodeGfx(outer_node.pos));
@@ -4094,6 +4097,7 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
             inner_node.nd_contacter = true;
             inner_node.nd_tyre_node = true;
             AdjustNodeBuoyancy(inner_node, def.node_defaults);
+            m_actor->ar_nodes_aux[inner_node.pos].nda_source_keyword = (RigDef::Keyword::WHEELS);
 
             wheel.wh_tire_nodes.push_back(inner_node.pos);
             m_actor->m_gfx_actor->m_gfx_nodes.push_back(NodeGfx(inner_node.pos));
@@ -4483,6 +4487,7 @@ WheelID_t ActorSpawner::BuildWheelObjectAndNodes(
             outer_node.nd_contacter = true;
             outer_node.nd_tyre_node = true;
             AdjustNodeBuoyancy(outer_node, node_defaults);
+            m_actor->ar_nodes_aux[outer_node.pos].nda_source_keyword = (RigDef::Keyword::WHEELS);
 
             wheel.wh_tire_nodes.push_back(outer_node.pos);
             m_actor->m_gfx_actor->m_gfx_nodes.push_back(NodeGfx(outer_node.pos));
@@ -4499,6 +4504,7 @@ WheelID_t ActorSpawner::BuildWheelObjectAndNodes(
             inner_node.nd_contacter = true;
             inner_node.nd_tyre_node = true;
             AdjustNodeBuoyancy(inner_node, node_defaults);
+            m_actor->ar_nodes_aux[inner_node.pos].nda_source_keyword = (RigDef::Keyword::WHEELS);
 
             wheel.wh_tire_nodes.push_back(inner_node.pos);
             m_actor->m_gfx_actor->m_gfx_nodes.push_back(NodeGfx(inner_node.pos));
@@ -4736,6 +4742,7 @@ unsigned int ActorSpawner::AddWheel2(RigDef::Wheel2 & wheel_2_def)
 
             m_actor->ar_nodes_aux[outer_node.pos].nda_minimass = m_state.global_minimass;
             wheel.wh_rim_nodes.push_back(outer_node.pos);
+                m_actor->ar_nodes_aux[outer_node.pos].nda_source_keyword = (RigDef::Keyword::WHEELS);
             m_actor->m_gfx_actor->m_gfx_nodes.push_back(NodeGfx(outer_node.pos));
         }
 
@@ -4749,9 +4756,10 @@ unsigned int ActorSpawner::AddWheel2(RigDef::Wheel2 & wheel_2_def)
             inner_node.nd_rim_node = true;
 
             m_actor->ar_nodes_aux[inner_node.pos].nda_minimass = m_state.global_minimass;
+            m_actor->ar_nodes_aux[inner_node.pos].nda_source_keyword = (RigDef::Keyword::WHEELS);
             wheel.wh_rim_nodes.push_back(inner_node.pos);
             m_actor->m_gfx_actor->m_gfx_nodes.push_back(NodeGfx(inner_node.pos));
-        }        
+        }
 
         rim_ray_vector = rim_ray_rotator * rim_ray_vector;
     }
@@ -4775,6 +4783,7 @@ unsigned int ActorSpawner::AddWheel2(RigDef::Wheel2 & wheel_2_def)
             outer_node.surface_coef = wheel_2_def.node_defaults->surface;
             outer_node.nd_contacter = true;
             outer_node.nd_tyre_node = true;
+            m_actor->ar_nodes_aux[outer_node.pos].nda_source_keyword = (RigDef::Keyword::WHEELS);
 
             wheel.wh_tire_nodes.push_back(outer_node.pos);
             m_actor->m_gfx_actor->m_gfx_nodes.push_back(NodeGfx(outer_node.pos));
@@ -4792,6 +4801,7 @@ unsigned int ActorSpawner::AddWheel2(RigDef::Wheel2 & wheel_2_def)
             inner_node.surface_coef = wheel_2_def.node_defaults->surface;
             inner_node.nd_contacter = true;
             inner_node.nd_tyre_node = true;
+            m_actor->ar_nodes_aux[inner_node.pos].nda_source_keyword = (RigDef::Keyword::WHEELS);
 
             wheel.wh_tire_nodes.push_back(inner_node.pos);
             m_actor->m_gfx_actor->m_gfx_nodes.push_back(NodeGfx(inner_node.pos));
@@ -5678,7 +5688,8 @@ NodeNum_t ActorSpawner::AddNode(RigDef::Node::Id & id)
             msg << "Duplicate node number, previous definition will be overriden! - " << id.ToString() << " (number of nodes at this point: " << static_cast<int>(m_actor->ar_nodes.size()) << ")";
             this->AddMessage(Message::TYPE_WARNING, msg.str());
         }
-        node_t& node = AddNode();        
+        node_t& node = AddNode();
+        m_actor->ar_nodes_aux[node.pos].nda_source_id = id.Num();
         return node.pos;
     }
     // Invalid node ID without type flag!
@@ -5803,6 +5814,11 @@ void ActorSpawner::ProcessNode(RigDef::Node & def)
     nfx.nx_no_particles = BITMASK_IS_1(options, RigDef::Node::OPTION_p_NO_PARTICLES);
     nfx.nx_no_sparks    = BITMASK_IS_1(options, RigDef::Node::OPTION_f_NO_SPARKS);
     m_actor->m_gfx_actor->m_gfx_nodes.push_back(nfx);
+
+    // Referencing the definitions
+    m_actor->ar_nodes_aux[node.pos].nda_source_keyword = (RigDef::Keyword::NODES);
+    m_actor->ar_nodes_aux[node.pos].nda_source_datapos = m_num_nodes_processed;
+    m_num_nodes_processed++;
 }
 
 void ActorSpawner::AddExhaust(
@@ -5851,8 +5867,8 @@ void ActorSpawner::ProcessCinecam(RigDef::Cinecam & def)
     camera_node.volume_coef   = def.node_defaults->volume;
     camera_node.surface_coef  = def.node_defaults->surface;
     // NOTE: Not applying the 'node_mass' value here for backwards compatibility - this node must go through initial `Actor::RecalculateNodeMasses()` pass with default weight.
-
     m_actor->ar_nodes_aux[camera_node.pos].nda_minimass = m_state.global_minimass;
+    m_actor->ar_nodes_aux[camera_node.pos].nda_source_keyword = (RigDef::Keyword::CINECAM);
     
     // node GFX
     NodeGfx nfx(camera_node.pos);

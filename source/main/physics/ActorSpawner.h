@@ -460,6 +460,7 @@ private:
     RigDef::Keyword                m_current_keyword = RigDef::Keyword::INVALID; //!< For error reports    
     std::map<Ogre::String, NodeNum_t> m_named_nodes;
     int                            m_num_cameras_processed = 0; //!< Camera at index 0 is main camera and already exists, do not insert another
+    int                            m_num_nodes_processed = 0;
     /// @}
 
     /// @name Visuals

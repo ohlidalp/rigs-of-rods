@@ -915,7 +915,8 @@ void GameContext::UpdateGlobalInputEvents()
             {
                 App::GetGuiManager()->GameControls.SetVisible(false);
             }
-            else if (App::sim_state->getEnum<SimState>() == SimState::RUNNING)
+            else if (App::sim_state->getEnum<SimState>() == SimState::RUNNING
+                || App::sim_state->getEnum<SimState>() == SimState::TRUCK_EDITOR)
             {
                 this->PushMessage(Message(MSG_GUI_OPEN_MENU_REQUESTED));
                 if (App::mp_state->getEnum<MpState>() != MpState::CONNECTED)
@@ -1069,6 +1070,12 @@ void GameContext::UpdateSimInputEvents(float dt)
     if (!App::GetGameContext()->GetPlayerActor() && App::GetInputEngine()->getEventBoolValueBounce(EV_COMMON_TOGGLE_TERRAIN_EDITOR))
     {
         App::GetGameContext()->PushMessage(MSG_EDI_ENTER_TERRN_EDITOR_REQUESTED);
+    }
+
+    // truck editor toggle
+    if (App::GetGameContext()->GetPlayerActor() && App::GetInputEngine()->getEventBoolValueBounce(EV_COMMON_TOGGLE_TRUCK_EDITOR))
+    {
+        App::GetGameContext()->PushMessage(MSG_EDI_ENTER_TRUCK_EDITOR_REQUESTED);
     }
 
     // forward commands from character

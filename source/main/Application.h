@@ -117,6 +117,8 @@ enum MsgType
     MSG_EDI_ENTER_TERRN_EDITOR_REQUESTED,
     MSG_EDI_LEAVE_TERRN_EDITOR_REQUESTED,
     MSG_EDI_RELOAD_BUNDLE_REQUESTED,       //!< Payload = RoR::CacheEntry* (weak)
+    MSG_EDI_ENTER_TRUCK_EDITOR_REQUESTED,
+    MSG_EDI_LEAVE_TRUCK_EDITOR_REQUESTED
 };
 
 const char* MsgTypeToString(MsgType type);
@@ -145,7 +147,8 @@ enum class SimState
     OFF,
     RUNNING,
     PAUSED,
-    EDITOR_MODE //!< Hacky, but whatever... added by Ulteq, 2016
+    TERRN_EDITOR,
+    TRUCK_EDITOR
 };
 
 /// @} // addtogroup GameState

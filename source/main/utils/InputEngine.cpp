@@ -52,6 +52,7 @@ InputEvent eventInfo[] = {
     {"COMMON_FOV_RESET",              EV_COMMON_FOV_RESET,              "Keyboard EXPL+SHIFT+NUMPAD7",  _LC("InputEvent", "reset the FOV value")},
     {"COMMON_SAVE_TERRAIN",           EV_COMMON_SAVE_TERRAIN,           "Keyboard EXPL+ALT+SHIF+CTRL+M",_LC("InputEvent", "save the currently loaded terrain to a mesh file")},
     {"COMMON_TOGGLE_TERRAIN_EDITOR",  EV_COMMON_TOGGLE_TERRAIN_EDITOR,  "Keyboard EXPL+SHIFT+Y",        _LC("InputEvent", "toggle terrain editor")},
+    {"COMMON_TOGGLE_TRUCK_EDITOR",    EV_COMMON_TOGGLE_TRUCK_EDITOR,    "Keyboard EXPL+CTRL+Y",         _LC("InputEvent", "toggle truck editor")},
     {"COMMON_FULLSCREEN_TOGGLE",      EV_COMMON_FULLSCREEN_TOGGLE,      "Keyboard EXPL+ALT+RETURN",     _LC("InputEvent", "toggle between windowed and fullscreen mode")},
 
     // Comon: actor interaction

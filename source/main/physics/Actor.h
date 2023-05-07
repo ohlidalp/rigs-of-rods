@@ -27,6 +27,7 @@
 #include "GfxActor.h"
 #include "PerVehicleCameraContext.h"
 #include "RigDef_Prerequisites.h"
+#include "RigDef_File.h"
 #include "RoRnet.h"
 #include "RefCountingObject.h"
 #include "RefCountingObjectPtr.h"
@@ -461,7 +462,6 @@ public:
     // Node effects
     std::vector<NodeEffectConstantForce> ar_node_effects_constant_force;
     std::vector<NodeEffectForceTowardsPoint> ar_node_effects_force_towards_point;
-
 
     // Realtime node/beam structure editing helpers
     bool                    ar_nb_initialized = false;

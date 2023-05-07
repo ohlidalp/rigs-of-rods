@@ -45,6 +45,7 @@
 #include "GUI_MainSelector.h"
 #include "GUI_NodeBeamUtils.h"
 #include "GUI_DirectionArrow.h"
+#include "GUI_RigEditor.h"
 #include "GUI_SimActorStats.h"
 #include "GUI_SimPerfStats.h"
 #include "GUI_SurveyMap.h"
@@ -153,6 +154,7 @@ public:
     GUI::DirectionArrow         DirectionArrow;
     GUI::VehicleButtons         VehicleButtons;
     GUI::FlexbodyDebug          FlexbodyDebug;
+    GUI::RigEditor              RigEditor;
     Ogre::Overlay*              MenuWallpaper = nullptr;
 
     // GUI manipulation

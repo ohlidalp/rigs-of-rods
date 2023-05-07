@@ -264,6 +264,7 @@ enum events
     EV_COMMON_TOGGLE_DEBUG_VIEW,  //!< toggle debug view mode
     EV_COMMON_CYCLE_DEBUG_VIEWS,  //!< cycle debug view mode
     EV_COMMON_TOGGLE_TERRAIN_EDITOR,   //!< toggle terrain editor
+    EV_COMMON_TOGGLE_TRUCK_EDITOR,     //!< toggle truck editor
     EV_COMMON_TOGGLE_CUSTOM_PARTICLES, //!< toggle particle cannon
     EV_COMMON_TOGGLE_MAT_DEBUG,   //!< debug purpose - dont use (currently not used)
     EV_COMMON_TOGGLE_REPLAY_MODE, //!< toggle replay mode
