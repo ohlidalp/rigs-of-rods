@@ -34,6 +34,9 @@ namespace RoR
     typedef int ActorInstanceID_t; //!< Unique sequentially generated ID of an actor in session. Use `ActorManager::GetActorById()`
     static const ActorInstanceID_t ACTORINSTANCEID_INVALID = -1;
 
+    typedef uint16_t NodeNum_t; //!< Node index in `Actor::ar_nodes`; use RoR::NODENUM_INVALID as empty value.
+    static const NodeNum_t NODENUM_INVALID = std::numeric_limits<NodeNum_t>::max();
+
     class  Actor;
     class  ActorManager;
     class  ActorSpawner;
