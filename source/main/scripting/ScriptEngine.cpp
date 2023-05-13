@@ -261,7 +261,7 @@ int ScriptEngine::fireEvent(std::string instanceName, float intensity)
     return 0;
 }
 
-void ScriptEngine::envokeCallback(int _functionId, eventsource_t *source, node_t *node, int type)
+void ScriptEngine::envokeCallback(int _functionId, eventsource_t *source, NodeNum_t nodenum, int type)
 {
     if (!engine || !context)
         return;
@@ -287,8 +287,8 @@ void ScriptEngine::envokeCallback(int _functionId, eventsource_t *source, node_t
         context->SetArgDWord (0, type);
         context->SetArgObject(1, &source->es_instance_name);
         context->SetArgObject(2, &source->es_box_name);
-        if (node)
-            context->SetArgDWord (3, static_cast<AngelScript::asDWORD>(node->pos));
+        if (nodenum != NODENUM_INVALID)
+            context->SetArgDWord (3, static_cast<AngelScript::asDWORD>(nodenum));
         else
             context->SetArgDWord (3, static_cast<AngelScript::asDWORD>(-1));
 
