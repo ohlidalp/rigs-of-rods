@@ -475,7 +475,7 @@ struct hook_t
     float      hk_min_length = 0.f; //!< Absolute value in meters
     node_t*    hk_hook_node = nullptr;
     node_t*    hk_lock_node = nullptr;
-    beam_t*    hk_beam = nullptr;
+    BeamID_t   hk_beam = BEAMID_INVALID;
     ActorPtr   hk_locked_actor;
 };
 

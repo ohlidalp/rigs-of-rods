@@ -860,7 +860,7 @@ float Actor::getTotalMass(bool withLocked)
 void Actor::DetermineLinkedActors()
 {
     // BEWARE: `ar_linked_actors` includes both direct and indirect links!
-    // --------------------------------------------------------------------------------------------------
+    // -------------------------------------------------------------------
 
     ar_linked_actors.clear();
 
@@ -1709,7 +1709,7 @@ void Actor::SyncReset(bool reset_position)
 
     for (auto& h : ar_hooks)
     {
-        h.hk_beam->bm_disabled = true; // should only be active if the hook is locked
+        ar_beams[h.hk_beam].bm_disabled = true; // should only be active if the hook is locked
     }
 
     for (auto& t : ar_ties)
@@ -3779,23 +3779,25 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
                     it->hk_locked_actor = actor;
                     it->hk_locked = PRELOCK;
                     //enable beam if not enabled yet between those 2 nodes
-                    if (it->hk_beam->bm_disabled)
+                    beam_t& hookbeam = ar_beams[it->hk_beam];
+                    if (hookbeam.bm_disabled)
                     {
-                        it->hk_beam->p2 = it->hk_lock_node;
-                        it->hk_beam->bm_inter_actor = (it->hk_locked_actor != nullptr);
-                        it->hk_beam->L = (it->hk_hook_node->AbsPosition - it->hk_lock_node->AbsPosition).length();
-                        it->hk_beam->bm_disabled = false;
-                        this->AddInterActorBeam(it->hk_beam, it->hk_locked_actor, mode); // OK to invoke here - hookToggle() - processing `MSG_SIM_ACTOR_LINKING_REQUESTED`
+                        hookbeam.p2 = it->hk_lock_node;
+                        hookbeam.bm_inter_actor = (it->hk_locked_actor != nullptr);
+                        hookbeam.L = (it->hk_hook_node->AbsPosition - it->hk_lock_node->AbsPosition).length();
+                        hookbeam.bm_disabled = false;
+                        this->AddInterActorBeam(&hookbeam, it->hk_locked_actor, mode); // OK to invoke here - hookToggle() - processing `MSG_SIM_ACTOR_LINKING_REQUESTED`
                     }
                 }
             }
         }
         // this is a locked or prelocked hook and its not a locking attempt or the locked actor was removed (bm_inter_actor == false)
-        else if ((it->hk_locked == LOCKED || it->hk_locked == PRELOCK) && (mode != ActorLinkingRequestType::HOOK_LOCK || !it->hk_beam->bm_inter_actor))
+        else if ((it->hk_locked == LOCKED || it->hk_locked == PRELOCK) && (mode != ActorLinkingRequestType::HOOK_LOCK || !ar_beams[it->hk_beam].bm_inter_actor))
         {
             // we unlock ropes immediatelly
             it->hk_locked = UNLOCKED;
-            this->RemoveInterActorBeam(it->hk_beam, mode); // OK to invoke here - hookToggle() - processing `MSG_SIM_ACTOR_LINKING_REQUESTED`
+            beam_t& hookbeam = ar_beams[it->hk_beam];
+            this->RemoveInterActorBeam(&hookbeam, mode); // OK to invoke here - hookToggle() - processing `MSG_SIM_ACTOR_LINKING_REQUESTED`
             if (it->hk_group <= -2)
             {
                 // autolock timer: if we're hard-resetting the actor, force immediate relock, otherwise restart the countdown.
@@ -3804,10 +3806,10 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
             it->hk_lock_node = 0;
             it->hk_locked_actor = 0;
             //disable hook-assistance beam
-            it->hk_beam->p2 = &ar_nodes[0];
-            it->hk_beam->bm_inter_actor = false;
-            it->hk_beam->L = (ar_nodes[0].AbsPosition - it->hk_hook_node->AbsPosition).length();
-            it->hk_beam->bm_disabled = true;
+            hookbeam.p2 = &ar_nodes[0];
+            hookbeam.bm_inter_actor = false;
+            hookbeam.L = (ar_nodes[0].AbsPosition - it->hk_hook_node->AbsPosition).length();
+            hookbeam.bm_disabled = true;
         }
     }
 }

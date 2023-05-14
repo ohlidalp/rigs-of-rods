@@ -99,6 +99,9 @@ namespace RoR
     typedef int RepoFileInstallRequestID_t; //!< Unique sequentially generated ID of a repository item installation request; use `GUI::RepositorySelector::GetNextInstallRequestId()`.
     static const RepoFileInstallRequestID_t REPOFILEINSTALLREQUESTID_INVALID = -1; //!< Invalid ID for repository item installation request.
 
+    typedef int BeamID_t; //!< Beam position within `Actor::ar_beams`, use RoR::BEAMID_INVALID as empty value.
+    static const BeamID_t BEAMID_INVALID = -1;
+
     class  Actor;
     class  ActorManager;
     class  ActorSpawner;

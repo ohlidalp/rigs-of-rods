@@ -1792,9 +1792,10 @@ void Actor::CalcHooks()
         //we need to do this here to avoid countdown speedup by triggers
         it->hk_timer = std::max(0.0f, it->hk_timer - PHYSICS_DT);
 
+        beam_t& hookbeam = ar_beams[it->hk_beam];
         if (it->hk_lock_node && it->hk_locked == PRELOCK)
         {
-            if (it->hk_beam->L < it->hk_min_length)
+            if (hookbeam.L < it->hk_min_length)
             {
                 //shortlimit reached -> status LOCKED
                 it->hk_locked = LOCKED;
@@ -1802,15 +1803,15 @@ void Actor::CalcHooks()
             else
             {
                 //shorten the connecting beam slowly to locking minrange
-                if (it->hk_beam->L > it->hk_lockspeed && fabs(it->hk_beam->stress) < it->hk_maxforce)
+                if (hookbeam.L > it->hk_lockspeed && fabs(hookbeam.stress) < it->hk_maxforce)
                 {
-                    it->hk_beam->L = (it->hk_beam->L - it->hk_lockspeed);
+                    hookbeam.L = (hookbeam.L - it->hk_lockspeed);
                 }
                 else
                 {
-                    if (fabs(it->hk_beam->stress) < it->hk_maxforce)
+                    if (fabs(hookbeam.stress) < it->hk_maxforce)
                     {
-                        it->hk_beam->L = 0.001f;
+                        hookbeam.L = 0.001f;
                         //locking minrange or stress exeeded -> status LOCKED
                         it->hk_locked = LOCKED;
                     }
