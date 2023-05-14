@@ -112,7 +112,7 @@ void Actor::dispose()
         SOUND_STOP(this, i);
     }
     muteAllSounds();
-    for (int i = 0; i < ar_num_soundsources; i++)
+    for (size_t i = 0; i < ar_soundsources.size(); i++)
     {
         if (ar_soundsources[i].ssi)
         {
@@ -120,7 +120,6 @@ void Actor::dispose()
             ar_soundsources[i].ssi = nullptr;
         }
     }
-    ar_num_soundsources = 0;
 #endif // USE_OPENAL
 
     if (ar_autopilot != nullptr)
@@ -3270,7 +3269,7 @@ void Actor::updateSoundSources()
 #ifdef USE_OPENAL
     if (App::GetSoundScriptManager()->isDisabled())
         return;
-    for (int i = 0; i < ar_num_soundsources; i++)
+    for (size_t i = 0; i < ar_soundsources.size(); i++)
     {
         // TODO: Investigate segfaults after terrain reloads ~ ulteq 11/2018
         ar_soundsources[i].ssi->setPosition(ar_nodes[ar_soundsources[i].nodenum].AbsPosition);
@@ -3868,7 +3867,7 @@ void Actor::muteAllSounds()
     if (ar_state == ActorState::DISPOSED)
         return;
 
-    for (int i = 0; i < ar_num_soundsources; i++)
+    for (size_t i = 0; i < ar_soundsources.size(); i++)
     {
         if (ar_soundsources[i].ssi)
             ar_soundsources[i].ssi->setEnabled(false);
@@ -3882,9 +3881,9 @@ void Actor::unmuteAllSounds()
     if (ar_state == ActorState::DISPOSED)
         return;
 
-    for (int i = 0; i < ar_num_soundsources; i++)
+    for (size_t i = 0; i < ar_soundsources.size(); i++)
     {
-        bool enabled = (ar_soundsources[i].type == -2 || ar_soundsources[i].type == ar_current_cinecam);
+        bool enabled = (ar_soundsources[i].type == soundsource_t::TYPE_ALWAYS || ar_soundsources[i].type == ar_current_cinecam);
         ar_soundsources[i].ssi->setEnabled(enabled);
     }
 #endif // USE_OPENAL
@@ -3897,9 +3896,9 @@ void Actor::NotifyActorCameraChanged()
     if (ar_state == ActorState::DISPOSED)
         return;
 
-    for (int i = 0; i < ar_num_soundsources; i++)
+    for (size_t i = 0; i < ar_soundsources.size(); i++)
     {
-        bool enabled = (ar_soundsources[i].type == -2 || ar_soundsources[i].type == ar_current_cinecam);
+        bool enabled = (ar_soundsources[i].type == soundsource_t::TYPE_ALWAYS || ar_soundsources[i].type == ar_current_cinecam);
         ar_soundsources[i].ssi->setEnabled(enabled);
     }
 #endif // USE_OPENAL

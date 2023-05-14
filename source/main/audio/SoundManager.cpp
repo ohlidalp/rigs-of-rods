@@ -463,12 +463,11 @@ void SoundManager::UpdateSourceSpecificDopplerFactor(const int hardware_index) c
     // identify actor to which the Sound instance corresponding to the hardware source belongs
     for (const ActorPtr& actor : actors)
     {
-        for (int soundsource_index = 0; soundsource_index < actor->ar_num_soundsources; ++soundsource_index)
+        for (const soundsource_t& soundsource: actor->ar_soundsources)
         {
-            const soundsource_t& soundsource      = actor->ar_soundsources[soundsource_index];
-            const int            num_sounds_of_ss = soundsource.ssi->getTemplate()->getNumSounds();
+            const int num_sounds = soundsource.ssi->getTemplate()->getNumSounds();
 
-            for (int num_sound = 0; num_sound < num_sounds_of_ss; ++num_sound)
+            for (int num_sound = 0; num_sound < num_sounds; ++num_sound)
             {
                 // update the Doppler factor if the Sound belongs to the actor
                 if (soundsource.ssi->getSound(num_sound) == corresponding_sound)
@@ -1080,9 +1079,8 @@ bool SoundManager::IsHardwareSourceObstructed(const int hardware_index) const
         {
             // Trucks shouldn't obstruct their own sound sources since the
             // obstruction is most likely already contained in the recording.
-            for (int soundsource_index = 0; soundsource_index < actor->ar_num_soundsources; ++soundsource_index)
+            for (const soundsource_t& soundsource : actor->ar_soundsources)
             {
-                const soundsource_t& soundsource = actor->ar_soundsources[soundsource_index];
                 const int num_sounds = soundsource.ssi->getTemplate()->getNumSounds();
                 for (int num_sound = 0; num_sound < num_sounds; ++num_sound)
                 {
@@ -1171,9 +1169,8 @@ void SoundManager::UpdateDirectedSounds() const
             NodeNum_t sound_node = RoR::NODENUM_INVALID;
 
             // check if the sound corresponding to this hardware source belongs to the actor
-            for (int soundsource_index = 0; soundsource_index < actor->ar_num_soundsources; ++soundsource_index)
+            for (const soundsource_t& soundsource : actor->ar_soundsources)
             {
-                const soundsource_t& soundsource = actor->ar_soundsources[soundsource_index];
                 const int num_sounds = soundsource.ssi->getTemplate()->getNumSounds();
                 for (int num_sound = 0; num_sound < num_sounds; ++num_sound)
                 {

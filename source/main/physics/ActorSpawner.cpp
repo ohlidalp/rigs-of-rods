@@ -293,8 +293,6 @@ void ActorSpawner::InitializeRig()
 
     m_actor->ar_minimass.resize(req.num_nodes);
 
-    memset(m_actor->ar_soundsources, 0, sizeof(soundsource_t) * MAX_SOUNDSCRIPTS_PER_TRUCK);
-    m_actor->ar_num_soundsources = 0;
     memset(m_actor->ar_collcabs, 0, sizeof(int) * MAX_CABS);
     memset(m_actor->ar_inter_collcabrate, 0, sizeof(collcab_rate_t) * MAX_CABS);
     m_actor->ar_num_collcabs = 0;
@@ -1193,22 +1191,16 @@ void ActorSpawner::AddSoundSourceInstance(ActorPtr const& vehicle, Ogre::String 
 #endif // USE_OPENAL
 }
 
-void ActorSpawner::AddSoundSource(ActorPtr const& vehicle, SoundScriptInstancePtr sound_script, NodeNum_t node_index, int type)
+void ActorSpawner::AddSoundSource(ActorPtr const& vehicle, SoundScriptInstancePtr ssi, NodeNum_t node_index, int type)
 {
-    if (! CheckSoundScriptLimit(vehicle, 1))
+    if (ssi)
     {
-        return;
+        soundsource_t soundsource;
+        soundsource.ssi = ssi;
+        soundsource.nodenum = node_index;
+        soundsource.type = type;
+        vehicle->ar_soundsources.push_back(soundsource);
     }
-
-    if (sound_script == nullptr)
-    {
-        return;
-    }
-
-    vehicle->ar_soundsources[vehicle->ar_num_soundsources].ssi=sound_script;
-    vehicle->ar_soundsources[vehicle->ar_num_soundsources].nodenum=node_index;
-    vehicle->ar_soundsources[vehicle->ar_num_soundsources].type=type;
-    vehicle->ar_num_soundsources++;
 }
 
 void ActorSpawner::ProcessSoundSource(RigDef::SoundSource & def)
@@ -6302,19 +6294,6 @@ bool ActorSpawner::CheckTexcoordLimit(unsigned int count)
         std::stringstream msg;
         msg << "Texcoord limit (" << MAX_TEXCOORDS << ") exceeded";
         AddMessage(Message::TYPE_ERROR, msg.str());
-        return false;
-    }
-    return true;
-}
-
-/* Static version */
-bool ActorSpawner::CheckSoundScriptLimit(ActorPtr const& vehicle, unsigned int count)
-{
-    if ((vehicle->ar_num_soundsources + count) > MAX_SOUNDSCRIPTS_PER_TRUCK)
-    {
-        std::stringstream msg;
-        msg << "SoundScript limit (" << MAX_SOUNDSCRIPTS_PER_TRUCK << ") exceeded";
-        LOG(msg.str());
         return false;
     }
     return true;

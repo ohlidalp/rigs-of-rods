@@ -370,6 +370,7 @@ public:
     Ogre::AxisAlignedBox      ar_bounding_box;     //!< standard bounding box (surrounds all nodes of an actor)
     Ogre::AxisAlignedBox      ar_evboxes_bounding_box; //!< bounding box around nodes eligible for eventbox triggering
     Ogre::AxisAlignedBox      ar_predicted_bounding_box;
+    std::vector<soundsource_t>     ar_soundsources;
     
     std::vector<wheeldetacher_t>   ar_wheeldetachers;
     std::vector<std::vector<int>>  ar_node_to_node_connections;
@@ -383,8 +384,6 @@ public:
     int               ar_num_contacters = 0; //!< Total number of nodes which can selfcontact cabs
     wheel_t           ar_wheels[MAX_WHEELS] = {};
     int               ar_num_wheels = 0;
-    soundsource_t     ar_soundsources[MAX_SOUNDSCRIPTS_PER_TRUCK] = {};
-    int               ar_num_soundsources = 0;
     AeroEnginePtr     ar_aeroengines[MAX_AEROENGINES] = {};
     int               ar_num_aeroengines = 0;
     ScrewpropPtr      ar_screwprops[MAX_SCREWPROPS] = {};
