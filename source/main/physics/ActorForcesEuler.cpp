@@ -1793,7 +1793,7 @@ void Actor::CalcHooks()
         it->hk_timer = std::max(0.0f, it->hk_timer - PHYSICS_DT);
 
         beam_t& hookbeam = ar_beams[it->hk_beam];
-        if (it->hk_lock_node && it->hk_locked == PRELOCK)
+        if (it->hk_locked_node != NODENUM_INVALID && it->hk_locked == PRELOCK)
         {
             if (hookbeam.L < it->hk_min_length)
             {

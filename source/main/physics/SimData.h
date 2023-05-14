@@ -473,10 +473,11 @@ struct hook_t
     float      hk_timer = 0.f;
     float      hk_timer_preset = 0.f;
     float      hk_min_length = 0.f; //!< Absolute value in meters
-    node_t*    hk_hook_node = nullptr;
-    node_t*    hk_lock_node = nullptr;
-    BeamID_t   hk_beam = BEAMID_INVALID;
-    ActorPtr   hk_locked_actor;
+
+    NodeNum_t  hk_hook_node = NODENUM_INVALID;   //!< The hooking node on master actor, never invalid.
+    BeamID_t   hk_beam = BEAMID_INVALID;         //!< The hooking beam on master actor.
+    ActorPtr   hk_locked_actor;                  //!< The slave actor, or null if not hooked.
+    NodeNum_t  hk_locked_node = NODENUM_INVALID; //!< The locked node on slave actor, or NODENUM_INVALID if not hooked.
 };
 
 struct ropable_t

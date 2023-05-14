@@ -3682,7 +3682,7 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
     // iterate over all hooks
     for (std::vector<hook_t>::iterator it = ar_hooks.begin(); it != ar_hooks.end(); it++)
     {
-        if (mode == ActorLinkingRequestType::HOOK_MOUSE_TOGGLE && it->hk_hook_node->pos != mousenode)
+        if (mode == ActorLinkingRequestType::HOOK_MOUSE_TOGGLE && it->hk_hook_node != mousenode)
         {
             //skip all other nodes except the one manually toggled by mouse
             continue;
@@ -3745,7 +3745,7 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
                 if (this == actor.GetRef() && !it->hk_selflock)
                     continue; // don't lock to self
 
-                node_t* nearest_node = nullptr;
+                NodeNum_t nearest_node = NODENUM_INVALID;
                 for (int i = 0; i < actor->ar_num_nodes; i++)
                 {
                     // skip all nodes with lockgroup 9999 (deny lock)
@@ -3753,7 +3753,7 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
                         continue;
 
                     // exclude this truck and its current hooknode from the locking search
-                    if (this == actor.GetRef() && i == it->hk_hook_node->pos)
+                    if (this == actor.GetRef() && i == it->hk_hook_node)
                         continue;
 
                     // a lockgroup for this hooknode is set -> skip all nodes that do not have the same lockgroup (-1 = default(all nodes))
@@ -3761,30 +3761,30 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
                         continue;
 
                     // measure distance
-                    float n2n_distance = (it->hk_hook_node->AbsPosition - actor->ar_nodes[i].AbsPosition).length();
+                    float n2n_distance = (ar_nodes[it->hk_hook_node].AbsPosition - actor->ar_nodes[i].AbsPosition).length();
                     if (n2n_distance < mindist)
                     {
                         if (distance >= n2n_distance)
                         {
                             // located a node that is closer
                             distance = n2n_distance;
-                            nearest_node = &actor->ar_nodes[i];
+                            nearest_node = static_cast<NodeNum_t>(i);
                         }
                     }
                 }
-                if (nearest_node)
+                if (nearest_node != NODENUM_INVALID)
                 {
                     // we found a node, lock to it
-                    it->hk_lock_node = nearest_node;
+                    it->hk_locked_node = nearest_node;
                     it->hk_locked_actor = actor;
                     it->hk_locked = PRELOCK;
                     //enable beam if not enabled yet between those 2 nodes
                     beam_t& hookbeam = ar_beams[it->hk_beam];
                     if (hookbeam.bm_disabled)
                     {
-                        hookbeam.p2 = it->hk_lock_node;
+                        hookbeam.p2 = &ar_nodes[it->hk_locked_node];
                         hookbeam.bm_inter_actor = (it->hk_locked_actor != nullptr);
-                        hookbeam.L = (it->hk_hook_node->AbsPosition - it->hk_lock_node->AbsPosition).length();
+                        hookbeam.L = (ar_nodes[it->hk_hook_node].AbsPosition - ar_nodes[it->hk_locked_node].AbsPosition).length();
                         hookbeam.bm_disabled = false;
                         this->AddInterActorBeam(&hookbeam, it->hk_locked_actor, mode); // OK to invoke here - hookToggle() - processing `MSG_SIM_ACTOR_LINKING_REQUESTED`
                     }
@@ -3803,12 +3803,12 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
                 // autolock timer: if we're hard-resetting the actor, force immediate relock, otherwise restart the countdown.
                 it->hk_timer = (mode == ActorLinkingRequestType::HOOK_RESET) ? 0.f : it->hk_timer_preset;
             }
-            it->hk_lock_node = 0;
-            it->hk_locked_actor = 0;
+            it->hk_locked_node = NODENUM_INVALID;
+            it->hk_locked_actor = nullptr;
             //disable hook-assistance beam
             hookbeam.p2 = &ar_nodes[0];
             hookbeam.bm_inter_actor = false;
-            hookbeam.L = (ar_nodes[0].AbsPosition - it->hk_hook_node->AbsPosition).length();
+            hookbeam.L = (ar_nodes[0].AbsPosition - ar_nodes[it->hk_hook_node].AbsPosition).length();
             hookbeam.bm_disabled = true;
         }
     }
