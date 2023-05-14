@@ -1801,7 +1801,7 @@ void Actor::CalcHooks()
         //we need to do this here to avoid countdown speedup by triggers
         it->hk_timer = std::max(0.0f, it->hk_timer - PHYSICS_DT);
 
-        if (it->hk_lock_node && it->hk_locked == PRELOCK)
+        if (it->hk_locked_node != NODENUM_INVALID && it->hk_locked == PRELOCK)
         {
             if (it->hk_beam->L < it->hk_min_length)
             {
