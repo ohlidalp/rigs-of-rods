@@ -495,11 +495,11 @@ struct rope_t
     rope_t();
     ~rope_t();
 
-    int        rp_locked = 0;
-    int        rp_group = 0;
-    beam_t*    rp_beam = nullptr;
-    ropable_t* rp_locked_ropable = nullptr;
-    ActorPtr   rp_locked_actor;
+    HookState   rp_locked = UNLOCKED;
+    int         rp_group;
+    BeamID_t    rp_beam = BEAMID_INVALID;
+    RopableID_t rp_locked_ropable_id = ROPABLEID_INVALID;
+    ActorPtr    rp_locked_actor;
 };
 
 struct tie_t
