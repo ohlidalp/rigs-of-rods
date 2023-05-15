@@ -320,7 +320,7 @@ void Actor::propagateNodeBeamChangesToDef()
     {
         // PLEASE maintain the same order of arguments as the docs: https://docs.rigsofrods.org/vehicle-creation/fileformat-truck/#vehicle-specific
 
-        UpdateSetNodeDefaults(node_defaults, this, ar_wheels[i].wh_nodes[0]->pos);
+        UpdateSetNodeDefaults(node_defaults, this, ar_wheels[i].wh_tire_nodes[0]);
         UpdateSetBeamDefaults(beam_defaults, this, ar_wheels[i].wh_beam_start);
         switch (ar_wheels[i].wh_arg_keyword)
         {
@@ -334,14 +334,14 @@ void Actor::propagateNodeBeamChangesToDef()
             // rays
             wheel.num_rays = ar_wheels[i].wh_arg_num_rays;
             // nodes
-            wheel.nodes[0] = BuildNodeRef(this, ar_wheels[i].wh_axis_node_0->pos);
-            wheel.nodes[1] = BuildNodeRef(this, ar_wheels[i].wh_axis_node_1->pos);
+            wheel.nodes[0] = BuildNodeRef(this, ar_wheels[i].wh_axis_node0num);
+            wheel.nodes[1] = BuildNodeRef(this, ar_wheels[i].wh_axis_node1num);
             wheel.rigidity_node = BuildNodeRef(this, ar_wheels[i].wh_arg_rigidity_node);
             // braking, propulsion
             wheel.braking = ar_wheels[i].wh_braking;
             wheel.propulsion = ar_wheels[i].wh_propulsed;
             // arm node
-            wheel.reference_arm_node = BuildNodeRef(this, (ar_wheels[i].wh_arm_node ? ar_wheels[i].wh_arm_node->pos : NODENUM_INVALID));
+            wheel.reference_arm_node = BuildNodeRef(this, ar_wheels[i].wh_arm_nodenum);
             // mass
             wheel.mass = ar_wheels[i].wh_mass;
             // springiness, damping
@@ -365,14 +365,14 @@ void Actor::propagateNodeBeamChangesToDef()
             // rays
             wheel.num_rays = ar_wheels[i].wh_arg_num_rays;
             // nodes
-            wheel.nodes[0] = BuildNodeRef(this, ar_wheels[i].wh_axis_node_0->pos);
-            wheel.nodes[1] = BuildNodeRef(this, ar_wheels[i].wh_axis_node_1->pos);
+            wheel.nodes[0] = BuildNodeRef(this, ar_wheels[i].wh_axis_node0num);
+            wheel.nodes[1] = BuildNodeRef(this, ar_wheels[i].wh_axis_node1num);
             wheel.rigidity_node = BuildNodeRef(this, ar_wheels[i].wh_arg_rigidity_node);
             // braking, propulsion
             wheel.braking = ar_wheels[i].wh_braking;
             wheel.propulsion = ar_wheels[i].wh_propulsed;
             // arm node
-            wheel.reference_arm_node = BuildNodeRef(this, (ar_wheels[i].wh_arm_node ? ar_wheels[i].wh_arm_node->pos : NODENUM_INVALID));
+            wheel.reference_arm_node = BuildNodeRef(this, ar_wheels[i].wh_arm_nodenum);
             // mass
             wheel.mass = ar_wheels[i].wh_mass;
             // springiness, damping
@@ -398,14 +398,14 @@ void Actor::propagateNodeBeamChangesToDef()
             // rays
             wheel.num_rays = ar_wheels[i].wh_arg_num_rays;
             // nodes
-            wheel.nodes[0] = BuildNodeRef(this, ar_wheels[i].wh_axis_node_0->pos);
-            wheel.nodes[1] = BuildNodeRef(this, ar_wheels[i].wh_axis_node_1->pos);
+            wheel.nodes[0] = BuildNodeRef(this, ar_wheels[i].wh_axis_node0num);
+            wheel.nodes[1] = BuildNodeRef(this, ar_wheels[i].wh_axis_node1num);
             wheel.rigidity_node = BuildNodeRef(this, ar_wheels[i].wh_arg_rigidity_node);
             // braking, propulsion
             wheel.braking = ar_wheels[i].wh_braking;
             wheel.propulsion = ar_wheels[i].wh_propulsed;
             // arm node
-            wheel.reference_arm_node = BuildNodeRef(this, (ar_wheels[i].wh_arm_node ? ar_wheels[i].wh_arm_node->pos : NODENUM_INVALID));
+            wheel.reference_arm_node = BuildNodeRef(this, ar_wheels[i].wh_arm_nodenum);
             // mass
             wheel.mass = ar_wheels[i].wh_mass;
             // springiness, damping
@@ -434,14 +434,14 @@ void Actor::propagateNodeBeamChangesToDef()
             // rays
             wheel.num_rays = ar_wheels[i].wh_arg_num_rays;
             // nodes
-            wheel.nodes[0] = BuildNodeRef(this, ar_wheels[i].wh_axis_node_0->pos);
-            wheel.nodes[1] = BuildNodeRef(this, ar_wheels[i].wh_axis_node_1->pos);
+            wheel.nodes[0] = BuildNodeRef(this, ar_wheels[i].wh_axis_node0num);
+            wheel.nodes[1] = BuildNodeRef(this, ar_wheels[i].wh_axis_node1num);
             wheel.rigidity_node = BuildNodeRef(this, ar_wheels[i].wh_arg_rigidity_node);
             // braking, propulsion
             wheel.braking = ar_wheels[i].wh_braking;
             wheel.propulsion = ar_wheels[i].wh_propulsed;
             // arm node
-            wheel.reference_arm_node = BuildNodeRef(this, (ar_wheels[i].wh_arm_node ? ar_wheels[i].wh_arm_node->pos : NODENUM_INVALID));
+            wheel.reference_arm_node = BuildNodeRef(this, ar_wheels[i].wh_arm_nodenum);
             // mass
             wheel.mass = ar_wheels[i].wh_mass;
             // springiness, damping
@@ -470,14 +470,14 @@ void Actor::propagateNodeBeamChangesToDef()
             // rays
             wheel.num_rays = ar_wheels[i].wh_arg_num_rays;
             // nodes
-            wheel.nodes[0] = BuildNodeRef(this, ar_wheels[i].wh_axis_node_0->pos);
-            wheel.nodes[1] = BuildNodeRef(this, ar_wheels[i].wh_axis_node_1->pos);
+            wheel.nodes[0] = BuildNodeRef(this, ar_wheels[i].wh_axis_node0num);
+            wheel.nodes[1] = BuildNodeRef(this, ar_wheels[i].wh_axis_node1num);
             wheel.rigidity_node = BuildNodeRef(this, ar_wheels[i].wh_arg_rigidity_node);
             // braking, propulsion
             wheel.braking = ar_wheels[i].wh_braking;
             wheel.propulsion = ar_wheels[i].wh_propulsed;
             // arm node
-            wheel.reference_arm_node = BuildNodeRef(this, (ar_wheels[i].wh_arm_node ? ar_wheels[i].wh_arm_node->pos : NODENUM_INVALID));
+            wheel.reference_arm_node = BuildNodeRef(this, ar_wheels[i].wh_arm_nodenum);
             // mass
             wheel.mass = ar_wheels[i].wh_mass;
             // springiness, damping
