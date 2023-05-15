@@ -1714,8 +1714,8 @@ void Actor::SyncReset(bool reset_position)
 
     for (auto& t : ar_ties)
     {
-        t.ti_locked_ropable = nullptr; // `tieToggle()` doesn't do this - bug or feature? ~ ohlidalp, 06/2024
-        t.ti_beam->bm_disabled = true; // should only be active if the tie is tied
+        t.ti_locked_ropable_id = ROPABLEID_INVALID; // `tieToggle()` doesn't do this - bug or feature? ~ ohlidalp, 06/2024
+        ar_beams[t.ti_beamid].bm_disabled = true; // should only be active if the tie is tied
     }
 
     // End extra cleanup
@@ -3502,20 +3502,24 @@ void Actor::tieToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_t
         // if tied, untie it.
         if (it->ti_tied)
         {
-            istied = !it->ti_beam->bm_disabled;
+            beam_t& tiebeam = ar_beams[it->ti_beamid];
+
+            istied = !tiebeam.bm_disabled;
 
             // tie is locked and should get unlocked and stop tying
             it->ti_tied = false;
             it->ti_tying = false;
-            if (it->ti_locked_ropable)
-                it->ti_locked_ropable->attached_ties--;
+            if (it->ti_locked_ropable_id != ROPABLEID_INVALID)
+            {
+                it->ti_locked_actor->ar_ropables[it->ti_locked_ropable_id].attached_ties--;
+            }
             // disable the ties beam
-            it->ti_beam->p2 = &ar_nodes[0];
-            it->ti_beam->bm_inter_actor = false;
-            it->ti_beam->bm_disabled = true;
+            tiebeam.p2 = &ar_nodes[0];
+            tiebeam.bm_inter_actor = false;
+            tiebeam.bm_disabled = true;
             if (it->ti_locked_actor != this)
             {
-                this->RemoveInterActorBeam(it->ti_beam, mode); // OK to invoke here - tieToggle() - processing `MSG_SIM_ACTOR_LINKING_REQUESTED`
+                this->RemoveInterActorBeam(&tiebeam, mode); // OK to invoke here - tieToggle() - processing `MSG_SIM_ACTOR_LINKING_REQUESTED`
             }
             it->ti_locked_actor = nullptr;
         }
@@ -3532,11 +3536,13 @@ void Actor::tieToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_t
 
             if (!it->ti_tied)
             {
+                beam_t& tiebeam = ar_beams[it->ti_beamid];
+
                 // tie is unlocked and should get locked, search new remote ropable to lock to
-                float mindist = it->ti_beam->refL;
+                float mindist = tiebeam.refL;
                 NodeNum_t nearest_node = NODENUM_INVALID;
                 ActorPtr nearest_actor = 0;
-                ropable_t* locktedto = 0;
+                RopableID_t locktedto_id = ROPABLEID_INVALID;
                 // iterate over all actors
                 for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
                 {
@@ -3554,17 +3560,17 @@ void Actor::tieToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_t
                             continue;
 
                         // skip if tienode is ropable too (no selflock)
-                        if (this == actor.GetRef() && itr->rb_nodenum == it->ti_beam->p1->pos)
+                        if (this == actor.GetRef() && itr->rb_nodenum == tiebeam.p1->pos)
                             continue;
 
                         // calculate the distance and record the nearest ropable
-                        float dist = (it->ti_beam->p1->AbsPosition - actor->ar_nodes[itr->rb_nodenum].AbsPosition).length();
+                        float dist = (tiebeam.p1->AbsPosition - actor->ar_nodes[itr->rb_nodenum].AbsPosition).length();
                         if (dist < mindist)
                         {
                             mindist = dist;
                             nearest_node = itr->rb_nodenum;
                             nearest_actor = actor;
-                            locktedto = &(*itr);
+                            locktedto_id = itr->rb_pos;
                         }
                     }
                 }
@@ -3572,20 +3578,20 @@ void Actor::tieToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_t
                 if (nearest_node != NODENUM_INVALID)
                 {
                     // enable the beam and visually display the beam
-                    it->ti_beam->bm_disabled = false;
+                    tiebeam.bm_disabled = false;
                     // now trigger the tying action
                     it->ti_locked_actor = nearest_actor;
-                    it->ti_beam->p2 = &nearest_actor->ar_nodes[nearest_node];
-                    it->ti_beam->bm_inter_actor = nearest_actor != this;
-                    it->ti_beam->stress = 0;
-                    it->ti_beam->L = it->ti_beam->refL;
+                    tiebeam.p2 = &nearest_actor->ar_nodes[nearest_node];
+                    tiebeam.bm_inter_actor = nearest_actor != this;
+                    tiebeam.stress = 0;
+                    tiebeam.L = tiebeam.refL;
                     it->ti_tied = true;
                     it->ti_tying = true;
-                    it->ti_locked_ropable = locktedto;
-                    it->ti_locked_ropable->attached_ties++;
-                    if (it->ti_beam->bm_inter_actor)
+                    it->ti_locked_ropable_id = locktedto_id;
+                    it->ti_locked_actor->ar_ropables[it->ti_locked_ropable_id].attached_ties++;
+                    if (tiebeam.bm_inter_actor)
                     {
-                        this->AddInterActorBeam(it->ti_beam, nearest_actor, mode); // OK to invoke here - tieToggle() - processing `MSG_SIM_ACTOR_LINKING_REQUESTED`
+                        this->AddInterActorBeam(&tiebeam, nearest_actor, mode); // OK to invoke here - tieToggle() - processing `MSG_SIM_ACTOR_LINKING_REQUESTED`
                     }
                 }
             }
