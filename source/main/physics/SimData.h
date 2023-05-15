@@ -306,8 +306,8 @@ struct beam_t
     beam_t();
     ~beam_t();
 
-    node_t*         p1 = nullptr;
-    node_t*         p2 = nullptr;
+    NodeNum_t       p1num = NODENUM_INVALID;
+    NodeNum_t       p2num = NODENUM_INVALID;
     float           k = 0.f;                     //!< tensile spring
     float           d = 0.f;                     //!< damping factor
     float           L = 0.f;                     //!< length
@@ -324,7 +324,7 @@ struct beam_t
     ActorPtr        bm_locked_actor;             //!< in case p2 is on another actor
     bool            bm_disabled = false;
     bool            bm_broken = false;
-    BeamID_t        bm_pos;
+    BeamID_t        bm_pos = BEAMID_INVALID;
 
     float           shortbound = 0.f;
     float           longbound = 0.f;

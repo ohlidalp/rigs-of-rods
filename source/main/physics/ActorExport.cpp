@@ -255,8 +255,8 @@ void Actor::propagateNodeBeamChangesToDef()
         }
 
         // Build refs to the nodes
-        beam.nodes[0] = BuildNodeRef(this, ar_beams[i].p1->pos);
-        beam.nodes[1] = BuildNodeRef(this, ar_beams[i].p2->pos);
+        beam.nodes[0] = BuildNodeRef(this, ar_beams[i].p1num);
+        beam.nodes[1] = BuildNodeRef(this, ar_beams[i].p2num);
 
         // Submit the beam
         m_used_actor_entry->actor_def->root_module->beams.push_back(beam);
@@ -281,15 +281,15 @@ void Actor::propagateNodeBeamChangesToDef()
         int cinecam_beamid = -1;
         for (int j = 0; j < ar_num_beams; j++)
         {
-            if (ar_beams[j].p1->pos == i)
+            if (ar_beams[j].p1num == i)
             {
                 cinecam_beamid = j;
-                cinecam_nodes[num_cinecam_nodes++] = ar_beams[j].p2->pos;
+                cinecam_nodes[num_cinecam_nodes++] = ar_beams[j].p2num;
             }
-            else if (ar_beams[j].p2->pos == i)
+            else if (ar_beams[j].p2num == i)
             {
                 cinecam_beamid = j;
-                cinecam_nodes[num_cinecam_nodes++] = ar_beams[j].p1->pos;
+                cinecam_nodes[num_cinecam_nodes++] = ar_beams[j].p1num;
             }
         }
         ROR_ASSERT(num_cinecam_nodes == 8);
@@ -516,8 +516,8 @@ void Actor::propagateNodeBeamChangesToDef()
 
             RigDef::Shock def;
             def.beam_defaults = beam_defaults;
-            def.nodes[0] = BuildNodeRef(this, beam.p1->pos);
-            def.nodes[1] = BuildNodeRef(this, beam.p2->pos);
+            def.nodes[0] = BuildNodeRef(this, beam.p1num);
+            def.nodes[1] = BuildNodeRef(this, beam.p2num);
             def.short_bound = beam.shortbound;
             def.long_bound = beam.longbound;
             def.precompression = beam.shock->shock_precompression;
@@ -550,8 +550,8 @@ void Actor::propagateNodeBeamChangesToDef()
 
             RigDef::Shock2 def;
             def.beam_defaults = beam_defaults;
-            def.nodes[0] = BuildNodeRef(this, beam.p1->pos);
-            def.nodes[1] = BuildNodeRef(this, beam.p2->pos);
+            def.nodes[0] = BuildNodeRef(this, beam.p1num);
+            def.nodes[1] = BuildNodeRef(this, beam.p2num);
             def.short_bound = beam.shortbound;
             def.long_bound = beam.longbound;
             def.precompression = beam.shock->shock_precompression;
@@ -584,8 +584,8 @@ void Actor::propagateNodeBeamChangesToDef()
 
             RigDef::Shock3 def;
             def.beam_defaults = beam_defaults;
-            def.nodes[0] = BuildNodeRef(this, beam.p1->pos);
-            def.nodes[1] = BuildNodeRef(this, beam.p2->pos);
+            def.nodes[0] = BuildNodeRef(this, beam.p1num);
+            def.nodes[1] = BuildNodeRef(this, beam.p2num);
             def.short_bound = beam.shortbound;
             def.long_bound = beam.longbound;
             def.precompression = beam.shock->shock_precompression;
@@ -637,8 +637,8 @@ void Actor::propagateNodeBeamChangesToDef()
         RigDef::Hydro def;
         def.beam_defaults = beam_defaults;
         def.inertia_defaults = inertia_defaults;
-        def.nodes[0] = BuildNodeRef(this, beam.p1->pos);
-        def.nodes[1] = BuildNodeRef(this, beam.p2->pos);
+        def.nodes[0] = BuildNodeRef(this, beam.p1num);
+        def.nodes[1] = BuildNodeRef(this, beam.p2num);
         def.lenghtening_factor = hydrobeam.hb_speed;
 
         // HEADS UP: hydro options have quirks:
