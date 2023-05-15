@@ -324,6 +324,7 @@ struct beam_t
     ActorPtr        bm_locked_actor;             //!< in case p2 is on another actor
     bool            bm_disabled = false;
     bool            bm_broken = false;
+    BeamID_t        bm_pos;
 
     float           shortbound = 0.f;
     float           longbound = 0.f;
