@@ -42,7 +42,7 @@ struct RailSegment
     RailSegment(beam_t* beam): rs_prev(nullptr), rs_next(nullptr), rs_beam(beam) {}
 
     /// Check if the slidenode should skip to a neighbour rail segment
-    RailSegment* CheckCurSlideSegment(Ogre::Vector3 const& point );
+    RailSegment* CheckCurSlideSegment(ActorPtr& actor, Ogre::Vector3 const& point );
 
     RailSegment*   rs_prev;
     RailSegment*   rs_next;
@@ -55,7 +55,7 @@ struct RailGroup
     RailGroup(): rg_id(-1) {}
 
     /// Search for closest rail segment (the one with closest node in it) in the entire RailGroup
-    RailSegment* FindClosestSegment(Ogre::Vector3 const& point );
+    RailSegment* FindClosestSegment(ActorPtr& actor, Ogre::Vector3 const& point );
 
     std::vector<RailSegment> rg_segments;
     int                      rg_id; //!< Spawn context - matching separately defined rails with slidenodes.
@@ -145,21 +145,21 @@ public:
      * @param point
      * @return value is always positive, if group is null return infinity.
      */
-    static Ogre::Real getLenTo( const RailGroup* group, const Ogre::Vector3& point );
+    static Ogre::Real getLenTo(const ActorPtr& actor, const RailGroup* group, const Ogre::Vector3& point );
 
     /**
      * @param rail
      * @param point
      * @return value is always positive, if rail is null return infinity.
      */
-    static Ogre::Real getLenTo( const RailSegment* rail, const Ogre::Vector3& point );
+    static Ogre::Real getLenTo(const ActorPtr& actor, const RailSegment* rail, const Ogre::Vector3& point );
 
     /**
      * @param beam
      * @param point
      * @return value is always positive, if beam is null return infinity
      */
-    static Ogre::Real getLenTo( const beam_t* beam, const Ogre::Vector3& point );
+    static Ogre::Real getLenTo(const ActorPtr& actor, BeamID_t beamID, const Ogre::Vector3& point );
 
 
     /**

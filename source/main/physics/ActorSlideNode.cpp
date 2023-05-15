@@ -85,7 +85,7 @@ std::pair<RailGroup*, Ogre::Real> Actor::GetClosestRailOnActor(ActorPtr actor, c
         if (*itGroup == nullptr)
             continue;
 
-        curRail = (*itGroup)->FindClosestSegment(node.GetSlideNodePosition());
+        curRail = (*itGroup)->FindClosestSegment(actor, node.GetSlideNodePosition());
         lenToCurRail = node.getLenTo(curRail);
 
         if (lenToCurRail < node.GetAttachmentDistance() && lenToCurRail < closest.second)
