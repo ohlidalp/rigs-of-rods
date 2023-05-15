@@ -398,15 +398,14 @@ struct soundsource_t
 
 struct wheel_t
 {
-    int         wh_num_nodes;
-    node_t*     wh_nodes[50];             // TODO: remove limit, make this dyn-allocated ~ only_a_ptr, 08/2017
-    int         wh_num_rim_nodes;
-    node_t*     wh_rim_nodes[50];         // TODO: remove limit, make this dyn-allocated ~ only_a_ptr, 08/2017
-    WheelBraking wh_braking;
-    node_t*     wh_arm_node;
-    node_t*     wh_near_attach_node;
-    node_t*     wh_axis_node_0;
-    node_t*     wh_axis_node_1;
+    NodeNum_t     wh_arm_nodenum         = NODENUM_INVALID;
+    NodeNum_t     wh_near_attach_nodenum = NODENUM_INVALID;
+    NodeNum_t     wh_axis_node0num       = NODENUM_INVALID;
+    NodeNum_t     wh_axis_node1num       = NODENUM_INVALID;
+    WheelBraking  wh_braking;
+    std::vector<NodeNum_t> wh_tire_nodes;
+    std::vector<NodeNum_t> wh_rim_nodes;
+
     WheelPropulsion wh_propulsed;
     Ogre::Real  wh_radius;
     Ogre::Real  wh_rim_radius;
