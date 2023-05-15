@@ -64,12 +64,12 @@ struct RailGroup
 class SlideNode
 {
 public:
-    /// @param sliding_node valid pointer to the node acting as a slide node
+    /// @param sliding_node valid node acting as a slide node
     /// @param rail initial RailGroup to slide on, or NULL.
-    SlideNode(node_t* sliding_node, RailGroup* rail);
+    SlideNode(ActorPtr actor, NodeNum_t sliding_node, RailGroup* rail);
 
     /// Returns the node index of the slide node
-    int GetSlideNodeId();
+    NodeNum_t GetSlideNodeId() { return m_sliding_node; }
 
     /// Updates the corrective forces and applies these forces to the beam
     /// @param dt delta time in seconds
@@ -111,8 +111,9 @@ private:
     /// Calculate forces between the ideal and actual position of the sliding node.
     Ogre::Vector3 CalcCorrectiveForces();
 
-    node_t*        m_sliding_node;        //!< Pointer to node that is sliding
-    beam_t*        m_sliding_beam;        //!< Pointer to current beam sliding on
+    ActorPtr       m_actor;               //!< owner of the nodes and beams
+    NodeNum_t      m_sliding_node;        //!< node that is sliding
+    BeamID_t       m_sliding_beam;        //!< current beam sliding on
     RailGroup*     m_initial_railgroup;   //!< Initial Rail group on spawn
     RailGroup*     m_cur_railgroup;       //!< Current Rail group, used for attachments
     RailSegment*   m_cur_rail_seg;        //!< Current rail segment we are sliding on
@@ -137,12 +138,7 @@ public:
      * @param toAttach Which rail to attach to, Pass NULL to detach this
      * SlideNode from any rail.
      */
-    void AttachToRail(RailGroup* toAttach)
-    {
-        m_cur_railgroup = toAttach;
-        this->ResetPositions();
-        m_cur_threshold = (m_sliding_beam ? getLenTo(m_sliding_beam) : m_initial_threshold);
-    }
+    void AttachToRail(RailGroup* toAttach);
 
     /**
      * @param group
