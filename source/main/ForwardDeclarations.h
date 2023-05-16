@@ -43,6 +43,9 @@ namespace RoR
     typedef int RopableID_t; //!< Index to `Actor::ar_ropables`, use RoR::ROPABLEID_INVALID as empty value.
     static const RopableID_t ROPABLEID_INVALID = -1;
 
+    typedef int16_t BboxID_t; //!< Index to `Actor::ar_collision_bounding_boxes`, use `RoR::BBOXID_INVALID` as empty value.
+    static const BboxID_t BBOXID_INVALID = -1;
+
     class  Actor;
     class  ActorManager;
     class  ActorSpawner;
