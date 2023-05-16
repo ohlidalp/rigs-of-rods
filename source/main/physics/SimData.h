@@ -315,7 +315,7 @@ struct node_t
 /// Simulation: An edge in the softbody structure
 struct beam_t
 {
-    beam_t();
+    beam_t(BeamID_t id);
     ~beam_t();
 
     NodeNum_t       p1num = NODENUM_INVALID;

@@ -295,8 +295,7 @@ void Actor::dispose()
     m_num_wheel_diffs = 0;
 
     m_wheel_node_count = 0;
-    delete[] ar_beams;
-    ar_num_beams = 0;
+
     delete[] ar_shocks;
     ar_num_shocks = 0;
     delete[] ar_rotators;
@@ -318,7 +317,7 @@ void Actor::scaleTruck(float value)
 
     ar_scale *= value;
     // scale beams
-    for (int i = 0; i < ar_num_beams; i++)
+    for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
         //ar_beams[i].k *= value;
         ar_beams[i].d *= value;
@@ -750,7 +749,7 @@ void Actor::recalculateNodeMasses()
     //average linear density
     // Note this uses the reference (initial) length, so it should give consistent results.
     Real len = 0.0f;
-    for (int i = 0; i < ar_num_beams; i++)
+    for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
         if (ar_beams[i].bm_type != BEAM_VIRTUAL)
         {
@@ -762,7 +761,7 @@ void Actor::recalculateNodeMasses()
         }
     }
 
-    for (int i = 0; i < ar_num_beams; i++)
+    for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
         if (ar_beams[i].bm_type != BEAM_VIRTUAL)
         {
@@ -916,7 +915,7 @@ void Actor::calcNodeConnectivityGraph()
     ar_node_to_node_connections.resize(static_cast<int>(ar_nodes.size()), std::vector<int>());
     ar_node_to_beam_connections.resize(static_cast<int>(ar_nodes.size()), std::vector<int>());
 
-    for (i = 0; i < ar_num_beams; i++)
+    for (i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
         if (ar_beams[i].p1num != NODENUM_INVALID && 
             ar_beams[i].p2num != NODENUM_INVALID)
@@ -939,7 +938,7 @@ bool Actor::Intersects(ActorPtr other_actor, Vector3 offset)
         return false;
 
     // Test own (contactable) beams against others cabs
-    for (int i = 0; i < ar_num_beams; i++)
+    for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
         const NodeNum_t p1num = ar_beams[i].p1num;
         const NodeNum_t p2num = ar_beams[i].p2num;
@@ -968,7 +967,7 @@ bool Actor::Intersects(ActorPtr other_actor, Vector3 offset)
     }
 
     // Test own cabs against others (contactable) beams
-    for (int i = 0; i < other_actor->ar_num_beams; i++)
+    for (int i = 0; i < static_cast<int>(other_actor->ar_beams.size()); i++)
     {
         NodeNum_t p1num = other_actor->ar_beams[i].p1num;
         NodeNum_t p2num = other_actor->ar_beams[i].p2num;
@@ -1702,7 +1701,7 @@ void Actor::SyncReset(bool reset_position)
         ar_nodes[i].Forces = Vector3::ZERO;
     }
 
-    for (int i = 0; i < ar_num_beams; i++)
+    for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
         ar_beams[i].maxposstress    = ar_beams[i].default_beam_deform;
         ar_beams[i].maxnegstress    = -ar_beams[i].default_beam_deform;
@@ -1823,7 +1822,7 @@ void Actor::SyncReset(bool reset_position)
 
 void Actor::applyNodeBeamScales()
 {
-    for (int i = 0; i < ar_num_beams; i++)
+    for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
         if ((ar_nodes[ar_beams[i].p1num].nd_tyre_node || ar_nodes[ar_beams[i].p1num].nd_rim_node) ||
             (ar_nodes[ar_beams[i].p2num].nd_tyre_node || ar_nodes[ar_beams[i].p2num].nd_rim_node))
@@ -1922,7 +1921,7 @@ void Actor::searchBeamDefaults()
             sum_movement += v / (float)ar_nb_measure_steps;
             movement = std::max(movement, v);
         }
-        for (int i = 0; i < ar_num_beams; i++)
+        for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
         {
             Vector3 dis = (ar_nodes[ar_beams[i].p1num].RelPosition - ar_nodes[ar_beams[i].p2num].RelPosition).normalisedCopy();
             float v = (ar_nodes[ar_beams[i].p1num].Velocity - ar_nodes[ar_beams[i].p2num].Velocity).dotProduct(dis);
@@ -4846,7 +4845,7 @@ void Actor::WriteDiagnosticDump(std::string const& fileName)
     }
 
     buf << "[beams]" << std::endl;
-    for (int i = 0; i < ar_num_beams; i++)
+    for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
         buf
             << "  "                  << std::setw(4) << i // actual pos in beam buffer

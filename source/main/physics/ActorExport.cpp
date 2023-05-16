@@ -217,7 +217,7 @@ void Actor::propagateNodeBeamChangesToDef()
 
     // ~~~ Beams ~~~
 
-    for (int i = 0; i < ar_num_beams; i++)
+    for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
         if (!ar_beams_user_defined[i])
         {
@@ -279,7 +279,7 @@ void Actor::propagateNodeBeamChangesToDef()
         std::array<int, 8> cinecam_nodes = { -1, -1, -1, -1, -1, -1, -1, -1 };
         int num_cinecam_nodes = 0;
         int cinecam_beamid = -1;
-        for (int j = 0; j < ar_num_beams; j++)
+        for (int j = 0; j < static_cast<int>(ar_beams.size()); j++)
         {
             if (ar_beams[j].p1num == i)
             {
@@ -499,7 +499,7 @@ void Actor::propagateNodeBeamChangesToDef()
 
     // ~~~ Shocks ~~~
 
-    for (int i = 0; i < ar_num_beams; i++)
+    for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
         const beam_t& beam = ar_beams[i];
         switch (beam.bounded)

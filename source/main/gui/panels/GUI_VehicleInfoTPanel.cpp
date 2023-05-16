@@ -401,7 +401,7 @@ void VehicleInfoTPanel::DrawVehicleStatsUI(RoR::GfxActor* actorx)
         DrawStatsLine(_LC("SimActorStats", "Vehicle destruction: "), "100%");
     }
 
-    const int num_beams = actorx->GetActor()->ar_num_beams;
+    const int num_beams = static_cast<int>(actorx->GetActor()->ar_beams.size());
     DrawStatsLine(_LC("SimActorStats", "Beam count: "), fmt::format("{}", num_beams));
 
     const float broken_pct = static_cast<float>( Round((float)m_stat_broken_beams / (float)num_beams, 2) * 100.0f );
@@ -635,7 +635,6 @@ void VehicleInfoTPanel::SetVisible(TPanelMode mode, TPanelFocus focus)
 void VehicleInfoTPanel::UpdateStats(float dt, ActorPtr actor)
 {
     //taken from TruckHUD.cpp (now removed)
-    beam_t* beam = actor->ar_beams;
     float average_deformation = 0.0f;
     float beamstress = 0.0f;
     float mass = actor->getTotalMass();
@@ -644,8 +643,9 @@ void VehicleInfoTPanel::UpdateStats(float dt, ActorPtr actor)
     Ogre::Vector3 gcur = actor->getGForces();
     Ogre::Vector3 gmax = actor->getMaxGForces();
 
-    for (int i = 0; i < actor->ar_num_beams; i++ , beam++)
+    for (int i = 0; i < static_cast<int>(actor->ar_beams.size()); i++)
     {
+        beam_t* beam = &actor->ar_beams[i];
         if (beam->bm_broken != 0)
         {
             beambroken++;
@@ -659,7 +659,7 @@ void VehicleInfoTPanel::UpdateStats(float dt, ActorPtr actor)
         average_deformation += current_deformation;
     }
 
-    m_stat_health = ((float)beambroken / (float)actor->ar_num_beams) * 10.0f + ((float)beamdeformed / (float)actor->ar_num_beams);
+    m_stat_health = ((float)beambroken / (float)actor->ar_beams.size()) * 10.0f + ((float)beamdeformed / (float)actor->ar_beams.size());
     m_stat_broken_beams = beambroken;
     m_stat_deformed_beams = beamdeformed;
     m_stat_beam_stress = beamstress;

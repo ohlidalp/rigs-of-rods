@@ -344,13 +344,12 @@ public:
     int                  ar_nodes_name_top_length = 0; //!< For nicely formatted diagnostic output
 
     // Beam data (split to layers)
-    beam_t*              ar_beams = nullptr;
-    int                  ar_num_beams = 0;
+    std::vector<beam_t>  ar_beams;
     std::vector<std::pair<float, float>> ar_initial_beam_defaults;
     std::vector<bool>    ar_beams_invisible;    //!< Used only by the exporter (for rendering, invisible beams simply get no mesh).
     std::vector<bool>    ar_beams_user_defined; //!< True for 'beams', false for wheels/cinecam/hooknode/wings/rotators etc...
-
     std::vector<beam_t*> ar_inter_beams;       //!< Beams connecting 2 actors
+
     shock_t*             ar_shocks = nullptr;            //!< Shock absorbers
     int                  ar_num_shocks = 0;        //!< Number of shock absorbers
     bool                 ar_has_active_shocks = false; //!< Are there active stabilizer shocks?
