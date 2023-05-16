@@ -749,7 +749,7 @@ void RoR::GfxActor::UpdateDebugView()
             ImVec2 pos(pos_xyz.x, pos_xyz.y);
 
             float radius = 0.0f;
-            for (int i = 0; i < m_actor->ar_num_nodes; ++i)
+            for (int i = 0; i < static_cast<int>(m_actor->ar_nodes.size()); ++i)
             {
                 radius = std::max(radius, pos_xyz.distance(world2screen.Convert(m_actor->ar_nodes[i].AbsPosition)));
             }
@@ -824,8 +824,8 @@ void RoR::GfxActor::UpdateDebugView()
         if (!App::diag_hide_nodes->getBool())
         {
             // Nodes
-            const node_t* nodes = m_actor->ar_nodes;
-            const size_t num_nodes = static_cast<size_t>(m_actor->ar_num_nodes);
+            auto& nodes = m_actor->ar_nodes;
+            const size_t num_nodes = static_cast<size_t>(static_cast<int>(m_actor->ar_nodes.size()));
             for (size_t i = 0; i < num_nodes; ++i)
             {
                 if (App::diag_hide_wheels->getBool() && (nodes[i].nd_tyre_node || nodes[i].nd_rim_node))
@@ -1255,7 +1255,7 @@ void RoR::GfxActor::UpdateDebugView()
     } else if (m_debug_view == DebugViewType::DEBUGVIEW_ROTATORS)
     {
         // Rotators
-        const node_t* nodes = m_actor->ar_nodes;
+        auto& nodes = m_actor->ar_nodes;
         const rotator_t* rotators = m_actor->ar_rotators;
         const size_t num_rotators = static_cast<size_t>(m_actor->ar_num_rotators);
         for (int i = 0; i < num_rotators; i++)
@@ -1464,7 +1464,7 @@ void RoR::GfxActor::UpdateDebugView()
     } else if (m_debug_view == DebugViewType::DEBUGVIEW_SLIDENODES)
     {
         // Slide nodes
-        const node_t* nodes = m_actor->ar_nodes;
+        auto& nodes = m_actor->ar_nodes;
         std::set<NodeNum_t> node_ids;
         for (auto railgroup : m_actor->m_railgroups)
         {
@@ -1526,7 +1526,7 @@ void RoR::GfxActor::UpdateDebugView()
     } else if (m_debug_view == DebugViewType::DEBUGVIEW_SUBMESH)
     {
         // Cabs
-        const node_t* nodes = m_actor->ar_nodes;
+        auto& nodes = m_actor->ar_nodes;
         const auto cabs = m_actor->ar_cabs;
         const auto num_cabs = m_actor->ar_num_cabs;
         const auto buoycabs = m_actor->ar_buoycabs;
@@ -1807,8 +1807,8 @@ void RoR::GfxActor::UpdateSimDataBuffer()
     }
 
     // Elements: nodes
-    m_simbuf.simbuf_nodes.resize(m_actor->ar_num_nodes);
-    for (int i = 0; i < m_actor->ar_num_nodes; ++i)
+    m_simbuf.simbuf_nodes.resize(static_cast<int>(m_actor->ar_nodes.size()));
+    for (int i = 0; i < static_cast<int>(m_actor->ar_nodes.size()); ++i)
     {
         auto node = m_actor->ar_nodes[i];
         m_simbuf.simbuf_nodes[i].AbsPosition = node.AbsPosition;

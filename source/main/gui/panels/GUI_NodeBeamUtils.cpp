@@ -228,11 +228,11 @@ void NodeBeamUtils::DrawSpringDampTab(ActorPtr actor)
         ImGui::Text("%s", _LC("NodeBeamUtils", "Optimum"));
         ImGui::NextColumn();
         ImGui::Separator();
-        ImGui::Text("%s: %f (%f)", _LC("NodeBeamUtils", "Movement"), actor->ar_nb_reference[5] / actor->ar_num_nodes, actor->ar_nb_reference[4]);
+        ImGui::Text("%s: %f (%f)", _LC("NodeBeamUtils", "Movement"),   actor->ar_nb_reference[5] / static_cast<int>(actor->ar_nodes.size()), actor->ar_nb_reference[4]);
         ImGui::Text("%s: %.2f (%.2f)", _LC("NodeBeamUtils", "Stress"), actor->ar_nb_reference[1] / actor->ar_num_beams, actor->ar_nb_reference[0]);
         ImGui::Text("%s:   %f (%f)", _LC("NodeBeamUtils", "Yitter"), actor->ar_nb_reference[3] / actor->ar_num_beams, actor->ar_nb_reference[2]);
         ImGui::NextColumn();
-        ImGui::Text("%s: %f (%f)", _LC("NodeBeamUtils", "Movement"), actor->ar_nb_optimum[5] / actor->ar_num_nodes, actor->ar_nb_optimum[4]);
+        ImGui::Text("%s: %f (%f)", _LC("NodeBeamUtils", "Movement"),   actor->ar_nb_optimum[5] / static_cast<int>(actor->ar_nodes.size()), actor->ar_nb_optimum[4]);
         ImGui::Text("%s: %.2f (%.2f)", _LC("NodeBeamUtils", "Stress"), actor->ar_nb_optimum[1] / actor->ar_num_beams, actor->ar_nb_optimum[0]);
         ImGui::Text("%s:   %f (%f)", _LC("NodeBeamUtils", "Yitter"), actor->ar_nb_optimum[3] / actor->ar_num_beams, actor->ar_nb_optimum[2]);
         ImGui::Columns(1);
@@ -346,7 +346,7 @@ void NodeBeamUtils::DrawMassTab(ActorPtr actor)
     ImGui::PushID("minimass"); // To disambiguate the 'reset' buttons.
     if (ImGui::SliderFloat(_LC("NodeBeamUtils", "Minimum node mass scale"), &actor->ar_nb_minimass_scale, 0.4, 1.6))
     {
-        for (int i = 0; i < actor->ar_num_nodes; i++)
+        for (int i = 0; i < actor->getNodeCount(); i++)
         {
             actor->ar_minimass[i] = actor->ar_nb_minimass_scale * actor->ar_orig_minimass[i];
         }
@@ -355,7 +355,7 @@ void NodeBeamUtils::DrawMassTab(ActorPtr actor)
     ImGui::SameLine();
     if (ImGui::SmallButton(_LC("NodeBeamUtils", "Reset")))
     {
-        for (int i = 0; i < actor->ar_num_nodes; i++)
+        for (int i = 0; i < actor->getNodeCount(); i++)
         {
             actor->ar_minimass[i] = actor->ar_orig_minimass[i];
         }
@@ -367,6 +367,6 @@ void NodeBeamUtils::DrawMassTab(ActorPtr actor)
     ImGui::Separator();
     ImGui::TextDisabled(_LC("NodeBeamUtils", "Calculated values:"));
     ImGui::Text("%s: %f", _LC("NodeBeamUtils", "Total mass"), actor->ar_total_mass);
-    ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Total nodes"), actor->ar_num_nodes);
+    ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Total nodes"), actor->getNodeCount());
     ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Loaded nodes"), actor->ar_masscount);
 }

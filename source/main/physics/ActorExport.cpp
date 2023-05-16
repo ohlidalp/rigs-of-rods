@@ -174,7 +174,7 @@ void Actor::propagateNodeBeamChangesToDef()
 
     // ~~~ Nodes ~~~
 
-    for (NodeNum_t i = 0; i < ar_num_nodes; i++)
+    for (NodeNum_t i = 0; i < (NodeNum_t)this->getNodeCount(); i++)
     {
         if (ar_nodes[i].nd_rim_node || ar_nodes[i].nd_tyre_node || ar_nodes[i].nd_cinecam_node)
         {
@@ -265,7 +265,7 @@ void Actor::propagateNodeBeamChangesToDef()
 
     // ~~~ Cinecam ~~~
 
-    for (NodeNum_t i = 0; i < ar_num_nodes; i++)
+    for (NodeNum_t i = 0; i < (NodeNum_t)this->getNodeCount(); i++)
     {
         if (!ar_nodes[i].nd_cinecam_node)
         {

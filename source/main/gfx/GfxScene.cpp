@@ -525,7 +525,7 @@ void GfxScene::UpdateFreeBeamGfx(float dt)
         GfxActor* gfx_actor_base = freeforce.ffc_base_actor->GetGfxActor();
         ROR_ASSERT(gfx_actor_base);
         ROR_ASSERT(freeforce.ffc_base_node != NODENUM_INVALID);
-        ROR_ASSERT(freeforce.ffc_base_node < freeforce.ffc_base_actor->ar_num_nodes);
+        ROR_ASSERT(freeforce.ffc_base_node < (NodeNum_t)freeforce.ffc_base_actor->getNodeCount());
 
         // Sanity checks - target actor
         ROR_ASSERT(freeforce.ffc_target_actor);
@@ -533,7 +533,7 @@ void GfxScene::UpdateFreeBeamGfx(float dt)
         GfxActor* gfx_actor_target = freeforce.ffc_target_actor->GetGfxActor();
         ROR_ASSERT(gfx_actor_target);
         ROR_ASSERT(freeforce.ffc_target_node != NODENUM_INVALID);
-        ROR_ASSERT(freeforce.ffc_target_node < freeforce.ffc_target_actor->ar_num_nodes);
+        ROR_ASSERT(freeforce.ffc_target_node < (NodeNum_t)freeforce.ffc_target_actor->getNodeCount());
 
         // Get node positions
         Ogre::Vector3 basenode_pos = gfx_actor_base->GetSimNodeBuffer()[freeforce.ffc_base_node].AbsPosition;

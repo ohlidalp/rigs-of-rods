@@ -108,14 +108,14 @@ ActorPtr ActorManager::CreateNewActor(ActorSpawnRequest rq, RigDef::DocumentPtr 
 
     /* POST-PROCESSING */
 
-    actor->ar_initial_node_positions.resize(actor->ar_num_nodes);
+    actor->ar_initial_node_positions.resize(static_cast<int>(actor->ar_nodes.size()));
     actor->ar_initial_beam_defaults.resize(actor->ar_num_beams);
-    actor->ar_initial_node_masses.resize(actor->ar_num_nodes);
+    actor->ar_initial_node_masses.resize(static_cast<int>(actor->ar_nodes.size()));
 
     actor->UpdateBoundingBoxes(); // (records the unrotated dimensions for 'veh_aab_size')
 
     // Apply spawn position & spawn rotation
-    for (int i = 0; i < actor->ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(actor->ar_nodes.size()); i++)
     {
         actor->ar_nodes[i].AbsPosition = rq.asr_position + rq.asr_rotation * (actor->ar_nodes[i].AbsPosition - rq.asr_position);
         actor->ar_nodes[i].RelPosition = actor->ar_nodes[i].AbsPosition - actor->ar_origin;
@@ -152,7 +152,7 @@ ActorPtr ActorManager::CreateNewActor(ActorSpawnRequest rq, RigDef::DocumentPtr 
         {
             bool inside = true;
 
-            for (int i = 0; i < actor->ar_num_nodes; i++)
+            for (int i = 0; i < static_cast<int>(actor->ar_nodes.size()); i++)
                 inside = (inside && App::GetGameContext()->GetTerrain()->GetCollisions()->isInside(actor->ar_nodes[i].AbsPosition, rq.asr_spawnbox, 0.2f));
 
             if (!inside)
@@ -177,7 +177,7 @@ ActorPtr ActorManager::CreateNewActor(ActorSpawnRequest rq, RigDef::DocumentPtr 
     actor->ar_original_dry_mass = actor->ar_dry_mass;
     actor->ar_original_load_mass = actor->ar_load_mass;
     actor->ar_orig_minimass = actor->ar_minimass;
-    for (int i = 0; i < actor->ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(actor->ar_nodes.size()); i++)
     {
         actor->ar_initial_node_masses[i] = actor->ar_nodes[i].mass;
     }
@@ -196,7 +196,7 @@ ActorPtr ActorManager::CreateNewActor(ActorSpawnRequest rq, RigDef::DocumentPtr 
 
     // calculate minimum camera radius
     actor->calculateAveragePosition();
-    for (int i = 0; i < actor->ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(actor->ar_nodes.size()); i++)
     {
         Real dist = actor->ar_nodes[i].AbsPosition.squaredDistance(actor->m_avg_node_position);
         if (dist > actor->m_min_camera_radius)
@@ -233,15 +233,15 @@ ActorPtr ActorManager::CreateNewActor(ActorSpawnRequest rq, RigDef::DocumentPtr 
 
     // calculate the number of wheel nodes
     actor->m_wheel_node_count = 0;
-    for (int i = 0; i < actor->ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(actor->ar_nodes.size()); i++)
     {
         if (actor->ar_nodes[i].nd_tyre_node)
             actor->m_wheel_node_count++;
     }
 
     // search m_net_first_wheel_node
-    actor->m_net_first_wheel_node = actor->ar_num_nodes;
-    for (int i = 0; i < actor->ar_num_nodes; i++)
+    actor->m_net_first_wheel_node = static_cast<int>(actor->ar_nodes.size());
+    for (int i = 0; i < static_cast<int>(actor->ar_nodes.size()); i++)
     {
         if (actor->ar_nodes[i].nd_tyre_node || actor->ar_nodes[i].nd_rim_node)
         {
@@ -1616,7 +1616,7 @@ void ActorManager::CalcFreeForces()
         ROR_ASSERT(freeforce.ffc_base_actor != nullptr);
         ROR_ASSERT(freeforce.ffc_base_actor->ar_state != ActorState::DISPOSED);
         ROR_ASSERT(freeforce.ffc_base_node != NODENUM_INVALID);
-        ROR_ASSERT(freeforce.ffc_base_node <= freeforce.ffc_base_actor->ar_num_nodes);
+        ROR_ASSERT(freeforce.ffc_base_node <= (NodeNum_t)freeforce.ffc_base_actor->getNodeCount());
 
         
         switch (freeforce.ffc_type)
@@ -1638,7 +1638,7 @@ void ActorManager::CalcFreeForces()
                     ROR_ASSERT(freeforce.ffc_target_actor != nullptr);
                     ROR_ASSERT(freeforce.ffc_target_actor->ar_state != ActorState::DISPOSED);
                     ROR_ASSERT(freeforce.ffc_target_node != NODENUM_INVALID);
-                    ROR_ASSERT(freeforce.ffc_target_node <= freeforce.ffc_target_actor->ar_num_nodes);
+                    ROR_ASSERT(freeforce.ffc_target_node <= (NodeNum_t)freeforce.ffc_target_actor->getNodeCount());
 
                     const Vector3 force_direction = (freeforce.ffc_target_actor->ar_nodes[freeforce.ffc_target_node].AbsPosition - freeforce.ffc_base_actor->ar_nodes[freeforce.ffc_base_node].AbsPosition).normalisedCopy();
                     freeforce.ffc_base_actor->ar_nodes[freeforce.ffc_base_node].Forces += freeforce.ffc_force_magnitude * force_direction;
@@ -1652,7 +1652,7 @@ void ActorManager::CalcFreeForces()
                 ROR_ASSERT(freeforce.ffc_target_actor != nullptr);
                 ROR_ASSERT(freeforce.ffc_target_actor->ar_state != ActorState::DISPOSED);
                 ROR_ASSERT(freeforce.ffc_target_node != NODENUM_INVALID);
-                ROR_ASSERT(freeforce.ffc_target_node <= freeforce.ffc_target_actor->ar_num_nodes);
+                ROR_ASSERT(freeforce.ffc_target_node <= (NodeNum_t)freeforce.ffc_target_actor->getNodeCount());
 
                 // ---- BEGIN COPYPASTE of `Actor::CalcBeamsInterActor()` ----
 
@@ -1788,8 +1788,8 @@ static bool ProcessFreeForce(FreeForceRequest* rq, FreeForce& freeforce)
     // Base node
     ROR_ASSERT(rq->ffr_base_node >= 0);
     ROR_ASSERT(rq->ffr_base_node <= NODENUM_MAX);
-    ROR_ASSERT(rq->ffr_base_node <= freeforce.ffc_base_actor->ar_num_nodes);
-    if (rq->ffr_base_node < 0 || rq->ffr_base_node >= NODENUM_MAX || rq->ffr_base_node >= freeforce.ffc_base_actor->ar_num_nodes)
+    ROR_ASSERT(rq->ffr_base_node <= (NodeNum_t)freeforce.ffc_base_actor->getNodeCount());
+    if (rq->ffr_base_node < 0 || rq->ffr_base_node >= NODENUM_MAX || rq->ffr_base_node >= (NodeNum_t)freeforce.ffc_base_actor->getNodeCount())
     {
         App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_INFO, Console::CONSOLE_SYSTEM_ERROR, 
             fmt::format("Cannot add free force with ID {} to actor {}: Invalid base node number {}", freeforce.ffc_id, rq->ffr_base_actor, rq->ffr_base_node));
@@ -1814,8 +1814,8 @@ static bool ProcessFreeForce(FreeForceRequest* rq, FreeForce& freeforce)
         // Target node
         ROR_ASSERT(rq->ffr_target_node >= 0);
         ROR_ASSERT(rq->ffr_target_node <= NODENUM_MAX);
-        ROR_ASSERT(rq->ffr_target_node <= freeforce.ffc_target_actor->ar_num_nodes);
-        if (rq->ffr_target_node < 0 || rq->ffr_target_node >= NODENUM_MAX || rq->ffr_target_node >= freeforce.ffc_target_actor->ar_num_nodes)
+        ROR_ASSERT(rq->ffr_target_node <= (NodeNum_t)freeforce.ffc_target_actor->getNodeCount());
+        if (rq->ffr_target_node < 0 || rq->ffr_target_node >= NODENUM_MAX || rq->ffr_target_node >= (NodeNum_t)freeforce.ffc_target_actor->getNodeCount())
         {
             App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_INFO, Console::CONSOLE_SYSTEM_ERROR, 
                 fmt::format("Cannot add free force of type 'TOWARDS_NODE' with ID {} to actor {}: Invalid target node number {}", freeforce.ffc_id, rq->ffr_target_actor, rq->ffr_target_node));

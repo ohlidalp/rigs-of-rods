@@ -248,8 +248,8 @@ private:
     void BuildWheelBeams(
         unsigned int num_rays,
         NodeNum_t base_node_index,
-        node_t *axis_node_1,
-        node_t *axis_node_2,
+        NodeNum_t axis_node_1,
+        NodeNum_t axis_node_2,
         float tyre_spring,
         float tyre_damping,
         float rim_spring,
@@ -259,9 +259,9 @@ private:
         float max_extension = 0.f);
 
     /// 'wheels', 'meshwheels', 'meshwheels2'
-    unsigned int AddWheelBeam(
-        node_t *node_1,
-        node_t *node_2,
+    BeamID_t AddWheelBeam(
+        NodeNum_t node_1,
+        NodeNum_t node_2,
         float spring,
         float damping,
         std::shared_ptr<RigDef::BeamDefaults> beam_defaults,
@@ -275,9 +275,9 @@ private:
     void BuildWheelObjectAndNodes(
         WheelID_t wheel_id,
         unsigned int num_rays,
-        node_t *axis_node_1,
-        node_t *axis_node_2,
-        node_t *reference_arm_node,
+        NodeNum_t axis_node_1,
+        NodeNum_t axis_node_2,
+        NodeNum_t reference_arm_node,
         unsigned int reserve_nodes,
         unsigned int reserve_beams,
         float wheel_radius,
@@ -296,7 +296,7 @@ private:
     BeamID_t                      AddWheelRimBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1, node_t *node_2);
     BeamID_t                      AddTyreBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1, node_t *node_2);
     BeamID_t                      _SectionWheels2AddBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1, node_t *node_2);
-    void                          GetWheelAxisNodes(RigDef::BaseWheel& def, node_t*& out_node_1, node_t*& out_node_2);
+    void                          GetWheelAxisNodes(RigDef::BaseWheel& def, NodeNum_t& out_node_1, NodeNum_t& out_node_2);
     void                          AddExhaust(NodeNum_t emitter_node_idx, NodeNum_t direction_node_idx);
     RailGroup*                    CreateRail(std::vector<RigDef::Node::Range> & node_ranges);
     void                          InitializeRig();
@@ -328,9 +328,8 @@ private:
     bool                          AssignWheelToAxle(int & _out_axle_wheel, node_t *axis_node_1, node_t *axis_node_2);
 
     // GetFree*(): Gets a free slot; checks limits, sets it's array position and updates 'free_node' index.
-    node_t&                       GetFreeNode();
+    node_t&                       AddNode();
     beam_t&                       GetFreeBeam();
-    node_t&                       GetAndInitFreeNode(Ogre::Vector3 const & position);
     beam_t&                       GetAndInitFreeBeam(node_t & node_1, node_t & node_2);
     shock_t&                      GetFreeShock();
 

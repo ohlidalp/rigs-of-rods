@@ -294,8 +294,6 @@ void Actor::dispose()
     }
     m_num_wheel_diffs = 0;
 
-    delete[] ar_nodes;
-    ar_num_nodes = 0;
     m_wheel_node_count = 0;
     delete[] ar_beams;
     ar_num_beams = 0;
@@ -336,7 +334,7 @@ void Actor::scaleTruck(float value)
     // scale nodes
     Vector3 refpos = ar_nodes[0].AbsPosition;
     Vector3 relpos = ar_nodes[0].RelPosition;
-    for (int i = 1; i < ar_num_nodes; i++)
+    for (int i = 1; i < static_cast<int>(ar_nodes.size()); i++)
     {
         ar_initial_node_positions[i] = refpos + (ar_initial_node_positions[i] - refpos) * value;
         ar_nodes[i].AbsPosition = refpos + (ar_nodes[i].AbsPosition - refpos) * value;
@@ -672,7 +670,7 @@ static void debugLogNodeMass(Actor* actor)
     float total_override = 0.f; int num_override = 0;
     float total = 0.f;
 
-    for (int i = 0; i < actor->ar_num_nodes; i++)
+    for (int i = 0; i < actor->getNodeCount(); i++)
     {
         if (actor->ar_nodes[i].nd_tyre_node)
         {
@@ -719,7 +717,7 @@ void Actor::recalculateNodeMasses()
 
     // Recalculate loaded nodes
     ar_masscount = 0;
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < this->getNodeCount(); i++)
     {
         if (!ar_nodes[i].nd_tyre_node && ar_nodes[i].nd_loaded_mass && !ar_nodes[i].nd_override_mass)
         {
@@ -728,7 +726,7 @@ void Actor::recalculateNodeMasses()
     }
 
     //reset
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         if (!ar_nodes[i].nd_tyre_node)
         {
@@ -804,7 +802,7 @@ void Actor::recalculateNodeMasses()
     }
 
     //update mass
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         if (!ar_nodes[i].nd_tyre_node &&
             !(ar_minimass_skip_loaded_nodes && ar_nodes[i].nd_loaded_mass) &&
@@ -828,7 +826,7 @@ void Actor::recalculateNodeMasses()
     }
 
     ar_total_mass = 0;
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         if (App::diag_truck_mass->getBool())
         {
@@ -915,8 +913,8 @@ void Actor::calcNodeConnectivityGraph()
 {
     int i;
 
-    ar_node_to_node_connections.resize(ar_num_nodes, std::vector<int>());
-    ar_node_to_beam_connections.resize(ar_num_nodes, std::vector<int>());
+    ar_node_to_node_connections.resize(static_cast<int>(ar_nodes.size()), std::vector<int>());
+    ar_node_to_beam_connections.resize(static_cast<int>(ar_nodes.size()), std::vector<int>());
 
     for (i = 0; i < ar_num_beams; i++)
     {
@@ -1052,14 +1050,14 @@ Vector3 Actor::calculateCollisionOffset(Vector3 direction)
             float proximity = std::max(.05f, std::sqrt(std::max(m_min_camera_radius, actor->m_min_camera_radius)) / 50.f);
 
             // Test proximity of own nodes against others nodes
-            for (int i = 0; i < ar_num_nodes; i++)
+            for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
             {
                 if (!ar_nodes[i].nd_contacter && !ar_nodes[i].nd_contactable)
                     continue;
 
                 Vector3 query_position = ar_nodes[i].AbsPosition + collision_offset;
 
-                for (int j = 0; j < actor->ar_num_nodes; j++)
+                for (int j = 0; j < static_cast<int>(actor->ar_nodes.size()); j++)
                 {
                     if (!actor->ar_nodes[j].nd_contacter && !actor->ar_nodes[j].nd_contactable)
                         continue;
@@ -1196,11 +1194,11 @@ void Actor::calculateAveragePosition()
     {
         // the classic approach: average over all nodes and beams
         Vector3 aposition = Vector3::ZERO;
-        for (int n = 0; n < ar_num_nodes; n++)
+        for (int n = 0; n < static_cast<int>(ar_nodes.size()); n++)
         {
             aposition += ar_nodes[n].AbsPosition;
         }
-        m_avg_node_position = aposition / ar_num_nodes;
+        m_avg_node_position = aposition / static_cast<int>(ar_nodes.size());
     }
 }
 
@@ -1228,11 +1226,11 @@ void Actor::UpdateBoundingBoxes()
     const Ogre::Vector3 mainCamPos = ar_nodes[ar_main_camera_node_pos].RelPosition;
 
     // Update
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         Vector3 vel = ar_nodes[i].Velocity;
         Vector3 pos = ar_nodes[i].AbsPosition;
-        int16_t cid = ar_nodes[i].nd_coll_bbox_id;
+        BboxID_t cid = ar_nodes[i].nd_coll_bbox_id;
 
         ar_bounding_box.merge(pos);                                  // Current box
         if (mainCamPos.squaredDistance(ar_nodes[i].RelPosition) < (CABNODE_MAX_CAMDIST*CABNODE_MAX_CAMDIST))
@@ -1241,7 +1239,7 @@ void Actor::UpdateBoundingBoxes()
         }
         ar_predicted_bounding_box.merge(pos);                        // Predicted box (current position)
         ar_predicted_bounding_box.merge(pos + vel);                  // Predicted box (future position)
-        if (cid != node_t::INVALID_BBOX)
+        if (cid != BBOXID_INVALID)
         {
             ar_collision_bounding_boxes[cid].merge(pos);
             ar_predicted_coll_bounding_boxes[cid].merge(pos);
@@ -1265,7 +1263,7 @@ void Actor::UpdatePhysicsOrigin()
     {
         Vector3 offset = ar_nodes[0].RelPosition;
         ar_origin += offset;
-        for (int i = 0; i < ar_num_nodes; i++)
+        for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
         {
             ar_nodes[i].RelPosition -= offset;
         }
@@ -1281,7 +1279,7 @@ void Actor::ResetAngle(float rot)
     Matrix3 matrix;
     matrix.FromEulerAnglesXYZ(Radian(0), Radian(-rot + m_spawn_rotation), Radian(0));
 
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         // Move node back to origin, apply rotation matrix, and move node back
         ar_nodes[i].AbsPosition -= origin;
@@ -1296,7 +1294,7 @@ void Actor::ResetAngle(float rot)
 
 void Actor::updateInitPosition()
 {
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         ar_initial_node_positions[i] = ar_nodes[i].AbsPosition;
     }
@@ -1306,7 +1304,7 @@ void Actor::resetPosition(float px, float pz, bool setInitPosition, float miny)
 {
     // horizontal displacement
     Vector3 offset = Vector3(px, ar_nodes[0].AbsPosition.y, pz) - ar_nodes[0].AbsPosition;
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         ar_nodes[i].AbsPosition += offset;
         ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
@@ -1318,14 +1316,14 @@ void Actor::resetPosition(float px, float pz, bool setInitPosition, float miny)
     {
         vertical_offset += std::max(0.0f, App::GetGameContext()->GetTerrain()->getWater()->GetStaticWaterHeight() - miny);
     }
-    for (int i = 1; i < ar_num_nodes; i++)
+    for (int i = 1; i < static_cast<int>(ar_nodes.size()); i++)
     {
         if (ar_nodes[i].nd_no_ground_contact)
             continue;
         float terrainHeight = App::GetGameContext()->GetTerrain()->getHeightAt(ar_nodes[i].AbsPosition.x, ar_nodes[i].AbsPosition.z);
         vertical_offset += std::max(0.0f, terrainHeight - (ar_nodes[i].AbsPosition.y + vertical_offset));
     }
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         ar_nodes[i].AbsPosition.y += vertical_offset;
         ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
@@ -1333,7 +1331,7 @@ void Actor::resetPosition(float px, float pz, bool setInitPosition, float miny)
 
     // mesh displacement
     float mesh_offset = 0.0f;
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         if (mesh_offset >= 1.0f)
             break;
@@ -1351,7 +1349,7 @@ void Actor::resetPosition(float px, float pz, bool setInitPosition, float miny)
             offset += 0.001f;
         }
     }
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         ar_nodes[i].AbsPosition.y += mesh_offset;
         ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
@@ -1366,7 +1364,7 @@ void Actor::resetPosition(Ogre::Vector3 translation, bool setInitPosition)
     if (translation != Vector3::ZERO)
     {
         Vector3 offset = translation - ar_nodes[0].AbsPosition;
-        for (int i = 0; i < ar_num_nodes; i++)
+        for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
         {
             ar_nodes[i].AbsPosition += offset;
             ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
@@ -1375,7 +1373,7 @@ void Actor::resetPosition(Ogre::Vector3 translation, bool setInitPosition)
 
     if (setInitPosition)
     {
-        for (int i = 0; i < ar_num_nodes; i++)
+        for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
         {
             ar_initial_node_positions[i] = ar_nodes[i].AbsPosition;
         }
@@ -1392,7 +1390,7 @@ void Actor::softRespawn(Ogre::Vector3 spawnpos, Ogre::Quaternion spawnrot)
 
     // Move the actor to position
     ar_origin = spawnpos;
-    for (NodeNum_t i = 0; i < ar_num_nodes; i++)
+    for (NodeNum_t i = 0; i < this->getNodeCount(); i++)
     {
         ar_nodes[i].AbsPosition = spawnpos + ar_nodes_spawn_offsets[i];
         ar_nodes[i].RelPosition = ar_nodes_spawn_offsets[i];
@@ -1402,7 +1400,7 @@ void Actor::softRespawn(Ogre::Vector3 spawnpos, Ogre::Quaternion spawnrot)
 
     // Apply spawn position & spawn rotation
     // (code taken as-is from `ActorManager::CreateNewActor()`)
-    for (NodeNum_t i = 0; i < ar_num_nodes; i++)
+    for (NodeNum_t i = 0; i < this->getNodeCount(); i++)
     {
         ar_nodes[i].AbsPosition = spawnpos + spawnrot * (ar_nodes[i].AbsPosition - spawnpos);
         ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
@@ -1563,7 +1561,7 @@ Ogre::Vector3 Actor::getRotationCenter()
 {
     Vector3 sum = Vector3::ZERO;
     std::vector<Vector3> positions;
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         Vector3 pos = ar_nodes[i].AbsPosition;
         const auto it = std::find_if(positions.begin(), positions.end(),
@@ -1580,7 +1578,7 @@ Ogre::Vector3 Actor::getRotationCenter()
 float Actor::getMinHeight(bool skip_virtual_nodes)
 {
     float height = std::numeric_limits<float>::max(); 
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         if (!skip_virtual_nodes || !ar_nodes[i].nd_no_ground_contact)
         {
@@ -1593,7 +1591,7 @@ float Actor::getMinHeight(bool skip_virtual_nodes)
 float Actor::getMaxHeight(bool skip_virtual_nodes)
 {
     float height = std::numeric_limits<float>::min(); 
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         if (!skip_virtual_nodes || !ar_nodes[i].nd_no_ground_contact)
         {
@@ -1606,7 +1604,7 @@ float Actor::getMaxHeight(bool skip_virtual_nodes)
 float Actor::getHeightAboveGround(bool skip_virtual_nodes)
 {
     float agl = std::numeric_limits<float>::max(); 
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         if (!skip_virtual_nodes || !ar_nodes[i].nd_no_ground_contact)
         {
@@ -1620,7 +1618,7 @@ float Actor::getHeightAboveGround(bool skip_virtual_nodes)
 float Actor::getHeightAboveGroundBelow(float height, bool skip_virtual_nodes)
 {
     float agl = std::numeric_limits<float>::max(); 
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         if (!skip_virtual_nodes || !ar_nodes[i].nd_no_ground_contact)
         {
@@ -1696,7 +1694,7 @@ void Actor::SyncReset(bool reset_position)
 
     this->DisjoinInterActorBeams(); // OK to be invoked here - SyncReset() - `processing MSG_SIM_MODIFY_ACTOR_REQUESTED`
 
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         ar_nodes[i].AbsPosition = ar_initial_node_positions[i];
         ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
@@ -1918,7 +1916,7 @@ void Actor::searchBeamDefaults()
     for (int k = 0; k < ar_nb_measure_steps; k++)
     {
         this->CalcForcesEulerCompute(false, ar_nb_measure_steps);
-        for (int i = 0; i < ar_num_nodes; i++)
+        for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
         {
             float v = ar_nodes[i].Velocity.length();
             sum_movement += v / (float)ar_nb_measure_steps;
@@ -1976,7 +1974,7 @@ void Actor::HandleInputEvents(float dt)
     {
         Quaternion rot = Quaternion(Radian(m_rotation_request), Vector3::UNIT_Y);
 
-        for (int i = 0; i < ar_num_nodes; i++)
+        for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
         {
             ar_nodes[i].AbsPosition -= m_rotation_request_center;
             ar_nodes[i].AbsPosition = rot * ar_nodes[i].AbsPosition;
@@ -1993,7 +1991,7 @@ void Actor::HandleInputEvents(float dt)
 
     if (m_translation_request != Vector3::ZERO)
     {
-        for (int i = 0; i < ar_num_nodes; i++)
+        for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
         {
             ar_nodes[i].AbsPosition += m_translation_request;
             ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
@@ -2564,7 +2562,7 @@ void Actor::CalcAnimators(hydrobeam_t const& hydrobeam, float &cstate, int &div)
 
 void Actor::CalcCabCollisions()
 {
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         ar_nodes[i].nd_has_mesh_contact = false;
     }
@@ -3770,7 +3768,7 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
                     continue; // don't lock to self
 
                 NodeNum_t nearest_node = NODENUM_INVALID;
-                for (int i = 0; i < actor->ar_num_nodes; i++)
+                for (int i = 0; i < static_cast<int>(actor->ar_nodes.size()); i++)
                 {
                     // skip all nodes with lockgroup 9999 (deny lock)
                     if (actor->ar_nodes[i].nd_lockgroup == 9999)
@@ -4550,7 +4548,7 @@ void Actor::setLoadedMass(float m)
 
 void Actor::setNodeMass(int nodeNumber, float m)
 {
-    if (nodeNumber >= 0 && nodeNumber < ar_num_nodes)
+    if (nodeNumber >= 0 && nodeNumber < this->getNodeCount())
     {
         ar_nodes_override_loadweights[nodeNumber] = m;
     }
@@ -4558,7 +4556,7 @@ void Actor::setNodeMass(int nodeNumber, float m)
 
 void Actor::setNodeMassOptions(int nodeNumber, bool loaded, bool overrideMass)
 {
-    if (nodeNumber >= 0 && nodeNumber < ar_num_nodes)
+    if (nodeNumber >= 0 && nodeNumber < this->getNodeCount())
     {
         ar_nodes[nodeNumber].nd_loaded_mass = loaded;
         ar_nodes[nodeNumber].nd_override_mass = overrideMass;
@@ -4718,7 +4716,7 @@ std::vector<std::string> Actor::getManagedMaterialNames()
 
 Vector3 Actor::getNodePosition(int nodeNumber)
 {
-    if (nodeNumber >= 0 && nodeNumber < ar_num_nodes)
+    if (nodeNumber >= 0 && nodeNumber < static_cast<int>(ar_nodes.size()))
     {
         return ar_nodes[nodeNumber].AbsPosition;
     }
@@ -4730,7 +4728,7 @@ Vector3 Actor::getNodePosition(int nodeNumber)
 
 float Actor::getNodeInitialMass(int nodeNumber)
 {
-    if (nodeNumber >= 0 && nodeNumber < ar_num_nodes)
+    if (nodeNumber >= 0 && nodeNumber < this->getNodeCount())
     {
         return ar_initial_node_masses[nodeNumber];
     }
@@ -4742,7 +4740,7 @@ float Actor::getNodeInitialMass(int nodeNumber)
 
 float Actor::getNodeMass(int nodeNumber)
 {
-    if (nodeNumber >= 0 && nodeNumber < ar_num_nodes)
+    if (nodeNumber >= 0 && nodeNumber < this->getNodeCount())
     {
         return ar_nodes[nodeNumber].mass;
     }
@@ -4754,7 +4752,7 @@ float Actor::getNodeMass(int nodeNumber)
 
 Vector3 Actor::getNodeVelocity(int nodeNumber)
 {
-    if (nodeNumber >= 0 && nodeNumber < ar_num_nodes)
+    if (nodeNumber >= 0 && nodeNumber < this->getNodeCount())
     {
         return ar_nodes[nodeNumber].Velocity;
     }
@@ -4766,7 +4764,7 @@ Vector3 Actor::getNodeVelocity(int nodeNumber)
 
 Vector3 Actor::getNodeForces(int nodeNumber)
 {
-    if (nodeNumber >= 0 && nodeNumber < ar_num_nodes)
+    if (nodeNumber >= 0 && nodeNumber < this->getNodeCount())
     {
         return ar_nodes[nodeNumber].Forces;
     }
@@ -4778,7 +4776,7 @@ Vector3 Actor::getNodeForces(int nodeNumber)
 
 void Actor::getNodeMassOptions(int nodeNumber, bool& loaded, bool& overrideMass)
 {
-    if (nodeNumber >= 0 && nodeNumber < ar_num_nodes)
+    if (nodeNumber >= 0 && nodeNumber < this->getNodeCount())
     {
         loaded = ar_nodes[nodeNumber].nd_loaded_mass;
         overrideMass = ar_nodes[nodeNumber].nd_override_mass;
@@ -4792,7 +4790,7 @@ void Actor::getNodeMassOptions(int nodeNumber, bool& loaded, bool& overrideMass)
 
 bool Actor::isNodeWheelRim(int nodeNumber)
 {
-    if (nodeNumber >= 0 && nodeNumber < ar_num_nodes)
+    if (nodeNumber >= 0 && nodeNumber < this->getNodeCount())
     {
         return ar_nodes[nodeNumber].nd_rim_node;
     }
@@ -4804,7 +4802,7 @@ bool Actor::isNodeWheelRim(int nodeNumber)
 
 bool Actor::isNodeWheelTire(int nodeNumber)
 {
-    if (nodeNumber >= 0 && nodeNumber < ar_num_nodes)
+    if (nodeNumber >= 0 && nodeNumber < this->getNodeCount())
     {
         return ar_nodes[nodeNumber].nd_tyre_node;
     }
@@ -4820,7 +4818,7 @@ void Actor::WriteDiagnosticDump(std::string const& fileName)
     std::stringstream buf;
 
     buf << "[nodes]" << std::endl;
-    for (int i = 0; i < ar_num_nodes; i++)
+    for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         buf 
             << "  pos:"              << std::setw(3) << ar_nodes[i].pos // indicated pos in node buffer

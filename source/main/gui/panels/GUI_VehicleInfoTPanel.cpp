@@ -418,7 +418,7 @@ void VehicleInfoTPanel::DrawVehicleStatsUI(RoR::GfxActor* actorx)
 
     ImGui::NewLine();
 
-    const int num_nodes = actorx->GetActor()->ar_num_nodes;
+    const int num_nodes = actorx->GetActor()->getNodeCount();
     const int num_wheelnodes = actorx->GetActor()->getWheelNodeCount();
     DrawStatsLine(_LC("SimActorStats", "Node count: "), fmt::format("{} (wheels: {})", num_nodes, num_wheelnodes));
     if (App::gfx_speedo_imperial->getBool())
