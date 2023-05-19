@@ -303,8 +303,8 @@ public:
     void              SoftReset();
     void              SyncReset(bool reset_position);      //!< this one should be called only synchronously (without physics running in background)
     void              WriteDiagnosticDump(std::string const& filename);
-    Ogre::Vector3     GetCameraDir()                    { return (ar_nodes[ar_main_camera_node_pos].RelPosition - ar_nodes[ar_main_camera_node_dir].RelPosition).normalisedCopy(); }
-    Ogre::Vector3     GetCameraRoll()                   { return (ar_nodes[ar_main_camera_node_pos].RelPosition - ar_nodes[ar_main_camera_node_roll].RelPosition).normalisedCopy(); }
+    Ogre::Vector3     GetCameraDir()                    { ROR_ASSERT(ar_state != ActorState::DISPOSED); return (ar_nodes[ar_cameras[0].camera_node_pos].RelPosition - ar_nodes[ar_cameras[0].camera_node_dir].RelPosition).normalisedCopy(); }
+    Ogre::Vector3     GetCameraRoll()                   { ROR_ASSERT(ar_state != ActorState::DISPOSED); return (ar_nodes[ar_cameras[0].camera_node_pos].RelPosition - ar_nodes[ar_cameras[0].camera_node_roll].RelPosition).normalisedCopy(); }
     Ogre::Vector3     GetFFbBodyForces() const          { return m_force_sensors.out_body_forces; }
     GfxActor*         GetGfxActor()                     { return m_gfx_actor.get(); }
     void              RequestUpdateHudFeatures()        { m_hud_features_ok = false; }
@@ -369,7 +369,7 @@ public:
     Ogre::AxisAlignedBox      ar_evboxes_bounding_box; //!< bounding box around nodes eligible for eventbox triggering
     Ogre::AxisAlignedBox      ar_predicted_bounding_box;
     std::vector<soundsource_t>     ar_soundsources;
-    
+    std::vector<camera_t>          ar_cameras;    //!< Index = `CineCameraID_t`; A frame of reference, one is generated if not defined (backwards compat).
     std::vector<wheeldetacher_t>   ar_wheeldetachers;
     std::vector<std::vector<int>>  ar_node_to_node_connections;
     std::vector<std::vector<int>>  ar_node_to_beam_connections;
@@ -433,15 +433,6 @@ public:
     float             ar_brake_force = 0.f;              //!< Physics attr; filled at spawn
     
     Ogre::Vector3     ar_origin = Ogre::Vector3::ZERO;                   //!< Physics state; base position for softbody nodes
-    int               ar_num_cameras = 0;
-    Ogre::Quaternion  ar_main_camera_dir_corr = Ogre::Quaternion::IDENTITY;              //!< Sim attr;
-    NodeNum_t         ar_main_camera_node_pos            = 0;    //!< Sim attr; ar_camera_node_pos[0]  >= 0 ? ar_camera_node_pos[0]  : 0
-    NodeNum_t         ar_main_camera_node_dir            = 0;    //!< Sim attr; ar_camera_node_dir[0]  >= 0 ? ar_camera_node_dir[0]  : 0
-    NodeNum_t         ar_main_camera_node_roll           = 0;    //!< Sim attr; ar_camera_node_roll[0] >= 0 ? ar_camera_node_roll[0] : 0
-    NodeNum_t         ar_camera_node_pos[MAX_CAMERAS]    = {NODENUM_INVALID};  //!< Physics attr; 'camera' = frame of reference; origin node
-    NodeNum_t         ar_camera_node_dir[MAX_CAMERAS]    = {NODENUM_INVALID};  //!< Physics attr; 'camera' = frame of reference; back node
-    NodeNum_t         ar_camera_node_roll[MAX_CAMERAS]   = {NODENUM_INVALID};  //!< Physics attr; 'camera' = frame of reference; left node
-    bool              ar_camera_node_roll_inv[MAX_CAMERAS] = {false};              //!< Physics attr; 'camera' = frame of reference; indicates roll node is right instead of left
     
     float             ar_posnode_spawn_height = 0.f;
     VehicleAIPtr      ar_vehicle_ai;

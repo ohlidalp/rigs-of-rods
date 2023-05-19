@@ -477,6 +477,7 @@ private:
     std::shared_ptr<RigDef::Document::Module> m_current_module; //!< For resolving addonparts
     std::map<Ogre::String, NodeNum_t> m_named_nodes;
     RigDef::Node*                  m_node0_hook_queued = nullptr; //!< Hookbeam needs 2 nodes so if Node#0 is a hooknode, we must defer creating the beam.
+    int                            m_num_cameras_processed = 0; //!< Camera at index 0 is main camera and already exists, do not insert another
     /// @}
 
     /// @name Visuals

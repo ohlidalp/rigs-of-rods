@@ -77,7 +77,7 @@ void Actor::CalcForceFeedback(bool doUpdate)
 
         if (ar_current_cinecam != CINECAMERAID_INVALID)
         {
-            m_force_sensors.accu_body_forces += ar_nodes[ar_camera_node_pos[ar_current_cinecam]].Forces;
+            m_force_sensors.accu_body_forces += ar_nodes[ar_cameras[ar_current_cinecam].camera_node_pos].Forces;
         }
 
         for (hydrobeam_t& hydrobeam: ar_hydros)
@@ -1641,7 +1641,7 @@ void Actor::CalcNodes()
             }
         }
 
-        if (i == ar_main_camera_node_pos)
+        if (i == ar_cameras[0].camera_node_pos)
         {
             // record g forces on cameras
             m_camera_gforces_accu += ar_nodes[i].Forces / ar_nodes[i].mass;
