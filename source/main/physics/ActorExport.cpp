@@ -64,9 +64,10 @@ static void UpdateSetBeamDefaults(std::shared_ptr<BeamDefaults>& beam_defaults, 
     float b_diameter = actor->ar_beams[i].default_beam_diameter;
     if (IsActuallyShockBeam(actor->ar_beams[i]))
     {
-        b_spring = actor->ar_beams[i].shock->sbd_spring;
-        b_damp = actor->ar_beams[i].shock->sbd_damp;
-        b_break = actor->ar_beams[i].shock->sbd_break;
+        const shock_t& shock = actor->ar_shocks[actor->ar_beams[i].bm_shockid];
+        b_spring = shock.sbd_spring;
+        b_damp = shock.sbd_damp;
+        b_break = shock.sbd_break;
     }
 
     if (beam_defaults->springiness != b_spring
@@ -514,24 +515,26 @@ void Actor::propagateNodeBeamChangesToDef()
 
             UpdateSetBeamDefaults(beam_defaults, this, i);
 
+            const shock_t& shock = ar_shocks[beam.bm_shockid];
+
             RigDef::Shock def;
             def.beam_defaults = beam_defaults;
             def.nodes[0] = BuildNodeRef(this, beam.p1num);
             def.nodes[1] = BuildNodeRef(this, beam.p2num);
             def.short_bound = beam.shortbound;
             def.long_bound = beam.longbound;
-            def.precompression = beam.shock->shock_precompression;
+            def.precompression = shock.shock_precompression;
 
             // shock1-specific
             def.spring_rate = beam.k;
             def.damping = beam.d;
 
             // options
-            if (BITMASK_IS_1(beam.shock->flags, SHOCK_FLAG_LACTIVE))
+            if (BITMASK_IS_1(shock.sk_flags, SHOCK_FLAG_LACTIVE))
             {
                 BITMASK_SET_1(def.options, RigDef::Shock::OPTION_L_ACTIVE_LEFT);
             }
-            if (BITMASK_IS_1(beam.shock->flags, SHOCK_FLAG_RACTIVE))
+            if (BITMASK_IS_1(shock.sk_flags, SHOCK_FLAG_RACTIVE))
             {
                 BITMASK_SET_1(def.options, RigDef::Shock::OPTION_R_ACTIVE_RIGHT);
             }
@@ -548,25 +551,27 @@ void Actor::propagateNodeBeamChangesToDef()
         {
             UpdateSetBeamDefaults(beam_defaults, this, i);
 
+            const shock_t& shock = ar_shocks[beam.bm_shockid];
+
             RigDef::Shock2 def;
             def.beam_defaults = beam_defaults;
             def.nodes[0] = BuildNodeRef(this, beam.p1num);
             def.nodes[1] = BuildNodeRef(this, beam.p2num);
             def.short_bound = beam.shortbound;
             def.long_bound = beam.longbound;
-            def.precompression = beam.shock->shock_precompression;
+            def.precompression = shock.shock_precompression;
 
             // shock2-specific
-            def.beam_defaults->springiness      = beam.shock->sbd_spring;
-            def.beam_defaults->damping_constant = beam.shock->sbd_damp  ;
-            def.spring_in                       = beam.shock->springin  ;
-            def.damp_in                         = beam.shock->dampin    ;
-            def.spring_out                      = beam.shock->springout ;
-            def.damp_out                        = beam.shock->dampout   ;
-            def.progress_factor_spring_in       = beam.shock->sprogin   ;
-            def.progress_factor_damp_in         = beam.shock->dprogin   ;
-            def.progress_factor_spring_out      = beam.shock->sprogout  ;
-            def.progress_factor_damp_out        = beam.shock->dprogout  ;
+            def.beam_defaults->springiness      = shock.sbd_spring;
+            def.beam_defaults->damping_constant = shock.sbd_damp  ;
+            def.spring_in                       = shock.springin  ;
+            def.damp_in                         = shock.dampin    ;
+            def.spring_out                      = shock.springout ;
+            def.damp_out                        = shock.dampout   ;
+            def.progress_factor_spring_in       = shock.sprogin   ;
+            def.progress_factor_damp_in         = shock.dprogin   ;
+            def.progress_factor_spring_out      = shock.sprogout  ;
+            def.progress_factor_damp_out        = shock.dprogout  ;
 
             // options
             if (ar_beams_invisible[i])
@@ -582,29 +587,31 @@ void Actor::propagateNodeBeamChangesToDef()
         {
             UpdateSetBeamDefaults(beam_defaults, this, i);
 
+            const shock_t& shock = ar_shocks[beam.bm_shockid];
+
             RigDef::Shock3 def;
             def.beam_defaults = beam_defaults;
             def.nodes[0] = BuildNodeRef(this, beam.p1num);
             def.nodes[1] = BuildNodeRef(this, beam.p2num);
             def.short_bound = beam.shortbound;
             def.long_bound = beam.longbound;
-            def.precompression = beam.shock->shock_precompression;
+            def.precompression = shock.shock_precompression;
 
             // same as shock2
-            def.beam_defaults->springiness = beam.shock->sbd_spring;
-            def.beam_defaults->damping_constant = beam.shock->sbd_damp;
-            def.spring_in = beam.shock->springin;
-            def.damp_in = beam.shock->dampin;
-            def.spring_out = beam.shock->springout;
-            def.damp_out = beam.shock->dampout;
+            def.beam_defaults->springiness = shock.sbd_spring;
+            def.beam_defaults->damping_constant = shock.sbd_damp;
+            def.spring_in = shock.springin;
+            def.damp_in = shock.dampin;
+            def.spring_out = shock.springout;
+            def.damp_out = shock.dampout;
 
             // shock3-specific
-            def.split_vel_in  = beam.shock->splitin  ;
-            def.damp_in_slow  = beam.shock->dslowin  ;
-            def.damp_in_fast  = beam.shock->dfastin  ;
-            def.split_vel_out = beam.shock->splitout ;
-            def.damp_out_slow = beam.shock->dslowout ;
-            def.damp_out_fast = beam.shock->dfastout ;
+            def.split_vel_in  = shock.splitin  ;
+            def.damp_in_slow  = shock.dslowin  ;
+            def.damp_in_fast  = shock.dfastin  ;
+            def.split_vel_out = shock.splitout ;
+            def.damp_out_slow = shock.dslowout ;
+            def.damp_out_fast = shock.dfastout ;
 
             // options
             if (ar_beams_invisible[i])

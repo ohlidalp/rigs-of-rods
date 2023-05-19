@@ -102,6 +102,9 @@ namespace RoR
     typedef int BeamID_t; //!< Beam position within `Actor::ar_beams`, use RoR::BEAMID_INVALID as empty value.
     static const BeamID_t BEAMID_INVALID = -1;
 
+    typedef int ShockID_t; //!< Offset to `Actor::ar_shocks`, use RoR::SHOCKID_INVALID as empty value.
+    static const ShockID_t SHOCKID_INVALID = -1;
+
     typedef int RopableID_t; //!< Index to `Actor::ar_ropables`, use RoR::ROPABLEID_INVALID as empty value.
     static const RopableID_t ROPABLEID_INVALID = -1;
 

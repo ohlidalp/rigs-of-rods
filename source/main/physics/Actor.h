@@ -120,7 +120,7 @@ public:
     void              requestRotation(float rotation, Ogre::Vector3 center) { m_rotation_request += rotation; m_rotation_request_center = center; };
     void              requestAngleSnap(int division) { m_anglesnap_request = division; };
     void              requestTranslation(Ogre::Vector3 translation) { m_translation_request += translation; };
-    int               getShockCount() { return ar_num_shocks; }
+    int               getShockCount() { return static_cast<int>(ar_shocks.size()); }
     Ogre::Vector3     getVelocity() const { return m_avg_node_velocity; }; //!< average actor velocity, calculated using the actor positions of the last two frames
     Ogre::Vector3     getDirection();
     Ogre::Vector3     getRotationCenter();
@@ -350,8 +350,6 @@ public:
     std::vector<bool>    ar_beams_user_defined; //!< True for 'beams', false for wheels/cinecam/hooknode/wings/rotators etc...
     std::vector<beam_t*> ar_inter_beams;       //!< Beams connecting 2 actors
 
-    shock_t*             ar_shocks = nullptr;            //!< Shock absorbers
-    int                  ar_num_shocks = 0;        //!< Number of shock absorbers
     bool                 ar_has_active_shocks = false; //!< Are there active stabilizer shocks?
     rotator_t*           ar_rotators = nullptr;
     int                  ar_num_rotators = 0;
@@ -370,6 +368,7 @@ public:
     Ogre::AxisAlignedBox      ar_predicted_bounding_box;
     std::vector<soundsource_t>     ar_soundsources;
     std::vector<camera_t>          ar_cameras;    //!< Index = `CineCameraID_t`; A frame of reference, one is generated if not defined (backwards compat).
+    std::vector<shock_t>           ar_shocks;     //!< Index = `ShockID_t`; Shock absorbers
     std::vector<wheeldetacher_t>   ar_wheeldetachers;
     std::vector<std::vector<int>>  ar_node_to_node_connections;
     std::vector<std::vector<int>>  ar_node_to_beam_connections;

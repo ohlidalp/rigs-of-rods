@@ -274,9 +274,6 @@ void ActorSpawner::InitializeRig()
     m_actor->ar_nodes_override_loadweights.resize(req.num_nodes, -1.f);
     m_actor->ar_nodes_options.resize(req.num_nodes, 0);
 
-    if (req.num_shocks > 0)
-        m_actor->ar_shocks = new shock_t[req.num_shocks];
-
     if (req.num_rotators > 0)
         m_actor->ar_rotators = new rotator_t[req.num_rotators];
 
@@ -421,13 +418,16 @@ void ActorSpawner::FinalizeRig()
     }
     
     // Sanitize trigger_cmdshort and trigger_cmdlong
-    for (int i=0; i<static_cast<int>(m_actor->ar_beams.size()); i++)
+    for (size_t i=0; i<m_actor->ar_beams.size(); i++)
     {
-        shock_t* shock = m_actor->ar_beams[i].shock;
-        if (shock && ((shock->flags & SHOCK_FLAG_TRG_BLOCKER) || (shock->flags & SHOCK_FLAG_TRG_BLOCKER_A)))
+        if (m_actor->ar_beams[i].bm_shockid != SHOCKID_INVALID)
         {
-            shock->trigger_cmdshort = std::min(shock->trigger_cmdshort, static_cast<int>(m_actor->ar_beams.size()) - i - 1);
-            shock->trigger_cmdlong  = std::min(shock->trigger_cmdlong , static_cast<int>(m_actor->ar_beams.size()) - i - 1);
+            shock_t& shock = m_actor->ar_shocks[m_actor->ar_beams[i].bm_shockid];
+            if ((shock.sk_flags & SHOCK_FLAG_TRG_BLOCKER) || (shock.sk_flags & SHOCK_FLAG_TRG_BLOCKER_A))
+            {
+                shock.trigger_cmdshort = std::min(shock.trigger_cmdshort, static_cast<int>(m_actor->ar_beams.size() - i - 1));
+                shock.trigger_cmdlong = std::min(shock.trigger_cmdlong, static_cast<int>(m_actor->ar_beams.size() - i - 1));
+            }
         }
     }
 
@@ -3303,21 +3303,21 @@ void ActorSpawner::ProcessTrigger(RigDef::Trigger & def)
     float lbound = def.expansion_trigger_limit; // longbound
 
 	// options
-	bool invisible = false;
-	BitMask_t shockflag = SHOCK_FLAG_NORMAL | SHOCK_FLAG_ISTRIGGER;
-	bool shock_trigger_enabled = true;
-	bool triggerblocker = false;
-	bool triggerblocker_inverted = false;
-	bool cmdkeyblock = false;
-	bool hooktoggle = false;
-	bool enginetrigger = false;
+    bool invisible = false;
+    BitMask_t shockflag = SHOCK_FLAG_NORMAL | SHOCK_FLAG_ISTRIGGER;
+    bool shock_trigger_enabled = true;
+    bool triggerblocker = false;
+    bool triggerblocker_inverted = false;
+    bool cmdkeyblock = false;
+    bool hooktoggle = false;
+    bool enginetrigger = false;
 
-	bool trigger_cmdkeyblock_state_short = false;
+    bool trigger_cmdkeyblock_state_short = false;
     bool trigger_cmdkeyblock_state_long = true;
     if (def.longbound_trigger_action != -1) trigger_cmdkeyblock_state_long = false;
 
     // now 'parse' the options
-	if (BITMASK_IS_1(def.options, RigDef::Trigger::OPTION_i_INVISIBLE)) // invisible
+    if (BITMASK_IS_1(def.options, RigDef::Trigger::OPTION_i_INVISIBLE)) // invisible
     {
         invisible = true;
     }
@@ -3327,8 +3327,8 @@ void ActorSpawner::ProcessTrigger(RigDef::Trigger & def)
     }
     if (BITMASK_IS_1(def.options, RigDef::Trigger::OPTION_B_TRIGGER_BLOCKER)) // Blocker that enable/disable other triggers
     {
-		shockflag |= SHOCK_FLAG_TRG_BLOCKER;
-		triggerblocker = true;
+        shockflag |= SHOCK_FLAG_TRG_BLOCKER;
+        triggerblocker = true;
     }
     if (BITMASK_IS_1(def.options, RigDef::Trigger::OPTION_b_KEY_BLOCKER)) // Set the CommandKeys that are set in a commandkeyblocker or trigger to blocked on startup, default is released
     {
@@ -3340,23 +3340,23 @@ void ActorSpawner::ProcessTrigger(RigDef::Trigger & def)
     }
     if (BITMASK_IS_1(def.options, RigDef::Trigger::OPTION_c_COMMAND_STYLE)) // trigger is set with commandstyle boundaries instead of shocksytle
     {
-		sbound = abs(sbound-1);
-		lbound = lbound-1;
+        sbound = abs(sbound-1);
+        lbound = lbound-1;
     }
     if (BITMASK_IS_1(def.options, RigDef::Trigger::OPTION_A_INV_TRIGGER_BLOCKER)) // Blocker that enable/disable other triggers, reversed activation method (inverted Blocker style, auto-ON)
     {
         shockflag |= SHOCK_FLAG_TRG_BLOCKER_A;
-		triggerblocker_inverted = true;
+        triggerblocker_inverted = true;
     }
     if (BITMASK_IS_1(def.options, RigDef::Trigger::OPTION_h_UNLOCKS_HOOK_GROUP))
     {
-		shockflag |= SHOCK_FLAG_TRG_HOOK_UNLOCK;
-		hooktoggle = true;
+        shockflag |= SHOCK_FLAG_TRG_HOOK_UNLOCK;
+        hooktoggle = true;
     }
     if (BITMASK_IS_1(def.options, RigDef::Trigger::OPTION_H_LOCKS_HOOK_GROUP))
     {
-		shockflag |= SHOCK_FLAG_TRG_HOOK_LOCK;
-		hooktoggle = true;
+        shockflag |= SHOCK_FLAG_TRG_HOOK_LOCK;
+        hooktoggle = true;
     }
     if (BITMASK_IS_1(def.options, RigDef::Trigger::OPTION_t_CONTINUOUS)) // this trigger sends values between 0 and 1
     {
@@ -3364,36 +3364,36 @@ void ActorSpawner::ProcessTrigger(RigDef::Trigger & def)
     }
     if (BITMASK_IS_1(def.options, RigDef::Trigger::OPTION_E_ENGINE_TRIGGER)) // this trigger is used to control an engine
     {
-		shockflag |= SHOCK_FLAG_TRG_ENGINE;
-		enginetrigger = true;
+        shockflag |= SHOCK_FLAG_TRG_ENGINE;
+        enginetrigger = true;
     }
 
-	if (!triggerblocker && !triggerblocker_inverted && !hooktoggle && !enginetrigger)
-	{
-		// make the full check
-		if (def.shortbound_trigger_action < 1 || def.shortbound_trigger_action > MAX_COMMANDS)
-		{
+    if (!triggerblocker && !triggerblocker_inverted && !hooktoggle && !enginetrigger)
+    {
+        // make the full check
+        if (def.shortbound_trigger_action < 1 || def.shortbound_trigger_action > MAX_COMMANDS)
+        {
             AddMessage(Message::TYPE_ERROR, fmt::format("Wrong 'shortbound_trigger_action': '{}' - must be between 1 and {}. Trigger deactivated.", def.shortbound_trigger_action, MAX_COMMANDS));
             return;
-		}
-	}
+        }
+    }
     else if (!hooktoggle && !enginetrigger)
-	{
-		// this is a Trigger-Blocker, make special check
-		if (def.shortbound_trigger_action < 0 || def.longbound_trigger_action < 0)
-		{
-			AddMessage(Message::TYPE_ERROR, "Wrong command-eventnumber (Triggers). Trigger-Blocker deactivated.");
+    {
+        // this is a Trigger-Blocker, make special check
+        if (def.shortbound_trigger_action < 0 || def.longbound_trigger_action < 0)
+        {
+            AddMessage(Message::TYPE_ERROR, "Wrong command-eventnumber (Triggers). Trigger-Blocker deactivated.");
             return;
-		}
-	}
+        }
+    }
     else if (enginetrigger)
-	{
-		if (triggerblocker || triggerblocker_inverted || hooktoggle || (shockflag & SHOCK_FLAG_TRG_CMD_SWITCH))
-		{
-			AddMessage(Message::TYPE_ERROR, "Error: Wrong command-eventnumber (Triggers). Engine trigger deactivated.");
-			return;
-		}
-	}
+    {
+        if (triggerblocker || triggerblocker_inverted || hooktoggle || (shockflag & SHOCK_FLAG_TRG_CMD_SWITCH))
+        {
+            AddMessage(Message::TYPE_ERROR, "Error: Wrong command-eventnumber (Triggers). Engine trigger deactivated.");
+            return;
+        }
+    }
 
     // `add_beam()`
     const NodeNum_t node_1_index = this->ResolveNodeRef(def.nodes[0]);
@@ -3403,7 +3403,7 @@ void ActorSpawner::ProcessTrigger(RigDef::Trigger & def)
         this->AddMessage(Message::TYPE_WARNING, "Skipping trigger, some nodes not found");
         return;
     }
-    int beam_index = static_cast<int>(m_actor->ar_beams.size());
+
     beam_t & beam = AddBeam(m_actor->ar_nodes[node_1_index], m_actor->ar_nodes[node_2_index], def.beam_defaults, def.detacher_group);
     beam.bm_type = BEAM_HYDRO;
     SetBeamStrength(beam, def.beam_defaults->breaking_threshold);
@@ -3416,22 +3416,21 @@ void ActorSpawner::ProcessTrigger(RigDef::Trigger & def)
 
     if (!invisible)
     {
-        this->CreateBeamVisuals(beam, beam_index, true, def.beam_defaults);
+        this->CreateBeamVisuals(beam, beam.bm_pos, true, def.beam_defaults);
     }
     else
     {
-        m_actor->ar_beams_invisible[beam_index] = true;
+        m_actor->ar_beams_invisible[beam.bm_pos] = true;
     }
     // end `add_beam()`
 
     if (m_actor->m_trigger_debug_enabled)
     {
-        LOG("Trigger added. BeamID " + TOSTRING(beam_index));
+        LOG("Trigger added. BeamID " + TOSTRING(beam.bm_pos));
     }
 
     shock_t& shock = this->GetFreeShock();
-    beam.shock = &shock;
-    shock.beamid = beam_index;
+    shock.sk_beamid = beam.bm_pos;
     shock.trigger_switch_state = 0.0f;   // used as bool and countdowntimer, dont touch!
     if (!triggerblocker && !triggerblocker_inverted) // this is no triggerblocker (A/B)
 	{
@@ -3469,7 +3468,7 @@ void ActorSpawner::ProcessTrigger(RigDef::Trigger & def)
 	else
 		shock.trigger_boundary_t = 1.0f;
 
-    shock.flags              = shockflag;
+    shock.sk_flags           = shockflag;
     shock.trigger_enabled    = shock_trigger_enabled;
     shock.sbd_spring         = def.beam_defaults->springiness;
     shock.sbd_damp           = def.beam_defaults->damping_constant;
@@ -4039,7 +4038,7 @@ void ActorSpawner::ProcessShock3(RigDef::Shock3 & def)
     node_t & node_2 = m_actor->ar_nodes[this->GetNodeIndexOrThrow(def.nodes[1])];
     float short_bound = def.short_bound;
     float long_bound = def.long_bound;
-    unsigned int shock_flags = SHOCK_FLAG_NORMAL | SHOCK_FLAG_ISSHOCK3;
+    BitMask_t shock_flags = SHOCK_FLAG_NORMAL | SHOCK_FLAG_ISSHOCK3;
 
     if (BITMASK_IS_1(def.options, RigDef::Shock3::OPTION_m_METRIC))
     {
@@ -4097,7 +4096,7 @@ void ActorSpawner::ProcessShock3(RigDef::Shock3 & def)
     }
 
     shock_t & shock  = GetFreeShock();
-    shock.flags      = shock_flags;
+    shock.sk_flags   = shock_flags;
     shock.sbd_spring = def.beam_defaults->springiness;
     shock.sbd_damp   = def.beam_defaults->damping_constant;
     shock.sbd_break  = def.beam_defaults->breaking_threshold;
@@ -4113,8 +4112,8 @@ void ActorSpawner::ProcessShock3(RigDef::Shock3 & def)
     shock.dfastout   = def.damp_out_fast;
     shock.shock_precompression = def.precompression;
 
-    beam.shock = & shock;
-    shock.beamid = beam_index;
+    beam.bm_shockid = shock.sk_pos;
+    shock.sk_beamid = beam.bm_pos;
 }
 
 void ActorSpawner::ProcessShock2(RigDef::Shock2 & def)
@@ -4123,7 +4122,7 @@ void ActorSpawner::ProcessShock2(RigDef::Shock2 & def)
     node_t & node_2 = m_actor->ar_nodes[this->GetNodeIndexOrThrow(def.nodes[1])];
     float short_bound = def.short_bound;
     float long_bound = def.long_bound;
-    unsigned int shock_flags = SHOCK_FLAG_NORMAL | SHOCK_FLAG_ISSHOCK2;
+    BitMask_t shock_flags = SHOCK_FLAG_NORMAL | SHOCK_FLAG_ISSHOCK2;
 
     if (BITMASK_IS_1(def.options, RigDef::Shock2::OPTION_s_SOFT_BUMP_BOUNDS))
     {
@@ -4186,7 +4185,7 @@ void ActorSpawner::ProcessShock2(RigDef::Shock2 & def)
     }
 
     shock_t & shock  = GetFreeShock();
-    shock.flags      = shock_flags;
+    shock.sk_flags   = shock_flags;
     shock.sbd_spring = def.beam_defaults->springiness;
     shock.sbd_damp   = def.beam_defaults->damping_constant;
     shock.sbd_break  = def.beam_defaults->breaking_threshold;
@@ -4200,8 +4199,8 @@ void ActorSpawner::ProcessShock2(RigDef::Shock2 & def)
     shock.dprogout   = def.progress_factor_damp_out;
     shock.shock_precompression = def.precompression;
 
-    beam.shock = & shock;
-    shock.beamid = beam_index;
+    beam.bm_shockid = shock.sk_pos;
+    shock.sk_beamid = beam.bm_pos;
 }
 
 void ActorSpawner::ProcessShock(RigDef::Shock & def)
@@ -4210,7 +4209,7 @@ void ActorSpawner::ProcessShock(RigDef::Shock & def)
     node_t & node_2 = m_actor->ar_nodes[this->GetNodeIndexOrThrow(def.nodes[1])];
     float short_bound = def.short_bound;
     float long_bound = def.long_bound;
-    unsigned int shock_flags = SHOCK_FLAG_NORMAL;
+    BitMask_t shock_flags = SHOCK_FLAG_NORMAL;
 
     if (BITMASK_IS_1(def.options, RigDef::Shock::OPTION_L_ACTIVE_LEFT))
     {
@@ -4247,7 +4246,7 @@ void ActorSpawner::ProcessShock(RigDef::Shock & def)
     beam.refL       *= def.precompression;
 
     shock_t & shock  = GetFreeShock();
-    shock.flags      = shock_flags;
+    shock.sk_flags   = shock_flags;
     shock.sbd_spring = def.beam_defaults->springiness;
     shock.sbd_damp   = def.beam_defaults->damping_constant;
     shock.sbd_break  = def.beam_defaults->breaking_threshold;
@@ -4262,8 +4261,8 @@ void ActorSpawner::ProcessShock(RigDef::Shock & def)
         m_actor->ar_beams_invisible[beam_index] = true;
     }
 
-    beam.shock = & shock;
-    shock.beamid = beam_index;
+    beam.bm_shockid = shock.sk_pos;
+    shock.sk_beamid = beam.bm_pos;
 }
 
 void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
@@ -6357,9 +6356,8 @@ beam_t & ActorSpawner::GetFreeBeam()
 
 shock_t & ActorSpawner::GetFreeShock()
 {
-    shock_t & shock = m_actor->ar_shocks[m_actor->ar_num_shocks];
-    m_actor->ar_num_shocks++;
-    return shock;
+    m_actor->ar_shocks.push_back(shock_t(static_cast<ShockID_t>(m_actor->ar_shocks.size())));
+    return m_actor->ar_shocks.back();
 }
 
 void ActorSpawner::SetBeamSpring(beam_t & beam, float spring)

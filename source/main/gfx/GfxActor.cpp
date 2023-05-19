@@ -1667,7 +1667,7 @@ bool RoR::GfxActor::IsDebugViewApplicable(DebugViewType dv)
     if (dv < DEBUGVIEWTYPE_FIRST ||
         dv > DEBUGVIEWTYPE_LAST ||
         dv == DebugViewType::DEBUGVIEW_WHEELS     && m_actor->ar_num_wheels   == 0 ||
-        dv == DebugViewType::DEBUGVIEW_SHOCKS     && m_actor->ar_num_shocks   == 0 ||
+        dv == DebugViewType::DEBUGVIEW_SHOCKS     && m_actor->ar_shocks.size()== 0 ||
         dv == DebugViewType::DEBUGVIEW_ROTATORS   && m_actor->ar_num_rotators == 0 ||
         dv == DebugViewType::DEBUGVIEW_SLIDENODES && m_actor->hasSlidenodes() == 0 ||
         dv == DebugViewType::DEBUGVIEW_SUBMESH    && m_actor->ar_num_cabs     == 0 ||
