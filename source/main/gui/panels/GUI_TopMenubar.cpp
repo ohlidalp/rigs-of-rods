@@ -1768,7 +1768,7 @@ void TopMenubar::Draw(float dt)
                 }
 
                 // Draw wheels
-                const int total_wheels = tuning_actor->ar_num_wheels;
+                const int total_wheels = static_cast<int>(tuning_actor->ar_wheels.size());
                 std::string wheels_title = fmt::format(_LC("TopMenubar", "Wheels ({})"), total_wheels);
                 if (ImGui::CollapsingHeader(wheels_title.c_str()))
                 {

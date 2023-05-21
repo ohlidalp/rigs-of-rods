@@ -368,6 +368,7 @@ public:
     std::vector<camera_t>          ar_cameras;    //!< Index = `CineCameraID_t`; A frame of reference, one is generated if not defined (backwards compat).
     std::vector<shock_t>           ar_shocks;     //!< Index = `ShockID_t`; Shock absorbers
     std::vector<wing_t>            ar_wings;      //!< Index = `WingID_t`; Airfoil surfaces
+    std::vector<wheel_t>           ar_wheels;     //!< Index = `WheelID_t`;
     std::vector<wheeldetacher_t>   ar_wheeldetachers;
     std::vector<std::vector<NodeNum_t>>  ar_node_to_node_connections;
     std::vector<std::vector<BeamID_t>>  ar_node_to_beam_connections;
@@ -378,8 +379,6 @@ public:
 
     int               ar_num_contactable_nodes = 0; //!< Total number of nodes which can contact ground or cabs
     int               ar_num_contacters = 0; //!< Total number of nodes which can selfcontact cabs
-    wheel_t           ar_wheels[MAX_WHEELS] = {};
-    int               ar_num_wheels = 0;
     AeroEnginePtr     ar_aeroengines[MAX_AEROENGINES] = {};
     int               ar_num_aeroengines = 0;
     ScrewpropPtr      ar_screwprops[MAX_SCREWPROPS] = {};
@@ -638,7 +637,6 @@ private:
     float             m_odometer_user = 0.f;         //!< GUI state
     int               m_num_command_beams = 0;     //!< TODO: Remove! Spawner context only; likely unused feature
 
-    Skidmark*         m_skid_trails[MAX_WHEELS*2] = {};
     bool              m_antilockbrake = false;         //!< GUI state
     bool              m_tractioncontrol = false;       //!< GUI state
     bool              m_has_axles_section = false;     //!< Temporary (legacy parsing helper) until central diffs are implemented

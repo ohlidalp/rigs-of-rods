@@ -286,7 +286,6 @@ void ActorSpawner::InitializeRig()
     memset(m_actor->ar_buoycabs, 0, sizeof(int) * MAX_CABS);
     m_actor->ar_num_buoycabs = 0;
     memset(m_actor->ar_buoycab_types, 0, sizeof(int) * MAX_CABS);
-    memset(m_actor->m_skid_trails, 0, sizeof(Skidmark *) * (MAX_WHEELS*2));
 
     m_actor->authors.clear();
 
@@ -450,7 +449,7 @@ void ActorSpawner::FinalizeRig()
     m_actor->m_has_axles_section = m_actor->m_num_wheel_diffs > 0;
 
     // Calculate mass of each wheel (without rim)
-    for (int i = 0; i < m_actor->ar_num_wheels; i++)
+    for (size_t i = 0; i < static_cast<int>(m_actor->ar_wheels.size()); i++)
     {
         m_actor->ar_wheels[i].wh_mass = 0.0f;
         for (size_t j = 0; j < m_actor->ar_wheels[i].wh_tire_nodes.size(); j++)
@@ -462,7 +461,7 @@ void ActorSpawner::FinalizeRig()
     if (m_actor->m_num_proped_wheels > 0)
     {
         float proped_wheels_radius_sum = 0.0f;
-        for (int i = 0; i < m_actor->ar_num_wheels; i++)
+        for (size_t i = 0; i < static_cast<int>(m_actor->ar_wheels.size()); i++)
         {
             if (m_actor->ar_wheels[i].wh_propulsed != WheelPropulsion::NONE)
             {
@@ -2703,20 +2702,19 @@ void ActorSpawner::ProcessCollisionRange(RigDef::CollisionRange & def)
         m_actor->ar_collision_range = DEFAULT_COLLISION_RANGE;
 }
 
-bool ActorSpawner::AssignWheelToAxle(int & _out_axle_wheel, node_t *axis_node_1, node_t *axis_node_2)
+WheelID_t ActorSpawner::AssignWheelToAxle(NodeNum_t axis_node_1, NodeNum_t axis_node_2)
 {
-    for (int i = 0; i < m_actor->ar_num_wheels; i++)
+    for (WheelID_t i = 0; i < static_cast<WheelID_t>(static_cast<int>(m_actor->ar_wheels.size())); i++)
     {
         wheel_t & wheel = m_actor->ar_wheels[i];
-        if	(	(wheel.wh_axis_node0num == axis_node_1->pos && wheel.wh_axis_node1num == axis_node_2->pos)
-            ||	(wheel.wh_axis_node0num == axis_node_2->pos && wheel.wh_axis_node1num == axis_node_1->pos)
+        if	(	(wheel.wh_axis_node0num == axis_node_1 && wheel.wh_axis_node1num == axis_node_2)
+            ||	(wheel.wh_axis_node0num == axis_node_2 && wheel.wh_axis_node1num == axis_node_1)
             )
         {
-            _out_axle_wheel = i;
-            return true;
+            return i;
         }
     }
-    return false;
+    return WHEELID_INVALID;
 }
 
 void ActorSpawner::ProcessAxle(RigDef::Axle & def)
@@ -2726,14 +2724,16 @@ void ActorSpawner::ProcessAxle(RigDef::Axle & def)
         return;
     }
 
-    node_t *wheel_1_node_1 = GetNodePointerOrThrow(def.wheels[0][0]);
-    node_t *wheel_1_node_2 = GetNodePointerOrThrow(def.wheels[0][1]);
-    node_t *wheel_2_node_1 = GetNodePointerOrThrow(def.wheels[1][0]);
-    node_t *wheel_2_node_2 = GetNodePointerOrThrow(def.wheels[1][1]);
+    NodeNum_t wheel_1_node_1 = this->ResolveNodeRef(def.wheels[0][0]);
+    NodeNum_t wheel_1_node_2 = this->ResolveNodeRef(def.wheels[0][1]);
+    NodeNum_t wheel_2_node_1 = this->ResolveNodeRef(def.wheels[1][0]);
+    NodeNum_t wheel_2_node_2 = this->ResolveNodeRef(def.wheels[1][1]);
 
     Differential *diff = new Differential();
+    diff->di_idx_1 = AssignWheelToAxle(wheel_1_node_1, wheel_1_node_2);
+    diff->di_idx_2 = AssignWheelToAxle(wheel_2_node_1, wheel_2_node_2);
 
-    if (! AssignWheelToAxle(diff->di_idx_1, wheel_1_node_1, wheel_1_node_2))
+    if (diff->di_idx_1 == WHEELID_INVALID)
     {
         std::stringstream msg;
         msg << "Couldn't find wheel with axis nodes '" << def.wheels[0][0].ToString()
@@ -2741,7 +2741,7 @@ void ActorSpawner::ProcessAxle(RigDef::Axle & def)
         AddMessage(Message::TYPE_WARNING, msg.str());
     }
 
-    if (! AssignWheelToAxle(diff->di_idx_2, wheel_2_node_1, wheel_2_node_2))
+    if (diff->di_idx_2 == WHEELID_INVALID)
     {
         std::stringstream msg;
         msg << "Couldn't find wheel with axis nodes '" << def.wheels[1][0].ToString()
@@ -2864,7 +2864,7 @@ void ActorSpawner::ProcessTransferCase(RigDef::TransferCase & def)
 
     m_actor->m_transfer_case = new TransferCase(def.a1, def.a2, def.has_2wd, def.has_2wd_lo, def.gear_ratios);
 
-    for (int i = 0; i < m_actor->ar_num_wheels; i++)
+    for (int i = 0; i < static_cast<int>(m_actor->ar_wheels.size()); i++)
     {
         m_actor->ar_wheels[i].wh_propulsed = WheelPropulsion::NONE;
     }
@@ -4265,17 +4265,14 @@ void ActorSpawner::ProcessShock(RigDef::Shock & def)
 void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
 {
     NodeNum_t base_node_index = static_cast<NodeNum_t>(m_actor->ar_nodes.size());
-    WheelID_t wheel_id = m_actor->ar_num_wheels;
-    wheel_t & wheel = m_actor->ar_wheels[wheel_id];
+    WheelID_t wheel_id = static_cast<WheelID_t>(m_actor->ar_wheels.size());
+    wheel_t wheel;
 
-    NodeNum_t axis_node_1 = this->ResolveNodeRef(def.nodes[0]);
-    NodeNum_t axis_node_2 = this->ResolveNodeRef(def.nodes[1]);
-    // Enforce the "second node must have a larger Z coordinate than the first" constraint
-    if (m_actor->ar_nodes[axis_node_1].AbsPosition.z > m_actor->ar_nodes[axis_node_2].AbsPosition.z)
+    NodeNum_t axis_node_1 = NODENUM_INVALID;
+    NodeNum_t axis_node_2 = NODENUM_INVALID;
+    if (!this->GetWheelAxisNodes(def, axis_node_1, axis_node_2))
     {
-        NodeNum_t swap = axis_node_1;
-        axis_node_1 = axis_node_2;
-        axis_node_2 = swap;
+        return; // Error already logged
     }
 
     // Rigidity node
@@ -4391,11 +4388,11 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
         }
     }
 
-    m_actor->ar_wheels[wheel_id].wh_arg_keyword = RigDef::Keyword::FLEXBODYWHEELS;
-    m_actor->ar_wheels[wheel_id].wh_arg_num_rays = def.num_rays;
-    m_actor->ar_wheels[wheel_id].wh_arg_media1 = def.rim_mesh_name;
-    m_actor->ar_wheels[wheel_id].wh_arg_media2 = def.tyre_mesh_name;
-    m_actor->ar_wheels[wheel_id].wh_beam_start = static_cast<int>(m_actor->ar_beams.size());
+    wheel.wh_arg_keyword = RigDef::Keyword::FLEXBODYWHEELS;
+    wheel.wh_arg_num_rays = def.num_rays;
+    wheel.wh_arg_media1 = def.rim_mesh_name;
+    wheel.wh_arg_media2 = def.tyre_mesh_name;
+    wheel.wh_beam_start = static_cast<int>(m_actor->ar_beams.size());
 
     // Beams
     float rim_spring = def.rim_springiness;
@@ -4500,8 +4497,8 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
     // Wheel object
     wheel.wh_braking = def.braking;
     wheel.wh_propulsed = def.propulsion;
-    wheel.wh_axis_node0num = m_actor->ar_nodes[axis_node_1].pos;
-    wheel.wh_axis_node1num = m_actor->ar_nodes[axis_node_2].pos;
+    wheel.wh_axis_node0num = axis_node_1;
+    wheel.wh_axis_node1num = axis_node_2;
     wheel.wh_radius = override_tire_radius;
     wheel.wh_rim_radius = override_rim_radius;
     wheel.wh_arm_nodenum = this->ResolveNodeRef(def.reference_arm_node);
@@ -4509,7 +4506,7 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
     if (def.propulsion != WheelPropulsion::NONE)
     {
         // for inter-differential locking
-        m_actor->m_proped_wheel_pairs[m_actor->m_num_proped_wheels] = m_actor->ar_num_wheels;
+        m_actor->m_proped_wheel_pairs[m_actor->m_num_proped_wheels] = static_cast<int>(m_actor->ar_wheels.size());
         m_actor->m_num_proped_wheels++;
     }
 
@@ -4518,7 +4515,13 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
     Ogre::Real length_2 = (m_actor->ar_nodes[axis_node_2].RelPosition - m_actor->ar_nodes[wheel.wh_arm_nodenum].RelPosition).length();
     wheel.wh_near_attach_nodenum = (length_1 < length_2) ? m_actor->ar_nodes[axis_node_1].pos : m_actor->ar_nodes[axis_node_2].pos;
 
-    this->CreateFlexBodyWheelVisuals(wheel_id,
+    // Commit the wheel - usually done by `BuildWheelObjectAndNodes()` but we work manually here.
+    m_actor->ar_wheels.push_back(wheel);
+
+    // ~~ Setup visuals (in the future, this will be done asynchronously) ~~
+
+    this->CreateFlexBodyWheelVisuals(
+        wheel_id,
         base_node_index,
         axis_node_1,
         axis_node_2,
@@ -4529,20 +4532,24 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
         TuneupUtil::getTweakedWheelMediaRG(m_actor->getWorkingTuneupDef(), wheel_id, 0, m_actor->getTruckFileResourceGroup()),
         TuneupUtil::getTweakedWheelMedia(m_actor->getWorkingTuneupDef(), wheel_id, 1, def.tyre_mesh_name),
         TuneupUtil::getTweakedWheelMediaRG(m_actor->getWorkingTuneupDef(), wheel_id, 1, m_actor->getTruckFileResourceGroup())
-    ); 
+    );
 
-    // Commit the wheel
-    ++m_actor->ar_num_wheels;
+    this->CreateWheelSkidmarks(wheel_id);
 }
 
-void ActorSpawner::GetWheelAxisNodes(RigDef::BaseWheel& def, NodeNum_t& out_node_1, NodeNum_t& out_node_2)
+bool ActorSpawner::GetWheelAxisNodes(RigDef::BaseWheel& def, NodeNum_t& out_node_1, NodeNum_t& out_node_2)
 {
     NodeNum_t def_node_1 = this->ResolveNodeRef(def.nodes[0]);
     NodeNum_t def_node_2 = this->ResolveNodeRef(def.nodes[1]);
 
     if (def_node_1 == def_node_2)
     {
-        throw Exception("Wheel axis nodes must not be set to single node!");
+        this->AddMessage(Message::TYPE_ERROR, "Wheel axis nodes must not be set to the same node!");
+        return false;
+    }
+    else if (def_node_1 == NODENUM_INVALID || def_node_2 == NODENUM_INVALID)
+    {
+        return false; // Error already logged
     }
 
     /* Enforce the "second node must have a larger Z coordinate than the first" constraint */
@@ -4556,19 +4563,21 @@ void ActorSpawner::GetWheelAxisNodes(RigDef::BaseWheel& def, NodeNum_t& out_node
         out_node_1 = def_node_1;
         out_node_2 = def_node_2;
     }
+    return true;
 }
 
 void ActorSpawner::ProcessMeshWheel(RigDef::MeshWheel & meshwheel_def)
 {
-    WheelID_t wheel_id = m_actor->ar_num_wheels;
-
     NodeNum_t axis_node_1 = NODENUM_INVALID;
     NodeNum_t axis_node_2 = NODENUM_INVALID;
-    this->GetWheelAxisNodes(meshwheel_def, axis_node_1, axis_node_2);
+    if (!this->GetWheelAxisNodes(meshwheel_def, axis_node_1, axis_node_2))
+    {
+        return; // Error already logged
+    }
 
     NodeNum_t base_node_index = (NodeNum_t)m_actor->getNodeCount();
+    WheelID_t wheel_id = static_cast<WheelID_t>(m_actor->ar_wheels.size());
     this->BuildWheelObjectAndNodes(
-        wheel_id,
         meshwheel_def.num_rays,
         axis_node_1,
         axis_node_2,
@@ -4605,6 +4614,8 @@ void ActorSpawner::ProcessMeshWheel(RigDef::MeshWheel & meshwheel_def)
         meshwheel_def.rigidity_node
     );
 
+    // ~~ Setup visuals (in the future, this will be done asynchronously) ~~
+
     this->CreateMeshWheelVisuals(
         wheel_id,
         base_node_index,
@@ -4620,23 +4631,21 @@ void ActorSpawner::ProcessMeshWheel(RigDef::MeshWheel & meshwheel_def)
     );
 
     this->CreateWheelSkidmarks(wheel_id);
-
-    m_actor->ar_num_wheels++;
 }
 
 void ActorSpawner::ProcessMeshWheel2(RigDef::MeshWheel2 & def)
 {
-    WheelID_t wheel_id = m_actor->ar_num_wheels;
-
     NodeNum_t axis_node_1 = NODENUM_INVALID;
     NodeNum_t axis_node_2 = NODENUM_INVALID;
-    this->GetWheelAxisNodes(def, axis_node_1, axis_node_2);
+    if (!this->GetWheelAxisNodes(def, axis_node_1, axis_node_2))
+    {
+        return; // Error already logged
+    }
 
     // --- Nodes ---
     NodeNum_t base_node_index = (NodeNum_t)m_actor->getNodeCount();
-
+    WheelID_t wheel_id = static_cast<WheelID_t>(m_actor->ar_wheels.size());
     this->BuildWheelObjectAndNodes(
-        wheel_id,
         def.num_rays,
         axis_node_1,
         axis_node_2,
@@ -4670,7 +4679,7 @@ void ActorSpawner::ProcessMeshWheel2(RigDef::MeshWheel2 & def)
     float rim_spring = def.beam_defaults->springiness;
     float rim_damp = def.beam_defaults->damping_constant;
 
-    BuildWheelBeams(
+    this->BuildWheelBeams(
         def.num_rays,
         base_node_index,
         axis_node_1,
@@ -4683,6 +4692,8 @@ void ActorSpawner::ProcessMeshWheel2(RigDef::MeshWheel2 & def)
         def.rigidity_node,
         0.15 // max_extension
     );
+
+    // ~~ Setup visuals (in the future, this will be done asynchronously) ~~
 
     this->CreateMeshWheelVisuals(
         wheel_id,
@@ -4698,9 +4709,7 @@ void ActorSpawner::ProcessMeshWheel2(RigDef::MeshWheel2 & def)
         TuneupUtil::getTweakedWheelRimRadius(m_actor->getWorkingTuneupDef(), wheel_id, def.rim_radius)
     );
 
-    CreateWheelSkidmarks(wheel_id);
-
-    m_actor->ar_num_wheels++;
+    this->CreateWheelSkidmarks(wheel_id);
 }
 
 void ActorSpawner::CreateMeshWheelVisuals(
@@ -4751,8 +4760,7 @@ void ActorSpawner::CreateMeshWheelVisuals(
     }
 }
 
-void ActorSpawner::BuildWheelObjectAndNodes( 
-    WheelID_t wheel_id,
+void ActorSpawner::BuildWheelObjectAndNodes(
     unsigned int num_rays,
     NodeNum_t axis_node_1,
     NodeNum_t axis_node_2,
@@ -4767,7 +4775,7 @@ void ActorSpawner::BuildWheelObjectAndNodes(
     float wheel_width       /* Default: -1.f */
 )
 {
-    wheel_t & wheel = m_actor->ar_wheels[wheel_id];
+    wheel_t wheel;
 
     /* Axis */
     Ogre::Vector3 axis_vector = m_actor->ar_nodes[axis_node_2].RelPosition - m_actor->ar_nodes[axis_node_1].RelPosition;
@@ -4791,7 +4799,7 @@ void ActorSpawner::BuildWheelObjectAndNodes(
     if (propulsion != WheelPropulsion::NONE)
     {
         /* for inter-differential locking */
-        m_actor->m_proped_wheel_pairs[m_actor->m_num_proped_wheels] = m_actor->ar_num_wheels;
+        m_actor->m_proped_wheel_pairs[m_actor->m_num_proped_wheels] = static_cast<int>(m_actor->ar_wheels.size());
         m_actor->m_num_proped_wheels++;
     }
     
@@ -4838,6 +4846,8 @@ void ActorSpawner::BuildWheelObjectAndNodes(
         }
 
     }
+
+    m_actor->ar_wheels.push_back(wheel);
 }
 
 void ActorSpawner::AdjustNodeBuoyancy(node_t & node, RigDef::Node & node_def, std::shared_ptr<RigDef::NodeDefaults> defaults)
@@ -4908,16 +4918,17 @@ void ActorSpawner::BuildWheelBeams(
 
 void ActorSpawner::ProcessWheel(RigDef::Wheel & wheel_def)
 {
-    WheelID_t wheel_id = m_actor->ar_num_wheels;
-
     NodeNum_t axis_node_1 = NODENUM_INVALID;
     NodeNum_t axis_node_2 = NODENUM_INVALID;
-    this->GetWheelAxisNodes(wheel_def, axis_node_1, axis_node_2);
+    if (!this->GetWheelAxisNodes(wheel_def, axis_node_1, axis_node_2))
+    {
+        return; // Error already logged
+    }
 
     NodeNum_t base_node_index = (NodeNum_t)m_actor->getNodeCount();
 
+    WheelID_t wheel_id = static_cast<WheelID_t>(m_actor->ar_wheels.size());
     this->BuildWheelObjectAndNodes(
-        wheel_id,
         wheel_def.num_rays,
         axis_node_1,
         axis_node_2,
@@ -4954,6 +4965,8 @@ void ActorSpawner::ProcessWheel(RigDef::Wheel & wheel_def)
         wheel_def.rigidity_node
     );
 
+    // ~~ Setup visuals (in the future, this will be done asynchronously) ~~
+
     this->CreateWheelVisuals(
         wheel_id,
         base_node_index,
@@ -4965,25 +4978,26 @@ void ActorSpawner::ProcessWheel(RigDef::Wheel & wheel_def)
         /*separate_rim:*/false
         );
 
-    CreateWheelSkidmarks(wheel_id);
-
-    m_actor->ar_num_wheels++;
+    this->CreateWheelSkidmarks(wheel_id);
 }
 
 void ActorSpawner::CreateWheelSkidmarks(WheelID_t wheel_index)
 {
     // Always create, even if disabled by config
-    m_actor->m_skid_trails[wheel_index] = new RoR::Skidmark(m_actor,
-        RoR::App::GetGfxScene()->GetSkidmarkConf(), &m_actor->ar_wheels[wheel_index], m_particles_parent_scenenode, 300, 20);
+    m_actor->ar_wheels[wheel_index].wh_skidmark = new Skidmark(m_actor,
+        RoR::App::GetGfxScene()->GetSkidmarkConf(), wheel_index, m_particles_parent_scenenode, 300, 20);
 }
 
 void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
 {
-    WheelID_t wheel_id = m_actor->ar_num_wheels;
+    WheelID_t wheel_id = static_cast<int>(m_actor->ar_wheels.size());
 
     NodeNum_t axis_node_1 = NODENUM_INVALID;
     NodeNum_t axis_node_2 = NODENUM_INVALID;
-    this->GetWheelAxisNodes(wheel_2_def, axis_node_1, axis_node_2);
+    if (!this->GetWheelAxisNodes(wheel_2_def, axis_node_1, axis_node_2))
+    {
+        return; // Error already logged
+    }
 
     NodeNum_t base_node_index = (NodeNum_t)m_actor->getNodeCount();
 
@@ -5002,7 +5016,7 @@ void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
     float override_tire_radius = TuneupUtil::getTweakedWheelTireRadius(m_actor->getWorkingTuneupDef(), wheel_id, wheel_2_def.tyre_radius);
 
     /* Node&beam generation */
-    wheel_t& wheel = m_actor->ar_wheels[wheel_id];
+    wheel_t wheel;
     Ogre::Vector3 axis_vector = m_actor->ar_nodes[axis_node_2].RelPosition - m_actor->ar_nodes[axis_node_1].RelPosition;
     axis_vector.normalise();
     Ogre::Vector3 rim_ray_vector = Ogre::Vector3(0, override_rim_radius, 0);
@@ -5092,18 +5106,18 @@ void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
     }
 
     // ~~~ Args ~~~
-    m_actor->ar_wheels[wheel_id].wh_arg_keyword = RigDef::Keyword::WHEELS2;
-    m_actor->ar_wheels[wheel_id].wh_radius = wheel_2_def.tyre_radius;
-    m_actor->ar_wheels[wheel_id].wh_rim_radius = wheel_2_def.rim_radius;
-    m_actor->ar_wheels[wheel_id].wh_arg_num_rays = wheel_2_def.num_rays;    
-    m_actor->ar_wheels[wheel_id].wh_arg_rigidity_node = this->ResolveNodeRef(wheel_2_def.rigidity_node, /* optional: */ true);
-    m_actor->ar_wheels[wheel_id].wh_arg_rim_spring =  wheel_2_def.rim_springiness;
-    m_actor->ar_wheels[wheel_id].wh_arg_rim_damping = wheel_2_def.rim_damping;
-    m_actor->ar_wheels[wheel_id].wh_arg_simple_spring =  wheel_2_def.tyre_springiness;
-    m_actor->ar_wheels[wheel_id].wh_arg_simple_damping = wheel_2_def.tyre_damping;
-    m_actor->ar_wheels[wheel_id].wh_arg_media1 = wheel_2_def.face_material_name;
-    m_actor->ar_wheels[wheel_id].wh_arg_media2 = wheel_2_def.band_material_name;
-    m_actor->ar_wheels[wheel_id].wh_beam_start = static_cast<int>(m_actor->ar_beams.size());
+    wheel.wh_arg_keyword = RigDef::Keyword::WHEELS2;
+    wheel.wh_radius = wheel_2_def.tyre_radius;
+    wheel.wh_rim_radius = wheel_2_def.rim_radius;
+    wheel.wh_arg_num_rays = wheel_2_def.num_rays;    
+    wheel.wh_arg_rigidity_node = this->ResolveNodeRef(wheel_2_def.rigidity_node, /* optional: */ true);
+    wheel.wh_arg_rim_spring =  wheel_2_def.rim_springiness;
+    wheel.wh_arg_rim_damping = wheel_2_def.rim_damping;
+    wheel.wh_arg_simple_spring =  wheel_2_def.tyre_springiness;
+    wheel.wh_arg_simple_damping = wheel_2_def.tyre_damping;
+    wheel.wh_arg_media1 = wheel_2_def.face_material_name;
+    wheel.wh_arg_media2 = wheel_2_def.band_material_name;
+    wheel.wh_beam_start = static_cast<int>(m_actor->ar_beams.size());
 
     /* Beams */
     for (unsigned int i = 0; i < wheel_2_def.num_rays; i++)
@@ -5186,7 +5200,7 @@ void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
     if (wheel_2_def.propulsion != WheelPropulsion::NONE)
     {
         /* for inter-differential locking */
-        m_actor->m_proped_wheel_pairs[m_actor->m_num_proped_wheels] = m_actor->ar_num_wheels;
+        m_actor->m_proped_wheel_pairs[m_actor->m_num_proped_wheels] = static_cast<int>(m_actor->ar_wheels.size());
         m_actor->m_num_proped_wheels++;
     }
 
@@ -5195,7 +5209,10 @@ void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
     Ogre::Real length_2 = (m_actor->ar_nodes[axis_node_2].RelPosition - m_actor->ar_nodes[wheel.wh_arm_nodenum].RelPosition).length();
     wheel.wh_near_attach_nodenum = (length_1 < length_2) ? m_actor->ar_nodes[axis_node_1].pos : m_actor->ar_nodes[axis_node_2].pos;
 
-    CreateWheelSkidmarks(static_cast<unsigned>(m_actor->ar_num_wheels));
+    // Commit the wheel - usually done by `CreateWheelObjectAndNodes()`, but since we're doing custom node/beam generation here, we need to do it manually.
+    m_actor->ar_wheels.push_back(wheel);
+
+    // ~~ Setup visuals (in the future, this will be done asynchronously) ~~
 
     this->CreateWheelVisuals(
         wheel_id,
@@ -5209,7 +5226,8 @@ void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
         /*rim_ratio:*/override_rim_radius / override_tire_radius
         );
 
-    m_actor->ar_num_wheels++;
+    this->CreateWheelSkidmarks(wheel_id);
+
 }
 
 void ActorSpawner::CreateWheelVisuals(
@@ -5316,8 +5334,6 @@ void ActorSpawner::CreateFlexBodyWheelVisuals(
         if (flexbody == nullptr)
             return; // Error already logged
 
-        this->CreateWheelSkidmarks(wheel_id);
-
         m_actor->m_gfx_actor->m_flexbodies.push_back(flexbody);
     }
     catch (Ogre::Exception& e)
@@ -5388,7 +5404,7 @@ BeamID_t ActorSpawner::_SectionWheels2AddBeam(RigDef::Wheel2 & wheel_2_def, node
 
 void ActorSpawner::ProcessWheelDetacher(RigDef::WheelDetacher & def)
 {
-    if (def.wheel_id > m_actor->ar_num_wheels - 1)
+    if (def.wheel_id > static_cast<int>(m_actor->ar_wheels.size()) - 1)
     {
         AddMessage(Message::TYPE_ERROR, std::string("Invalid wheel_id: ") + TOSTRING(def.wheel_id));
         return;
@@ -6437,7 +6453,7 @@ void ActorSpawner::SetupDefaultSoundSources(ActorPtr const& vehicle)
         AddSoundSourceInstance(vehicle, "tracks/default_tractioncontrol", 0);
     }
     //screetch
-    if ((vehicle->ar_driveable==TRUCK || vehicle->ar_driveable==AIRPLANE) && vehicle->ar_num_wheels != 0)
+    if ((vehicle->ar_driveable==TRUCK || vehicle->ar_driveable==AIRPLANE) && vehicle->ar_wheels.size() != 0)
     {
         AddSoundSourceInstance(vehicle, "tracks/default_screetch", 0);
     }

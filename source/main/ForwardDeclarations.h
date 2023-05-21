@@ -55,7 +55,7 @@ namespace RoR
     static const NodeNum_t NODENUM_INVALID = std::numeric_limits<NodeNum_t>::max();
     static const NodeNum_t NODENUM_MAX = std::numeric_limits<NodeNum_t>::max() - 1;
 
-    typedef int WheelID_t; //!< Index to `Actor::ar_wheels`, `use RoR::WHEELID_INVALID` as empty value
+    typedef int WheelID_t; //!< Offset to `Actor::ar_wheels`, `use RoR::WHEELID_INVALID` as empty value
     static const WheelID_t WHEELID_INVALID = -1;
 
     typedef int PropID_t; //!< Index to `GfxActor::m_props`, use `RoR::PROPID_INVALID` as empty value

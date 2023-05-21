@@ -273,7 +273,6 @@ private:
     /// @param wheel_width Width of the wheel (used in section 'wheels'). Use negative value to calculate width from axis beam.
     /// @return Wheel index.
     void BuildWheelObjectAndNodes(
-        WheelID_t wheel_id,
         unsigned int num_rays,
         NodeNum_t axis_node_1,
         NodeNum_t axis_node_2,
@@ -296,7 +295,7 @@ private:
     BeamID_t                      AddWheelRimBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1, node_t *node_2);
     BeamID_t                      AddTyreBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1, node_t *node_2);
     BeamID_t                      _SectionWheels2AddBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1, node_t *node_2);
-    void                          GetWheelAxisNodes(RigDef::BaseWheel& def, NodeNum_t& out_node_1, NodeNum_t& out_node_2);
+    bool                          GetWheelAxisNodes(RigDef::BaseWheel& def, NodeNum_t& out_node_1, NodeNum_t& out_node_2);
     void                          AddExhaust(NodeNum_t emitter_node_idx, NodeNum_t direction_node_idx);
     RailGroup*                    CreateRail(std::vector<RigDef::Node::Range> & node_ranges);
     void                          AddHook(NodeNum_t nodenum, RigDef::Node& def);
@@ -323,10 +322,8 @@ private:
     /// Creates name containing actor ID token, i.e. "Object#1 (filename.truck [Instance ID 1])".
     std::string                   ComposeName(const std::string& object, int number = -1);
 
-    /// Finds wheel with given axle nodes and returns it's index.
-    /// @param _out_axle_wheel Index of the found wheel.
-    /// @return True if wheel was found, false if not.
-    bool                          AssignWheelToAxle(int & _out_axle_wheel, node_t *axis_node_1, node_t *axis_node_2);
+    /// Finds wheel with given axle nodes and returns it's WheelID_t index (or WHEELID_INVALID if such wheel wasn't found).
+    WheelID_t                     AssignWheelToAxle(NodeNum_t axis_node_1, NodeNum_t axis_node_2);
 
     // GetFree*(): Gets a free slot; checks limits, sets it's array position and updates 'free_node' index.
     node_t&                       AddNode();

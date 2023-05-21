@@ -317,7 +317,7 @@ void Actor::propagateNodeBeamChangesToDef()
 
 
     // ~~~ Wheels ~~~
-    for (int i = 0; i < ar_num_wheels; i++)
+    for (int i = 0; i < static_cast<int>(ar_wheels.size()); i++)
     {
         // PLEASE maintain the same order of arguments as the docs: https://docs.rigsofrods.org/vehicle-creation/fileformat-truck/#vehicle-specific
 
