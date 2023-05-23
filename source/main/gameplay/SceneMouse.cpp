@@ -145,7 +145,7 @@ void SceneMouse::updateMouseNodeHighlights(ActorPtr& actor)
         return;
     }
 
-    for (int j = 0; j < actor->ar_num_nodes; j++)
+    for (size_t j = 0; j < actor->ar_nodes.size(); j++)
     {
         // skip nodes with grabbing disabled
         if (actor->ar_nodes[j].nd_no_mouse_grab)
@@ -216,7 +216,7 @@ void SceneMouse::updateMouseBeamHighlights()
     if (mintruck)
     {
         highlightedBeamsNodeProximity.clear();
-        highlightedBeamsNodeProximity.assign(mintruck->ar_num_nodes, 0);
+        highlightedBeamsNodeProximity.assign(mintruck->ar_nodes.size(), 0);
 
         // Fire up the recursive update
         const GUIManager::GuiTheme& theme = App::GetGuiManager()->GetTheme();
@@ -238,7 +238,7 @@ void SceneMouse::updateMouseBeamHighlightsRecursive(NodeNum_t nodenum, float tra
 
         // Check if node is within reach
         const beam_t& b = mintruck->ar_beams[beamID];
-        NodeNum_t nodenumFar = (b.p1->pos == nodenum) ? b.p2->pos : b.p1->pos;
+        NodeNum_t nodenumFar = (b.p1num == nodenum) ? b.p2num : b.p1num;
         float traversalLenFar = traversalLen + b.L;
 
         if (traversalLenFar < maxTraversalLen)
@@ -331,11 +331,11 @@ void SceneMouse::drawMouseBeamHighlights()
         const beam_t& beam = mintruck->ar_beams[beamID];
 
         Vector2 screenPos1, screenPos2;
-        if (GetScreenPosFromWorldPos(beam.p1->AbsPosition, screenPos1)
-            && GetScreenPosFromWorldPos(beam.p2->AbsPosition, screenPos2))
+        if (GetScreenPosFromWorldPos(mintruck->ar_nodes[beam.p1num].AbsPosition, screenPos1)
+            && GetScreenPosFromWorldPos(mintruck->ar_nodes[beam.p2num].AbsPosition, screenPos2))
         {
-            const float t1 = static_cast<float>(highlightedBeamsNodeProximity[beam.p1->pos] / 255.f);
-            const float t2 = static_cast<float>(highlightedBeamsNodeProximity[beam.p2->pos] / 255.f);
+            const float t1 = static_cast<float>(highlightedBeamsNodeProximity[beam.p1num] / 255.f);
+            const float t2 = static_cast<float>(highlightedBeamsNodeProximity[beam.p2num] / 255.f);
 
             const ImVec4 color1 = ImLerp(theme.mouse_beam_close_color, theme.mouse_beam_far_color, 1.f - t1);
             const ImVec4 color2 = ImLerp(theme.mouse_beam_close_color, theme.mouse_beam_far_color, 1.f - t2);
