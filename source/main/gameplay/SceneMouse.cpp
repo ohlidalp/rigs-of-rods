@@ -566,6 +566,6 @@ void SceneMouse::SetMouseHoveredNode(ActorPtr& actor, NodeNum_t nodenum)
     if (minnode != NODENUM_INVALID)
     {
         this->updateMouseBeamHighlights();
+        highlightedNodes.push_back({ 0.f, minnode });
     }
-    highlightedNodes.push_back({ 0.f, nodenum });
 }
