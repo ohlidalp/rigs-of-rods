@@ -209,7 +209,7 @@ void RigEditor::DrawNodesTable(ActorPtr& actor, CacheEntry* cache_entry)
     ImGui::NextColumn();
     ImGui::Text("`l`Kg");
 
-    for (int i = 0; i < actor->ar_num_nodes; i++)
+    for (size_t i = 0; i < actor->ar_nodes.size(); i++)
     {
         ROR_ASSERT(actor->ar_nodes[i].pos == (NodeNum_t)i);
         ImGui::PushID(i);
@@ -240,7 +240,7 @@ void RigEditor::DrawNodesTable(ActorPtr& actor, CacheEntry* cache_entry)
 
         ImGui::NextColumn(); // *Opt
         Str<25> liveOpt;
-        if (actor->ar_nodes[i].nd_loaded_mass) liveOpt << "l";
+        if (actor->ar_nodes_aux[i].nda_loaded_mass) liveOpt << "l";
         if (actor->ar_nodes[i].nd_no_mouse_grab) liveOpt << "m";
         ImGui::Text(liveOpt.ToCStr());
 
@@ -248,10 +248,10 @@ void RigEditor::DrawNodesTable(ActorPtr& actor, CacheEntry* cache_entry)
         ImGui::Text(RigDef::KeywordToString(actor->ar_nodes_aux[i].nda_source_keyword));
 
         ImGui::NextColumn(); // Name
-        ImGui::Text(actor->ar_nodes_name[i].c_str());
+        ImGui::Text(actor->ar_nodes_aux[i].nda_source_name.c_str());
 
         ImGui::NextColumn(); // Id
-        ImGui::Text("%d", actor->ar_nodes_id[i]);
+        ImGui::Text("%d", actor->ar_nodes_aux[i].nda_source_id);
 
         // Display definition, only for nodes from `nodes` or `nodes2`!
         if (actor->ar_nodes_aux[i].nda_source_keyword == RigDef::Keyword::NODES)
