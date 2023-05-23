@@ -46,7 +46,7 @@ void RigEditor::DrawSidePanel()
         m_is_visible = false;
         return;
     }
-    m_node_selected.resize(actor->ar_num_nodes);
+    m_node_selected.resize(actor->ar_nodes.size());
 
     ImGui::SetNextWindowContentWidth(500.f);
     ImGui::SetNextWindowPos(ImVec2(10.f, 10.f));
@@ -157,7 +157,7 @@ void RigEditor::UpdateInputEvents(float dt)
         if (App::GetInputEngine()->getEventBoolValueBounce(EV_COMMON_TOGGLE_DEBUG_VIEW))
         {
             player_actor->GetGfxActor()->ToggleDebugView();
-            for (ActorPtr actor : player_actor->getAllLinkedActors())
+            for (ActorPtr actor : player_actor->ar_linked_actors)
             {
                 actor->GetGfxActor()->SetDebugView(player_actor->GetGfxActor()->GetDebugView());
             }
@@ -166,7 +166,7 @@ void RigEditor::UpdateInputEvents(float dt)
         if (App::GetInputEngine()->getEventBoolValueBounce(EV_COMMON_CYCLE_DEBUG_VIEWS))
         {
             player_actor->GetGfxActor()->CycleDebugViews();
-            for (ActorPtr actor : player_actor->getAllLinkedActors())
+            for (ActorPtr actor : player_actor->ar_linked_actors)
             {
                 actor->GetGfxActor()->SetDebugView(player_actor->GetGfxActor()->GetDebugView());
             }
