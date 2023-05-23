@@ -289,29 +289,28 @@ void RigEditor::DrawSelectedNodeHighlights()
 
     ActorPtr actor = App::GetGameContext()->GetPlayerActor();
     m_node_highlight_drawn.clear();
-    m_node_highlight_drawn.resize(actor->ar_num_nodes, /*val:*/false); 
+    m_node_highlight_drawn.resize(actor->ar_nodes.size(), /*val:*/false); 
     auto& theme = App::GetGuiManager()->GetTheme();
 
     ImDrawList* drawlist = GetImDummyFullscreenWindow("RigEditorNodeHighlights");
-    for (int i = 0; i < actor->ar_num_beams; i++)
+    for (size_t i = 0; i < actor->ar_beams.size(); i++)
     {
-        NodeNum_t p1pos = actor->ar_beams[i].p1->pos;
-        NodeNum_t p2pos = actor->ar_beams[i].p2->pos;
+        beam_t& beam = actor->ar_beams[i];
 
-        if (m_node_selected[p1pos]
-            || m_node_selected[p2pos])
+        if (m_node_selected[beam.p1num]
+            || m_node_selected[beam.p2num])
         {
             Vector2 p1screen, p2screen;
-            if (GetScreenPosFromWorldPos(actor->ar_beams[i].p1->AbsPosition, p1screen)
-                && GetScreenPosFromWorldPos(actor->ar_beams[i].p2->AbsPosition, p2screen))
+            if (GetScreenPosFromWorldPos(actor->ar_nodes[beam.p1num].AbsPosition, p1screen)
+                && GetScreenPosFromWorldPos(actor->ar_nodes[beam.p2num].AbsPosition, p2screen))
             {
                 // Draw the beam highlight (faded if only 1 node is selected)
 
                 ImVec4 p1color = theme.editor_selected_node_color;
-                if (!m_node_selected[p1pos])
+                if (!m_node_selected[beam.p1num])
                     p1color.w = 0.f; // Unselected node = full transparency
                 ImVec4 p2color = theme.editor_selected_node_color;
-                if (!m_node_selected[p2pos])
+                if (!m_node_selected[beam.p2num])
                     p2color.w = 0.f; // Unselected node = full transparency
 
                 ImAddLineColorGradient(drawlist, p1screen, p2screen, p1color, p2color, theme.editor_selected_node_beam_thickness);
@@ -319,23 +318,23 @@ void RigEditor::DrawSelectedNodeHighlights()
                 // Draw node circles (if not already drawn)
 
                 ImVec2 im_p1screen(p1screen.x, p1screen.y);
-                if (!m_node_highlight_drawn[actor->ar_beams[i].p1->pos])
+                if (!m_node_highlight_drawn[actor->ar_nodes[beam.p1num].pos])
                 {
-                    if (m_node_selected[p1pos])
+                    if (m_node_selected[beam.p1num])
                     {
                         drawlist->AddCircleFilled(im_p1screen, theme.editor_selected_node_radius, ImColor(theme.editor_selected_node_color), theme.node_circle_num_segments);
                     }
-                    m_node_highlight_drawn[actor->ar_beams[i].p1->pos] = true;
+                    m_node_highlight_drawn[actor->ar_nodes[beam.p1num].pos] = true;
                 }
 
                 ImVec2 im_p2screen(p2screen.x, p2screen.y);
-                if (!m_node_highlight_drawn[actor->ar_beams[i].p2->pos])
+                if (!m_node_highlight_drawn[actor->ar_nodes[beam.p2num].pos])
                 {
-                    if (m_node_selected[p2pos])
+                    if (m_node_selected[beam.p2num])
                     {
                         drawlist->AddCircleFilled(im_p2screen, theme.editor_selected_node_radius, ImColor(theme.editor_selected_node_color), theme.node_circle_num_segments);
                     }
-                    m_node_highlight_drawn[actor->ar_beams[i].p2->pos] = true;
+                    m_node_highlight_drawn[actor->ar_nodes[beam.p2num].pos] = true;
                 }
             }
         }
