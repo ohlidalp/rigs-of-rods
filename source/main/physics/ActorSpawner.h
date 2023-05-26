@@ -299,6 +299,7 @@ private:
     void                          GetWheelAxisNodes(RigDef::BaseWheel& def, NodeNum_t& out_node_1, NodeNum_t& out_node_2);
     void                          AddExhaust(NodeNum_t emitter_node_idx, NodeNum_t direction_node_idx);
     RailGroup*                    CreateRail(std::vector<RigDef::Node::Range> & node_ranges);
+    void                          AddHook(NodeNum_t nodenum, RigDef::Node& def);
     void                          InitializeRig();
     void                          FinalizeRig();
     void                          AddBaseFlare(RigDef::FlareBase& flare_def);
@@ -475,7 +476,8 @@ private:
     std::vector<CabSubmesh>        m_oldstyle_cab_submeshes;    
     RigDef::Keyword                m_current_keyword = RigDef::Keyword::INVALID; //!< For error reports
     std::shared_ptr<RigDef::Document::Module> m_current_module; //!< For resolving addonparts
-    std::map<Ogre::String, unsigned int> m_named_nodes;
+    std::map<Ogre::String, NodeNum_t> m_named_nodes;
+    RigDef::Node*                  m_node0_hook_queued = nullptr; //!< Hookbeam needs 2 nodes so if Node#0 is a hooknode, we must defer creating the beam.
     /// @}
 
     /// @name Visuals
