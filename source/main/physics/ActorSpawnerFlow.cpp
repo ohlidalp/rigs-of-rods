@@ -155,6 +155,13 @@ void ActorSpawner::ProcessNewActor(ActorPtr actor, ActorSpawnRequest rq, RigDef:
         AddExhaust(m_actor->ar_exhaust_pos_node, m_actor->ar_exhaust_dir_node);
     }
 
+    // Flush hookbeams (beams created for nodes with 'h' flag)
+    for (auto& pair : m_queued_hookbeams)
+    {
+        AddHook(pair.first, pair.second);
+    }
+    m_queued_hookbeams.clear();
+
     // ---------------------------- Node generating sections ----------------------------
 
     PROCESS_ELEMENT(RigDef::Keyword::CINECAM, cinecam, ProcessCinecam);
