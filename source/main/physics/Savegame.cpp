@@ -489,9 +489,9 @@ bool ActorManager::SaveScene(Ogre::String filename)
         j_entry.AddMember("filename", j_bq_filename, j_doc.GetAllocator());
 
         rapidjson::Value j_actor_position(rapidjson::kArrayType);
-        j_actor_position.PushBack(actor->ar_nodes[0].AbsPosition.x, j_doc.GetAllocator());
-        j_actor_position.PushBack(actor->ar_nodes[0].AbsPosition.y, j_doc.GetAllocator());
-        j_actor_position.PushBack(actor->ar_nodes[0].AbsPosition.z, j_doc.GetAllocator());
+        j_actor_position.PushBack(actor->ar_nodes_AbsPosition[0].x, j_doc.GetAllocator());
+        j_actor_position.PushBack(actor->ar_nodes_AbsPosition[0].y, j_doc.GetAllocator());
+        j_actor_position.PushBack(actor->ar_nodes_AbsPosition[0].z, j_doc.GetAllocator());
         j_entry.AddMember("position", j_actor_position, j_doc.GetAllocator());
         j_entry.AddMember("rotation", actor->getRotation(), j_doc.GetAllocator());
         j_entry.AddMember("min_height", actor->getMinHeight(), j_doc.GetAllocator());
@@ -723,14 +723,14 @@ bool ActorManager::SaveScene(Ogre::String filename)
             rapidjson::Value j_node(rapidjson::kArrayType);
 
             // Position
-            j_node.PushBack(actor->ar_nodes[i].AbsPosition.x, j_doc.GetAllocator());
-            j_node.PushBack(actor->ar_nodes[i].AbsPosition.y, j_doc.GetAllocator());
-            j_node.PushBack(actor->ar_nodes[i].AbsPosition.z, j_doc.GetAllocator());
+            j_node.PushBack(actor->ar_nodes_AbsPosition[i].x, j_doc.GetAllocator());
+            j_node.PushBack(actor->ar_nodes_AbsPosition[i].y, j_doc.GetAllocator());
+            j_node.PushBack(actor->ar_nodes_AbsPosition[i].z, j_doc.GetAllocator());
 
             // Velocity
-            j_node.PushBack(actor->ar_nodes[i].Velocity.x, j_doc.GetAllocator());
-            j_node.PushBack(actor->ar_nodes[i].Velocity.y, j_doc.GetAllocator());
-            j_node.PushBack(actor->ar_nodes[i].Velocity.z, j_doc.GetAllocator());
+            j_node.PushBack(actor->ar_nodes_Velocity[i].x, j_doc.GetAllocator());
+            j_node.PushBack(actor->ar_nodes_Velocity[i].y, j_doc.GetAllocator());
+            j_node.PushBack(actor->ar_nodes_Velocity[i].z, j_doc.GetAllocator());
 
             // Initial Position
             j_node.PushBack(actor->ar_initial_node_positions[i].x, j_doc.GetAllocator());
@@ -938,9 +938,9 @@ void ActorManager::RestoreSavedState(ActorPtr actor, rapidjson::Value const& j_e
     for (rapidjson::SizeType i = 0; i < nodes.Size(); i++)
     {
         auto data = nodes[i].GetArray();
-        actor->ar_nodes[i].AbsPosition      = Vector3(data[0].GetFloat(), data[1].GetFloat(), data[2].GetFloat());
-        actor->ar_nodes[i].RelPosition      = actor->ar_nodes[i].AbsPosition - actor->ar_origin;
-        actor->ar_nodes[i].Velocity         = Vector3(data[3].GetFloat(), data[4].GetFloat(), data[5].GetFloat());
+        actor->ar_nodes_AbsPosition[i]      = Vector3(data[0].GetFloat(), data[1].GetFloat(), data[2].GetFloat());
+        actor->ar_nodes_RelPosition[i]      = actor->ar_nodes_AbsPosition[i] - actor->ar_origin;
+        actor->ar_nodes_Velocity[i]         = Vector3(data[3].GetFloat(), data[4].GetFloat(), data[5].GetFloat());
         actor->ar_initial_node_positions[i] = Vector3(data[6].GetFloat(), data[7].GetFloat(), data[8].GetFloat());
     }
 

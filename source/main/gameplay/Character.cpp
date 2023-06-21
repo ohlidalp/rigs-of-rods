@@ -166,9 +166,9 @@ void Character::update(float dt)
                     for (int i = 0; i < actor->ar_num_collcabs; i++)
                     {
                         int tmpv = actor->ar_collcabs[i] * 3;
-                        Vector3 a = actor->ar_nodes[actor->ar_cabs[tmpv + 0]].AbsPosition;
-                        Vector3 b = actor->ar_nodes[actor->ar_cabs[tmpv + 1]].AbsPosition;
-                        Vector3 c = actor->ar_nodes[actor->ar_cabs[tmpv + 2]].AbsPosition;
+                        Vector3 a = actor->ar_nodes_AbsPosition[actor->ar_cabs[tmpv + 0]];
+                        Vector3 b = actor->ar_nodes_AbsPosition[actor->ar_cabs[tmpv + 1]];
+                        Vector3 c = actor->ar_nodes_AbsPosition[actor->ar_cabs[tmpv + 2]];
                         auto result = Math::intersects(Ray(position, Vector3::UNIT_Y), a, b, c);
                         if (result.first && result.second < 1.8f)
                         {

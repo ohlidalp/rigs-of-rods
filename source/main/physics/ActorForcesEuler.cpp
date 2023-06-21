@@ -77,7 +77,7 @@ void Actor::CalcForceFeedback(bool doUpdate)
 
         if (ar_current_cinecam != CINECAMERAID_INVALID)
         {
-            m_force_sensors.accu_body_forces += ar_nodes[ar_cameras[ar_current_cinecam].camera_node_pos].Forces;
+            m_force_sensors.accu_body_forces += ar_nodes_Forces[ar_cameras[ar_current_cinecam].camera_node_pos];
         }
 
         for (hydrobeam_t& hydrobeam: ar_hydros)
@@ -95,8 +95,8 @@ void Actor::CalcMouse()
 {
     if (m_mouse_grab_node != NODENUM_INVALID)
     {
-        Vector3 dir = m_mouse_grab_pos - ar_nodes[m_mouse_grab_node].AbsPosition;
-        ar_nodes[m_mouse_grab_node].Forces += m_mouse_grab_move_force * dir;
+        Vector3 dir = m_mouse_grab_pos - ar_nodes_AbsPosition[m_mouse_grab_node];
+        ar_nodes_Forces[m_mouse_grab_node] += m_mouse_grab_move_force * dir;
     }
 }
 
@@ -126,12 +126,11 @@ void Actor::CalcFuseDrag()
 {
     if (m_fusealge_airfoil && m_fusealge_width > 0.0f)
     {
-        node_t& nodefront = ar_nodes[m_fusealge_front];
-        node_t& nodeback = ar_nodes[m_fusealge_back];
 
-        Vector3 wind = -nodefront.Velocity;
+
+        Vector3 wind = -ar_nodes_Velocity[m_fusealge_front];
         float wspeed = wind.length();
-        Vector3 axis = nodefront.RelPosition - nodeback.RelPosition;
+        Vector3 axis = ar_nodes_RelPosition[m_fusealge_front] - ar_nodes_RelPosition[m_fusealge_back];
         float s = axis.length() * m_fusealge_width;
         float cz, cx, cm;
         float v = axis.getRotationTo(wind).w;
@@ -141,7 +140,7 @@ void Actor::CalcFuseDrag()
         m_fusealge_airfoil->getparams(aoa, 1.0, 0.0, &cz, &cx, &cm);
 
         //tropospheric model valid up to 11.000m (33.000ft)
-        float altitude = nodefront.AbsPosition.y;
+        float altitude = ar_nodes_AbsPosition[m_fusealge_front].y;
         float sea_level_pressure = 101325; //in Pa
         float airpressure = sea_level_pressure * approx_pow(1.0 - 0.0065 * altitude / 288.1, 5.24947); //in Pa
         float airdensity = airpressure * 0.0000120896f;//1.225 at sea level
@@ -176,13 +175,13 @@ void Actor::CalcBuoyance(bool doUpdate)
         {
             // Refresh cached node from current simulation state
             NodeNum_t nodenum = m_buoyance->buoy_cached_nodes[i].nodenum;
-            m_buoyance->buoy_cached_nodes[i].AbsPosition = ar_nodes[nodenum].AbsPosition;
-            m_buoyance->buoy_cached_nodes[i].Velocity    = ar_nodes[nodenum].Velocity;
+            m_buoyance->buoy_cached_nodes[i].AbsPosition = ar_nodes_AbsPosition[nodenum];
+            m_buoyance->buoy_cached_nodes[i].Velocity    = ar_nodes_Velocity[nodenum];
             m_buoyance->buoy_cached_nodes[i].Forces      = Ogre::Vector3::ZERO;
 
             // Projected node: advance position by N steps
-            m_buoyance->buoy_projected_nodes[i].AbsPosition = ar_nodes[nodenum].AbsPosition + ar_nodes[nodenum].Velocity * timeshift_sec;
-            m_buoyance->buoy_projected_nodes[i].Velocity = ar_nodes[nodenum].Velocity;
+            m_buoyance->buoy_projected_nodes[i].AbsPosition = ar_nodes_AbsPosition[nodenum] + ar_nodes_Velocity[nodenum] * timeshift_sec;
+            m_buoyance->buoy_projected_nodes[i].Velocity = ar_nodes_Velocity[nodenum];
             m_buoyance->buoy_projected_nodes[i].Forces   = Ogre::Vector3::ZERO;
         }
 
@@ -207,7 +206,7 @@ void Actor::CalcBuoyance(bool doUpdate)
         // Apply forces to nodes.
         for (const BuoyCachedNode& bcn: m_buoyance->buoy_cached_nodes)
         {
-            ar_nodes[bcn.nodenum].Forces += bcn.Forces;
+            ar_nodes_Forces[bcn.nodenum] += bcn.Forces;
         }
 
         m_buoyance->buoy_last_sample_steps = m_buoyance->buoy_total_steps;
@@ -224,7 +223,7 @@ void Actor::CalcBuoyance(bool doUpdate)
             const Ogre::Vector3& force_a = m_buoyance->buoy_cached_nodes[i].Forces;
             const Ogre::Vector3& force_b = m_buoyance->buoy_projected_nodes[i].Forces;
             Ogre::Vector3 interp_force = force_a * (1.0f - interp_ratio) + force_b * interp_ratio;
-            ar_nodes[nodenum].Forces += interp_force;
+            ar_nodes_Forces[nodenum] += interp_force;
         }
     }
 
@@ -370,7 +369,7 @@ void Actor::CalcWheels(bool doUpdate, int num_steps)
         if (ar_wheels[i].wh_is_detached)
             continue;
 
-        float relspeed = ar_nodes[0].Velocity.dotProduct(getDirection());
+        float relspeed = ar_nodes_Velocity[0].dotProduct(getDirection());
         float curspeed = fabs(relspeed);
         float wheel_slip = fabs(ar_wheels[i].wh_speed - relspeed) / std::max(1.0f, curspeed);
 
@@ -444,13 +443,13 @@ void Actor::CalcWheels(bool doUpdate, int num_steps)
 
         ar_wheels[i].debug_torque += ar_wheels[i].wh_torque / (float)num_steps;
 
-        node_t& axisnode0 = ar_nodes[ar_wheels[i].wh_axis_node0num];
-        node_t& axisnode1 = ar_nodes[ar_wheels[i].wh_axis_node1num];
-        node_t& armnode = ar_nodes[ar_wheels[i].wh_arm_nodenum];
-        node_t& nearnode = ar_nodes[ar_wheels[i].wh_near_attach_nodenum];
+        const NodeNum_t axisnode0 = ar_wheels[i].wh_axis_node0num;
+        const NodeNum_t axisnode1 = ar_wheels[i].wh_axis_node1num;
+        const NodeNum_t armnode   = ar_wheels[i].wh_arm_nodenum;
+        const NodeNum_t nearnode  = ar_wheels[i].wh_near_attach_nodenum;
 
         // application to wheel
-        Vector3 axis = (axisnode1.RelPosition - axisnode0.RelPosition).normalisedCopy();
+        Vector3 axis = (ar_nodes_RelPosition[axisnode1] - ar_nodes_RelPosition[axisnode0]).normalisedCopy();
         float axis_precalc = ar_wheels[i].wh_torque / (Real)(ar_wheels[i].wh_tire_nodes.size());
 
         float expected_wheel_speed = ar_wheels[i].wh_speed;
@@ -461,10 +460,10 @@ void Actor::CalcWheels(bool doUpdate, int num_steps)
         Vector3 force = Vector3::ZERO;
         for (size_t j = 0; j < ar_wheels[i].wh_tire_nodes.size(); j++)
         {
-            node_t* outer_node = &ar_nodes[ar_wheels[i].wh_tire_nodes[j]];
-            node_t* inner_node = (j % 2) ? (&ar_nodes[ar_wheels[i].wh_axis_node1num]) : (&ar_nodes[ar_wheels[i].wh_axis_node0num]);
+            const NodeNum_t outer_node = ar_wheels[i].wh_tire_nodes[j];
+            const NodeNum_t inner_node = (j % 2) ? ar_wheels[i].wh_axis_node1num : ar_wheels[i].wh_axis_node0num;
 
-            Vector3 radius = outer_node->RelPosition - inner_node->RelPosition;
+            Vector3 radius = ar_nodes_RelPosition[outer_node] - ar_nodes_RelPosition[inner_node];
             float inverted_rlen = 1.0f / radius.length();
 
             if (ar_wheels[i].wh_propulsed == WheelPropulsion::BACKWARD)
@@ -473,8 +472,8 @@ void Actor::CalcWheels(bool doUpdate, int num_steps)
             }
 
             Vector3 dir = axis.crossProduct(radius) * inverted_rlen;
-            (&ar_nodes[ar_wheels[i].wh_tire_nodes[j]])->Forces += dir * axis_precalc * inverted_rlen;
-            ar_wheels[i].wh_speed += (outer_node->Velocity - inner_node->Velocity).dotProduct(dir);
+            ar_nodes_Forces[ar_wheels[i].wh_tire_nodes[j]] += dir * axis_precalc * inverted_rlen;
+            ar_wheels[i].wh_speed += (ar_nodes_Velocity[outer_node] - ar_nodes_Velocity[inner_node]).dotProduct(dir);
 
             if ((&ar_nodes[ar_wheels[i].wh_tire_nodes[j]])->nd_has_ground_contact || (&ar_nodes[ar_wheels[i].wh_tire_nodes[j]])->nd_has_mesh_contact)
             {
@@ -490,7 +489,7 @@ void Actor::CalcWheels(bool doUpdate, int num_steps)
             slip /= contact_counter; // average slip vector
             force /= contact_counter; // average force vector
             Vector3 normal = force.normalisedCopy(); // contact plane normal
-            Vector3 v = axisnode0.Velocity.midPoint(axisnode1.Velocity);
+            Vector3 v = ar_nodes_Velocity[axisnode0].midPoint(ar_nodes_Velocity[axisnode1]);
             Vector3 vel = v - v.dotProduct(normal) * normal;
             ar_wheels[i].debug_vel   += vel / (float)num_steps;
             ar_wheels[i].debug_slip  += slip / (float)num_steps;
@@ -513,8 +512,8 @@ void Actor::CalcWheels(bool doUpdate, int num_steps)
         ar_wheels[i].wh_last_retorque = ar_wheels[i].wh_mass * (ar_wheels[i].wh_speed - expected_wheel_speed) / PHYSICS_DT;
 
         // reaction torque
-        Vector3 rradius = armnode.RelPosition - nearnode.RelPosition;
-        Vector3 radius = Plane(axis, nearnode.RelPosition).projectVector(rradius);
+        Vector3 rradius = ar_nodes_RelPosition[armnode] - ar_nodes_RelPosition[nearnode];
+        Vector3 radius = Plane(axis, ar_nodes_RelPosition[nearnode]).projectVector(rradius);
         float offset = (rradius - radius).length(); // length of the error arm
         Real rlen = radius.normalise(); // length of the projected arm
         // TODO: Investigate the offset length abort condition ~ ulteq 10/2018
@@ -523,8 +522,8 @@ void Actor::CalcWheels(bool doUpdate, int num_steps)
             Vector3 cforce = axis.crossProduct(radius);
             // modulate the force according to induced torque error
             cforce *= (0.5f * ar_wheels[i].wh_torque / rlen) * (1.0f - ((offset * 2.0f) / rlen)); // linear modulation
-            armnode.Forces -= cforce;
-            nearnode.Forces += cforce;
+            ar_nodes_Forces[armnode] -= cforce;
+            ar_nodes_Forces[nearnode] += cforce;
             ar_wheels[i].debug_scaled_cforce += cforce / ar_total_mass / (float)num_steps;
         }
 
@@ -1086,8 +1085,8 @@ void Actor::CalcCommands(bool doUpdate)
         for (size_t i = 0; i < ar_rotators.size(); i++)
         {
             // compute rotation axis
-            Vector3 ax1 = ar_nodes[ar_rotators[i].axis1].RelPosition;
-            Vector3 ax2 = ar_nodes[ar_rotators[i].axis2].RelPosition;
+            Vector3 ax1 = ar_nodes_RelPosition[ar_rotators[i].axis1];
+            Vector3 ax2 = ar_nodes_RelPosition[ar_rotators[i].axis2];
             Vector3 axis = ax1 - ax2;
             axis.normalise();
             // find the reference plane
@@ -1097,8 +1096,8 @@ void Actor::CalcCommands(bool doUpdate)
             for (int k = 0; k < 2; k++)
             {
                 // find the reference vectors
-                Vector3 ref1 = pl.projectVector(ax1 - ar_nodes[ar_rotators[i].nodes1[k]].RelPosition);
-                Vector3 ref2 = pl.projectVector(ax2 - ar_nodes[ar_rotators[i].nodes2[k]].RelPosition);
+                Vector3 ref1 = pl.projectVector(ax1 - ar_nodes_RelPosition[ar_rotators[i].nodes1[k]]);
+                Vector3 ref2 = pl.projectVector(ax2 - ar_nodes_RelPosition[ar_rotators[i].nodes2[k]]);
                 float ref1len = ref1.normalise();
                 float ref2len = ref2.normalise();
                 // theory vector
@@ -1117,11 +1116,11 @@ void Actor::CalcCommands(bool doUpdate)
                 if (ref2len <= ar_rotators[i].tolerance)
                     ref2len = 0.0f;
 
-                ar_nodes[ar_rotators[i].nodes1[k    ]].Forces += (aerror * ref1len * rigidity) * dir1;
-                ar_nodes[ar_rotators[i].nodes2[k    ]].Forces -= (aerror * ref2len * rigidity) * dir2;
+                ar_nodes_Forces[ar_rotators[i].nodes1[k    ]] += (aerror * ref1len * rigidity) * dir1;
+                ar_nodes_Forces[ar_rotators[i].nodes2[k    ]] -= (aerror * ref2len * rigidity) * dir2;
                 // symmetric
-                ar_nodes[ar_rotators[i].nodes1[k + 2]].Forces -= (aerror * ref1len * rigidity) * dir1;
-                ar_nodes[ar_rotators[i].nodes2[k + 2]].Forces += (aerror * ref2len * rigidity) * dir2;
+                ar_nodes_Forces[ar_rotators[i].nodes1[k + 2]] -= (aerror * ref1len * rigidity) * dir1;
+                ar_nodes_Forces[ar_rotators[i].nodes2[k + 2]] += (aerror * ref2len * rigidity) * dir2;
             }
         }
     }
@@ -1218,7 +1217,7 @@ void Actor::CalcBeams(bool trigger_hooks)
         if (!ar_beams[i].bm_disabled && !ar_beams[i].bm_inter_actor)
         {
             // Calculate beam length
-            Vector3 dis = ar_nodes[ar_beams[i].p1num].RelPosition - ar_nodes[ar_beams[i].p2num].RelPosition;
+            Vector3 dis = ar_nodes_RelPosition[ar_beams[i].p1num] - ar_nodes_RelPosition[ar_beams[i].p2num];
 
             Real dislen = dis.squaredLength();
             Real inverted_dislen = fast_invSqrt(dislen);
@@ -1232,7 +1231,7 @@ void Actor::CalcBeams(bool trigger_hooks)
             Real d = ar_beams[i].d;
 
             // Calculate beam's rate of change
-            float v = (ar_nodes[ar_beams[i].p1num].Velocity - ar_nodes[ar_beams[i].p2num].Velocity).dotProduct(dis) * inverted_dislen;
+            float v = (ar_nodes_Velocity[ar_beams[i].p1num] - ar_nodes_Velocity[ar_beams[i].p2num]).dotProduct(dis) * inverted_dislen;
 
             if (ar_beams[i].bounded == SHOCK1)
             {
@@ -1464,8 +1463,8 @@ void Actor::CalcBeams(bool trigger_hooks)
             // At last update the beam forces
             Vector3 f = dis;
             f *= (slen * inverted_dislen);
-            ar_nodes[ar_beams[i].p1num].Forces += f;
-            ar_nodes[ar_beams[i].p2num].Forces -= f;
+            ar_nodes_Forces[ar_beams[i].p1num] += f;
+            ar_nodes_Forces[ar_beams[i].p2num] -= f;
         }
     }
 }
@@ -1486,11 +1485,22 @@ void Actor::CalcBeamsInterActor()
     {
         if (!ar_inter_beams[i]->bm_disabled && ar_inter_beams[i]->bm_inter_actor)
         {
-            node_t& node_p1 = ar_nodes[ar_inter_beams[i]->p1num];
-            node_t& node_p2 = ar_inter_beams[i]->bm_locked_actor->ar_nodes[ar_inter_beams[i]->p2num];
+            Actor* const actor1 = this;
+            ActorPtr& actor2 = ar_inter_beams[i]->bm_locked_actor;
+
+            const NodeNum_t node1 = ar_inter_beams[i]->p1num;
+            const NodeNum_t node2 = ar_inter_beams[i]->p2num;
+
+            const node_t& node_p1             = actor1->ar_nodes[ar_inter_beams[i]->p1num];
+            const Vector3 node_p1_AbsPosition = actor1->ar_nodes_AbsPosition[ar_inter_beams[i]->p1num];
+            const Vector3 node_p1_Velocity    = actor1->ar_nodes_Velocity[ar_inter_beams[i]->p1num];
+
+            const node_t& node_p2             = actor2->ar_nodes[ar_inter_beams[i]->p2num];
+            const Vector3 node_p2_AbsPosition = actor2->ar_nodes_AbsPosition[ar_inter_beams[i]->p2num];
+            const Vector3 node_p2_Velocity    = actor2->ar_nodes_Velocity[ar_inter_beams[i]->p2num];
 
             // Calculate beam length
-            Vector3 dis = node_p1.AbsPosition - node_p2.AbsPosition;
+            Vector3 dis = node_p1_AbsPosition - node_p2_AbsPosition;
 
             Real dislen = dis.squaredLength();
             Real inverted_dislen = fast_invSqrt(dislen);
@@ -1510,7 +1520,7 @@ void Actor::CalcBeamsInterActor()
             }
 
             // Calculate beam's rate of change
-            Vector3 v = node_p1.Velocity - node_p2.Velocity;
+            Vector3 v = node_p1_Velocity - node_p2_Velocity;
 
             float slen = -k * (difftoBeamL) - d * v.dotProduct(dis) * inverted_dislen;
             ar_inter_beams[i]->stress = slen;
@@ -1610,8 +1620,8 @@ void Actor::CalcBeamsInterActor()
             // At last update the beam forces
             Vector3 f = dis;
             f *= (slen * inverted_dislen);
-            node_p1.Forces += f;
-            node_p2.Forces -= f;
+            actor1->ar_nodes_Forces[node1] += f;
+            actor2->ar_nodes_Forces[node2] -= f;
         }
     }
 }
@@ -1627,7 +1637,7 @@ void Actor::CalcNodes()
         // COLLISION
         if (!ar_nodes[i].nd_no_ground_contact)
         {
-            Vector3 oripos = ar_nodes[i].AbsPosition;
+            Vector3 oripos = ar_nodes_AbsPosition[i];
             bool contacted = App::GetGameContext()->GetTerrain()->GetCollisions()->groundCollision(this, i, PHYSICS_DT);
             contacted = contacted | App::GetGameContext()->GetTerrain()->GetCollisions()->nodeCollision(this, i, PHYSICS_DT);
             ar_nodes[i].nd_has_ground_contact = contacted;
@@ -1636,32 +1646,32 @@ void Actor::CalcNodes()
                 ar_last_fuzzy_ground_model = ar_nodes[i].nd_last_collision_gm;
                 // Reverts: commit/d11a88142f737528638bd357c38d717c85cebba6#diff-4003254e55aec2c60d21228f375f2a2dL1153
                 // Fixes: Gavril Omega Six sliding on ground on the simple2 spawn
-                // ar_nodes[i].AbsPosition - oripos is always zero ... dark floating point magic
-                ar_nodes[i].RelPosition += ar_nodes[i].AbsPosition - oripos;
+                // ar_nodes_AbsPosition[i] - oripos is always zero ... dark floating point magic
+                ar_nodes_RelPosition[i] += ar_nodes_AbsPosition[i] - oripos;
             }
         }
 
         if (i == ar_cameras[0].camera_node_pos)
         {
             // record g forces on cameras
-            m_camera_gforces_accu += ar_nodes[i].Forces / ar_nodes[i].mass;
+            m_camera_gforces_accu += ar_nodes_Forces[i] / ar_nodes[i].mass;
         }
 
         // integration
         if (!ar_nodes[i].nd_immovable)
         {
-            ar_nodes[i].Velocity += ar_nodes[i].Forces / ar_nodes[i].mass * PHYSICS_DT;
-            ar_nodes[i].RelPosition += ar_nodes[i].Velocity * PHYSICS_DT;
-            ar_nodes[i].AbsPosition = ar_origin;
-            ar_nodes[i].AbsPosition += ar_nodes[i].RelPosition;
+            ar_nodes_Velocity[i] += ar_nodes_Forces[i] / ar_nodes[i].mass * PHYSICS_DT;
+            ar_nodes_RelPosition[i] += ar_nodes_Velocity[i] * PHYSICS_DT;
+            ar_nodes_AbsPosition[i] = ar_origin;
+            ar_nodes_AbsPosition[i] += ar_nodes_RelPosition[i];
         }
 
         // prepare next loop (optimisation)
         // we start forces from zero
         // start with gravity
-        ar_nodes[i].Forces = Vector3(0, ar_nodes[i].mass * gravity, 0);
+        ar_nodes_Forces[i] = Vector3(0, ar_nodes[i].mass * gravity, 0);
 
-        Real approx_speed = approx_sqrt(ar_nodes[i].Velocity.squaredLength());
+        Real approx_speed = approx_sqrt(ar_nodes_Velocity[i].squaredLength());
 
         // anti-explsion guard (mach 20)
         if (approx_speed > 6860 && !m_ongoing_reset)
@@ -1676,31 +1686,31 @@ void Actor::CalcNodes()
         if (m_fusealge_airfoil)
         {
             // aerodynamics on steroids!
-            ar_nodes[i].Forces += ar_fusedrag;
+            ar_nodes_Forces[i] += ar_fusedrag;
         }
         else if (!ar_disable_aerodyn_turbulent_drag)
         {
             // add viscous drag (turbulent model)
             Real defdragxspeed = DEFAULT_DRAG * approx_speed;
-            Vector3 drag = -defdragxspeed * ar_nodes[i].Velocity;
+            Vector3 drag = -defdragxspeed * ar_nodes_Velocity[i];
             // plus: turbulences
             Real maxtur = defdragxspeed * approx_speed * 0.005f;
             drag += maxtur * Vector3(frand_11(), frand_11(), frand_11());
-            ar_nodes[i].Forces += drag;
+            ar_nodes_Forces[i] += drag;
         }
 
         if (water)
         {
-            const bool is_under_water = water->IsUnderWater(ar_nodes[i].AbsPosition);
+            const bool is_under_water = water->IsUnderWater(ar_nodes_AbsPosition[i]);
             if (is_under_water)
             {
                 m_water_contact = true;
                 if (ar_num_buoycabs == 0)
                 {
                     // water drag (turbulent)
-                    ar_nodes[i].Forces -= (DEFAULT_WATERDRAG * approx_speed) * ar_nodes[i].Velocity;
+                    ar_nodes_Forces[i] -= (DEFAULT_WATERDRAG * approx_speed) * ar_nodes_Velocity[i];
                     // basic buoyance
-                    ar_nodes[i].Forces += ar_nodes[i].buoyancy * Vector3::UNIT_Y;
+                    ar_nodes_Forces[i] += ar_nodes[i].buoyancy * Vector3::UNIT_Y;
                 }
                 // engine stall
                 if (i == ar_cinecam_node[0] && ar_engine)
@@ -1713,13 +1723,13 @@ void Actor::CalcNodes()
     }
 }
 
-bool TestNodeEventBoxCollision(const node_t& node, collision_box_t* cbox)
+bool TestNodeEventBoxCollision(const Ogre::Vector3& node_abspos, const bool node_is_tire, collision_box_t* cbox)
 {
     // Test eventbox collision and extra 'only wheel nodes' filtering condition
     // ------------------------------------------------------------------------
 
-    return App::GetGameContext()->GetTerrain()->GetCollisions()->isInside(node.AbsPosition, cbox)
-        && (cbox->event_filter != EVENT_TRUCK_WHEELS || node.nd_tyre_node);
+    return App::GetGameContext()->GetTerrain()->GetCollisions()->isInside(node_abspos, cbox)
+        && (cbox->event_filter != EVENT_TRUCK_WHEELS || node_is_tire);
 }
 
 void Actor::CalcEventBoxes()
@@ -1746,7 +1756,7 @@ void Actor::CalcEventBoxes()
             if (itor->first == cbox)
             {
                 // Existing record found - check if the node still collides
-                has_collision = TestNodeEventBoxCollision(ar_nodes[itor->second], cbox);
+                has_collision = TestNodeEventBoxCollision(ar_nodes_AbsPosition[itor->second], ar_nodes[itor->second].nd_tyre_node, cbox);
                 if (!has_collision)
                 {
                     // Erase the collision record
@@ -1768,7 +1778,7 @@ void Actor::CalcEventBoxes()
             // Find if any node collides
             for (NodeNum_t i = 0; i < static_cast<int>(ar_nodes.size()); i++)
             {
-                has_collision = TestNodeEventBoxCollision(ar_nodes[i], cbox);
+                has_collision = TestNodeEventBoxCollision(ar_nodes_AbsPosition[i], ar_nodes[i].nd_tyre_node, cbox);
                 if (has_collision)
                 {
                     do_callback_exit = false;
@@ -1861,14 +1871,14 @@ void Actor::CalcRopes()
         if (r.rp_locked == LOCKED && r.rp_locked_ropable_id != ROPABLEID_INVALID)
         {
             ropable_t& locked_ropable = r.rp_locked_actor->ar_ropables[r.rp_locked_ropable_id];
-            node_t& locked_node = r.rp_locked_actor->ar_nodes[locked_ropable.rb_nodenum];
-            node_t& rope_node = ar_nodes[ar_beams[r.rp_beam].p2num];
+            const NodeNum_t locked_node = locked_ropable.rb_nodenum; // r.rp_locked_actor->ar_nodes[
+            const NodeNum_t rope_node = ar_beams[r.rp_beam].p2num; // ar_nodes[
 
-            rope_node.AbsPosition = locked_node.AbsPosition;
-            rope_node.RelPosition = locked_node.AbsPosition - ar_origin;
-            rope_node.Velocity    = locked_node.Velocity;
-            locked_node.Forces    += rope_node.Forces;
-            rope_node.Forces      = Vector3::ZERO;
+            ar_nodes_AbsPosition[rope_node] = r.rp_locked_actor->ar_nodes_AbsPosition[locked_node];
+            ar_nodes_RelPosition[rope_node] = r.rp_locked_actor->ar_nodes_AbsPosition[locked_node] - ar_origin;
+            ar_nodes_Velocity[rope_node]    = r.rp_locked_actor->ar_nodes_Velocity[locked_node];
+            r.rp_locked_actor->ar_nodes_Forces[locked_node]    += ar_nodes_Forces[rope_node];
+            ar_nodes_Forces[rope_node]      = Vector3::ZERO;
         }
     }
 }

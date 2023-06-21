@@ -56,25 +56,25 @@ void Screwprop::updateForces(int update)
     if (!App::GetGameContext()->GetTerrain()->getWater())
         return;
 
-    float depth = App::GetGameContext()->GetTerrain()->getWater()->CalcWavesHeight(m_actor->ar_nodes[noderef].AbsPosition) - m_actor->ar_nodes[noderef].AbsPosition.y;
+    float depth = App::GetGameContext()->GetTerrain()->getWater()->CalcWavesHeight(m_actor->ar_nodes_AbsPosition[noderef]) - m_actor->ar_nodes_AbsPosition[noderef].y;
     if (depth < 0)
         return; //out of water!
-    Vector3 dir = m_actor->ar_nodes[nodeback].RelPosition - m_actor->ar_nodes[noderef].RelPosition;
-    Vector3 rudaxis = m_actor->ar_nodes[noderef].RelPosition - m_actor->ar_nodes[nodeup].RelPosition;
+    Vector3 dir = m_actor->ar_nodes_RelPosition[nodeback] - m_actor->ar_nodes_RelPosition[noderef];
+    Vector3 rudaxis = m_actor->ar_nodes_RelPosition[noderef] - m_actor->ar_nodes_RelPosition[nodeup];
     dir.normalise();
     if (reverse)
         dir = -dir;
     rudaxis.normalise();
     dir = (throtle * fullpower) * (Quaternion(Degree(rudder), rudaxis) * dir);
-    m_actor->ar_nodes[noderef].Forces += dir;
+    m_actor->ar_nodes_Forces[noderef] += dir;
 
     if (update && splashp && throtle > 0.1)
     {
         if (depth < 0.2)
-            splashp->allocSplash(m_actor->ar_nodes[noderef].AbsPosition, 10.0 * dir / fullpower);
+            splashp->allocSplash(m_actor->ar_nodes_AbsPosition[noderef], 10.0 * dir / fullpower);
         else
-            splashp->allocSplash(m_actor->ar_nodes[noderef].AbsPosition, 5.0 * dir / fullpower);
-        ripplep->allocRipple(m_actor->ar_nodes[noderef].AbsPosition, 10.0 * dir / fullpower);
+            splashp->allocSplash(m_actor->ar_nodes_AbsPosition[noderef], 5.0 * dir / fullpower);
+        ripplep->allocRipple(m_actor->ar_nodes_AbsPosition[noderef], 10.0 * dir / fullpower);
     }
 }
 

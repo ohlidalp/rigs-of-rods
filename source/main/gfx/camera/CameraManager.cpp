@@ -212,10 +212,10 @@ void CameraManager::UpdateCurrentBehavior()
         const NodeNum_t dir_node  = m_cct_player_actor->ar_cameras[m_cct_player_actor->ar_current_cinecam].camera_node_dir ;
         const NodeNum_t roll_node = m_cct_player_actor->ar_cameras[m_cct_player_actor->ar_current_cinecam].camera_node_roll;
 
-        Vector3 dir  = (m_cct_player_actor->ar_nodes[pos_node].AbsPosition
-                - m_cct_player_actor->ar_nodes[dir_node].AbsPosition).normalisedCopy();
-        Vector3 roll = (m_cct_player_actor->ar_nodes[pos_node].AbsPosition
-                - m_cct_player_actor->ar_nodes[roll_node].AbsPosition).normalisedCopy();
+        Vector3 dir  = (m_cct_player_actor->ar_nodes_AbsPosition[pos_node]
+                - m_cct_player_actor->ar_nodes_AbsPosition[dir_node]).normalisedCopy();
+        Vector3 roll = (m_cct_player_actor->ar_nodes_AbsPosition[pos_node]
+                - m_cct_player_actor->ar_nodes_AbsPosition[roll_node]).normalisedCopy();
 
         if ( m_cct_player_actor->ar_cameras[m_cct_player_actor->ar_current_cinecam].camera_node_roll_inv )
         {
@@ -227,7 +227,7 @@ void CameraManager::UpdateCurrentBehavior()
 
         Quaternion orientation = Quaternion(m_cam_rot_x, up) * Quaternion(Degree(180.0) + m_cam_rot_y, roll) * Quaternion(roll, up, dir);
 
-        this->GetCameraNode()->setPosition(m_cct_player_actor->ar_nodes[m_cct_player_actor->ar_cinecam_node[m_cct_player_actor->ar_current_cinecam]].AbsPosition);
+        this->GetCameraNode()->setPosition(m_cct_player_actor->ar_nodes_AbsPosition[m_cct_player_actor->ar_cinecam_node[m_cct_player_actor->ar_current_cinecam]]);
         this->GetCameraNode()->setOrientation(orientation);
         return;
     }
@@ -723,7 +723,7 @@ void CameraManager::UpdateCameraBehaviorStatic()
             m_staticcam_force_update |= m_cct_player_actor->getPosition().distance(m_staticcam_look_at) > 100.0f;
         }
         m_staticcam_look_at = m_cct_player_actor->getPosition();
-        velocity = m_cct_player_actor->ar_nodes[0].Velocity * m_cct_sim_speed;
+        velocity = m_cct_player_actor->ar_nodes_Velocity[0] * m_cct_sim_speed;
         if (App::GetGameContext()->GetPlayerActor()->ar_driveable != AIRPLANE)
         {
             radius = m_cct_player_actor->getMinCameraRadius();
@@ -1113,7 +1113,7 @@ bool CameraManager::CameraBehaviorVehicleMousePressed()
 		if ( m_cct_player_actor && m_cct_player_actor->ar_custom_camera_node != NODENUM_INVALID)
 		{
 			// Calculate new camera distance
-			Vector3 lookAt = m_cct_player_actor->ar_nodes[m_cct_player_actor->ar_custom_camera_node].AbsPosition;
+			Vector3 lookAt = m_cct_player_actor->ar_nodes_AbsPosition[m_cct_player_actor->ar_custom_camera_node];
 			m_cam_dist = 2.0f * this->GetCameraNode()->getPosition().distance(lookAt);
 
 			// Calculate new camera pitch
@@ -1291,11 +1291,11 @@ void CameraManager::CameraBehaviorVehicleSplineCreateSpline()
             if (actor->ar_num_camera_rails <= 0)
                 continue;
 
-            Vector3 curSplineFront = m_cct_player_actor->ar_nodes[m_splinecam_spline_nodes.front()].AbsPosition;
-            Vector3 curSplineBack =  m_cct_player_actor->ar_nodes[m_splinecam_spline_nodes.back()].AbsPosition;
+            Vector3 curSplineFront = m_cct_player_actor->ar_nodes_AbsPosition[m_splinecam_spline_nodes.front()];
+            Vector3 curSplineBack =  m_cct_player_actor->ar_nodes_AbsPosition[m_splinecam_spline_nodes.back()];
 
-            Vector3 linkedSplineFront = actor->ar_nodes[actor->ar_camera_rail[0]].AbsPosition;
-            Vector3 linkedSplineBack = actor->ar_nodes[actor->ar_camera_rail[actor->ar_num_camera_rails - 1]].AbsPosition;
+            Vector3 linkedSplineFront = actor->ar_nodes_AbsPosition[actor->ar_camera_rail[0]];
+            Vector3 linkedSplineBack = actor->ar_nodes_AbsPosition[actor->ar_camera_rail[actor->ar_num_camera_rails - 1]];
 
             if (curSplineBack.distance(linkedSplineFront) < 5.0f)
             {
@@ -1330,7 +1330,7 @@ void CameraManager::CameraBehaviorVehicleSplineCreateSpline()
 
     for (unsigned int i = 0; i < m_splinecam_spline_nodes.size(); i++)
     {
-        m_splinecam_spline->addPoint(m_cct_player_actor->ar_nodes[m_splinecam_spline_nodes[i]].AbsPosition);
+        m_splinecam_spline->addPoint(m_cct_player_actor->ar_nodes_AbsPosition[m_splinecam_spline_nodes[i]]);
     }
 
     Vector3 firstPoint = m_splinecam_spline->getPoint(0);
@@ -1368,7 +1368,7 @@ void CameraManager::CameraBehaviorVehicleSplineUpdateSpline()
 {
     for (int i = 0; i < m_splinecam_spline->getNumPoints(); i++)
     {
-        m_splinecam_spline->updatePoint(i, m_cct_player_actor->ar_nodes[m_splinecam_spline_nodes[i]].AbsPosition);
+        m_splinecam_spline->updatePoint(i, m_cct_player_actor->ar_nodes_AbsPosition[m_splinecam_spline_nodes[i]]);
     }
 }
 

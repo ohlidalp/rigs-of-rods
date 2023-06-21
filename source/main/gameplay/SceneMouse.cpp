@@ -143,7 +143,7 @@ bool SceneMouse::handleMouseMoved()
                         continue;
 
                     // check if our ray intersects with the node
-                    std::pair<bool, Real> pair = mouseRay.intersects(Sphere(actor->ar_nodes[j].AbsPosition, 0.1f));
+                    std::pair<bool, Real> pair = mouseRay.intersects(Sphere(actor->ar_nodes_AbsPosition[j], 0.1f));
                     if (pair.first)
                     {
                         // we hit it, check if its the nearest node
@@ -279,7 +279,7 @@ bool SceneMouse::handleMousePressed()
 
             for (int i = 0; i < static_cast<int>(player_actor->ar_nodes.size()); i++)
             {
-                Vector3 pos = player_actor->ar_nodes[i].AbsPosition;
+                Vector3 pos = player_actor->ar_nodes_AbsPosition[i];
                 std::pair<bool, Real> pair = mouseRay.intersects(Sphere(pos, 0.25f));
                 if (pair.first)
                 {

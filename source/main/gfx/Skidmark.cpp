@@ -207,7 +207,7 @@ void RoR::Skidmark::UpdatePoint(Ogre::Vector3 contact_point, int index, float sl
 {
     Ogre::Vector3 thisPoint = contact_point;
     wheel_t& wheel = m_actor->ar_wheels[m_wheel];
-    Ogre::Vector3 axis = m_actor->ar_nodes[wheel.wh_axis_node1num].RelPosition - m_actor->ar_nodes[wheel.wh_axis_node0num].RelPosition;
+    Ogre::Vector3 axis = m_actor->ar_nodes_RelPosition[wheel.wh_axis_node1num] - m_actor->ar_nodes_RelPosition[wheel.wh_axis_node0num];
     if (index % 2)
     {
         axis = -axis;

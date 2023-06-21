@@ -869,14 +869,15 @@ void VehicleInfoTPanel::DrawVehicleCommandHighlights(RoR::GfxActor* actorx)
     ImDrawList* draw_list = GetImDummyFullscreenWindow("RoR_VehicleCommandHighlights");
     for (const commandbeam_t& cmdbeam: actorx->GetActor()->ar_command_key[m_hovered_commandkey].beams)
     {
-        const beam_t& beam = actorx->GetActor()->ar_beams[cmdbeam.cmb_beam_index];
-        const node_t& node1 = actorx->GetActor()->ar_nodes[beam.p1num];
-        const node_t& node2 = actorx->GetActor()->ar_nodes[beam.p2num];
+        const ActorPtr& actor = actorx->GetActor();
+        const beam_t& beam = actor->ar_beams[cmdbeam.cmb_beam_index];
+
         ImVec2 p1_pos, p2_pos;
-        if (GetScreenPosFromWorldPos(node1.AbsPosition, p1_pos) && GetScreenPosFromWorldPos(node2.AbsPosition, p2_pos))
+        if (GetScreenPosFromWorldPos(actor->ar_nodes_AbsPosition[beam.p1num], p1_pos) 
+            && GetScreenPosFromWorldPos(actor->ar_nodes_AbsPosition[beam.p2num], p2_pos))
         {
             draw_list->AddLine(p1_pos, p2_pos, ImColor(m_cmdbeam_highlight_color), m_cmdbeam_highlight_thickness);
-        }    
+        }
     }
 }
 

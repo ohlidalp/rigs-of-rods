@@ -216,7 +216,7 @@ void Actor::dispose()
     for (int i = 0; i < ar_num_screwprops; i++)
     {
         if (ar_screwprops[i])
-        {;
+        {
             ar_screwprops[i] = nullptr;
         }
     }
@@ -324,15 +324,15 @@ void Actor::scaleTruck(float value)
         hbeam.hb_speed *= value;
     }
     // scale nodes
-    Vector3 refpos = ar_nodes[0].AbsPosition;
-    Vector3 relpos = ar_nodes[0].RelPosition;
+    Vector3 refpos = ar_nodes_AbsPosition[0];
+    Vector3 relpos = ar_nodes_RelPosition[0];
     for (int i = 1; i < static_cast<int>(ar_nodes.size()); i++)
     {
         ar_initial_node_positions[i] = refpos + (ar_initial_node_positions[i] - refpos) * value;
-        ar_nodes[i].AbsPosition = refpos + (ar_nodes[i].AbsPosition - refpos) * value;
-        ar_nodes[i].RelPosition = relpos + (ar_nodes[i].RelPosition - relpos) * value;
-        ar_nodes[i].Velocity *= value;
-        ar_nodes[i].Forces *= value;
+        ar_nodes_AbsPosition[i] = refpos + (ar_nodes_AbsPosition[i] - refpos) * value;
+        ar_nodes_RelPosition[i] = relpos + (ar_nodes_RelPosition[i] - relpos) * value;
+        ar_nodes_Velocity[i] *= value;
+        ar_nodes_Forces[i] *= value;
         ar_nodes[i].mass *= value;
     }
     updateSlideNodePositions();
@@ -534,21 +534,21 @@ void Actor::calcNetwork()
         }        
 
         // linear interpolation
-        ar_nodes[i].AbsPosition = p1 + tratio * (p2 - p1);
-        ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
-        ar_nodes[i].Velocity    = (p2 - p1) * 1000.0f / (float)(oob2->time - oob1->time);
+        ar_nodes_AbsPosition[i] = p1 + tratio * (p2 - p1);
+        ar_nodes_RelPosition[i] = ar_nodes_AbsPosition[i] - ar_origin;
+        ar_nodes_Velocity[i]    = (p2 - p1) * 1000.0f / (float)(oob2->time - oob1->time);
     }
 
     for (int i = 0; i < static_cast<int>(ar_wheels.size()); i++)
     {
         float rp = net_rp1[i] + tratio * (net_rp2[i] - net_rp1[i]);
-        node_t& axisnode0 = ar_nodes[ar_wheels[i].wh_axis_node0num];
-        node_t& axisnode1 = ar_nodes[ar_wheels[i].wh_axis_node1num];
+        NodeNum_t axisnode0 = ar_wheels[i].wh_axis_node0num;
+        NodeNum_t axisnode1 = ar_wheels[i].wh_axis_node1num;
         //compute ideal positions
-        Vector3 axis = axisnode1.RelPosition - axisnode0.RelPosition;
+        Vector3 axis = ar_nodes_RelPosition[axisnode1] - ar_nodes_RelPosition[axisnode0];
         axis.normalise();
-        Plane pplan = Plane(axis, axisnode0.AbsPosition);
-        Vector3 ortho = -pplan.projectVector(ar_nodes[ar_wheels[i].wh_near_attach_nodenum].AbsPosition) - axisnode0.AbsPosition;
+        Plane pplan = Plane(axis, ar_nodes_AbsPosition[axisnode0]);
+        Vector3 ortho = -pplan.projectVector(ar_nodes_AbsPosition[ar_wheels[i].wh_near_attach_nodenum]) - ar_nodes_AbsPosition[axisnode0];
         Vector3 ray = ortho.crossProduct(axis);
         ray.normalise();
         ray *= ar_wheels[i].wh_radius;
@@ -557,14 +557,14 @@ void Actor::calcNetwork()
         {
             Vector3 uray = Quaternion(Radian(rp - drp * j), axis) * ray;
 
-            node_t& tirenode0 = ar_nodes[ar_wheels[i].wh_tire_nodes[j * 2 + 0]];
-            node_t& tirenode1 = ar_nodes[ar_wheels[i].wh_tire_nodes[j * 2 + 1]];
+            const NodeNum_t tirenode0 = ar_wheels[i].wh_tire_nodes[j * 2 + 0];
+            const NodeNum_t tirenode1 = ar_wheels[i].wh_tire_nodes[j * 2 + 1];
 
-            tirenode0.AbsPosition = axisnode0.AbsPosition + uray;
-            tirenode0.RelPosition = tirenode0.AbsPosition - ar_origin;
+            ar_nodes_AbsPosition[tirenode0] = ar_nodes_AbsPosition[axisnode0] + uray;
+            ar_nodes_RelPosition[tirenode0] = ar_nodes_AbsPosition[tirenode0] - ar_origin;
 
-            tirenode1.AbsPosition = axisnode1.AbsPosition + uray;
-            tirenode1.RelPosition = tirenode1.AbsPosition - ar_origin;
+            ar_nodes_AbsPosition[tirenode1] = ar_nodes_AbsPosition[axisnode1] + uray;
+            ar_nodes_RelPosition[tirenode1] = ar_nodes_AbsPosition[tirenode1] - ar_origin;
         }
         ray.normalise();
         ray *= ar_wheels[i].wh_rim_radius;
@@ -572,14 +572,14 @@ void Actor::calcNetwork()
         {
             Vector3 uray = Quaternion(Radian(rp - drp * j), axis) * ray;
 
-            node_t& rimnode0 = ar_nodes[ar_wheels[i].wh_rim_nodes[j * 2 + 0]];
-            node_t& rimnode1 = ar_nodes[ar_wheels[i].wh_rim_nodes[j * 2 + 1]];
+            const NodeNum_t rimnode0 = ar_wheels[i].wh_rim_nodes[j * 2 + 0];
+            const NodeNum_t rimnode1 = ar_wheels[i].wh_rim_nodes[j * 2 + 1];
 
-            rimnode0.AbsPosition = axisnode0.AbsPosition + uray;
-            rimnode0.RelPosition = rimnode0.AbsPosition - ar_origin;
+            ar_nodes_AbsPosition[rimnode0] = ar_nodes_AbsPosition[axisnode0] + uray;
+            ar_nodes_RelPosition[rimnode0] = ar_nodes_AbsPosition[rimnode0] - ar_origin;
 
-            rimnode1.AbsPosition = axisnode1.AbsPosition + uray;
-            rimnode1.RelPosition = rimnode1.AbsPosition - ar_origin;
+            ar_nodes_AbsPosition[rimnode1] = ar_nodes_AbsPosition[axisnode1] + uray;
+            ar_nodes_RelPosition[rimnode1] = ar_nodes_AbsPosition[rimnode1] - ar_origin;
         }
     }
     this->UpdateBoundingBoxes();
@@ -937,17 +937,17 @@ bool Actor::Intersects(ActorPtr other_actor, Vector3 offset)
             !(ar_nodes[p2num].nd_contacter || ar_nodes[p2num].nd_contactable))
             continue;
 
-        Vector3 origin = ar_nodes[p1num].AbsPosition + offset;
-        Vector3 target = ar_nodes[p2num].AbsPosition + offset;
+        Vector3 origin = ar_nodes_AbsPosition[ar_beams[i].p1num] + offset;
+        Vector3 target = ar_nodes_AbsPosition[ar_beams[i].p2num] + offset;
 
         Ray ray(origin, target - origin);
 
         for (int j = 0; j < other_actor->ar_num_collcabs; j++)
         {
             int index = other_actor->ar_collcabs[j] * 3;
-            Vector3 a = other_actor->ar_nodes[other_actor->ar_cabs[index + 0]].AbsPosition;
-            Vector3 b = other_actor->ar_nodes[other_actor->ar_cabs[index + 1]].AbsPosition;
-            Vector3 c = other_actor->ar_nodes[other_actor->ar_cabs[index + 2]].AbsPosition;
+            Vector3 a = other_actor->ar_nodes_AbsPosition[other_actor->ar_cabs[index + 0]];
+            Vector3 b = other_actor->ar_nodes_AbsPosition[other_actor->ar_cabs[index + 1]];
+            Vector3 c = other_actor->ar_nodes_AbsPosition[other_actor->ar_cabs[index + 2]];
 
             auto result = Ogre::Math::intersects(ray, a, b, c);
             if (result.first && result.second < 1.0f)
@@ -966,17 +966,17 @@ bool Actor::Intersects(ActorPtr other_actor, Vector3 offset)
             !(other_actor->ar_nodes[p2num].nd_contacter || other_actor->ar_nodes[p2num].nd_contactable))
             continue;
 
-        Vector3 origin = other_actor->ar_nodes[p1num].AbsPosition;
-        Vector3 target = other_actor->ar_nodes[p2num].AbsPosition;
+        Vector3 origin = other_actor->ar_nodes_AbsPosition[p1num];
+        Vector3 target = other_actor->ar_nodes_AbsPosition[p2num];
 
         Ray ray(origin, target - origin);
 
         for (int j = 0; j < ar_num_collcabs; j++)
         {
-            int index = ar_collcabs[j] * 3;
-            Vector3 a = ar_nodes[ar_cabs[index + 0]].AbsPosition + offset;
-            Vector3 b = ar_nodes[ar_cabs[index + 1]].AbsPosition + offset;
-            Vector3 c = ar_nodes[ar_cabs[index + 2]].AbsPosition + offset;
+            const int tmpv = ar_collcabs[j] * 3;
+            Vector3 a = ar_nodes_AbsPosition[ar_cabs[tmpv + 0]] + offset;
+            Vector3 b = ar_nodes_AbsPosition[ar_cabs[tmpv + 1]] + offset;
+            Vector3 c = ar_nodes_AbsPosition[ar_cabs[tmpv + 2]] + offset;
 
             auto result = Ogre::Math::intersects(ray, a, b, c);
             if (result.first && result.second < 1.0f)
@@ -1019,14 +1019,15 @@ Vector3 Actor::calculateCollisionOffset(Vector3 direction)
             {
                 for (int i = 0; i < actor->ar_num_collcabs; i++)
                 {
-                    int tmpv = actor->ar_collcabs[i] * 3;
-                    node_t* no = &actor->ar_nodes[actor->ar_cabs[tmpv]];
-                    node_t* na = &actor->ar_nodes[actor->ar_cabs[tmpv + 1]];
-                    node_t* nb = &actor->ar_nodes[actor->ar_cabs[tmpv + 2]];
+                    const int tmpv = actor->ar_collcabs[i] * 3;
+                    const NodeNum_t no = actor->ar_cabs[tmpv];
+                    const NodeNum_t na = actor->ar_cabs[tmpv + 1];
+                    const NodeNum_t nb = actor->ar_cabs[tmpv + 2];
 
-                    m_intra_point_col_detector->query(no->AbsPosition - collision_offset,
-                        na->AbsPosition - collision_offset,
-                        nb->AbsPosition - collision_offset,
+                    m_intra_point_col_detector->query(
+                        actor->ar_nodes_AbsPosition[no] - collision_offset,
+                        actor->ar_nodes_AbsPosition[na] - collision_offset,
+                        actor->ar_nodes_AbsPosition[nb] - collision_offset,
                         actor->ar_collision_range * 3.0f);
 
                     if (collision = !m_intra_point_col_detector->hit_list.empty())
@@ -1045,14 +1046,14 @@ Vector3 Actor::calculateCollisionOffset(Vector3 direction)
                 if (!ar_nodes[i].nd_contacter && !ar_nodes[i].nd_contactable)
                     continue;
 
-                Vector3 query_position = ar_nodes[i].AbsPosition + collision_offset;
+                Vector3 query_position = ar_nodes_AbsPosition[i] + collision_offset;
 
                 for (int j = 0; j < static_cast<int>(actor->ar_nodes.size()); j++)
                 {
                     if (!actor->ar_nodes[j].nd_contacter && !actor->ar_nodes[j].nd_contactable)
                         continue;
 
-                    if (collision = query_position.squaredDistance(actor->ar_nodes[j].AbsPosition) < proximity)
+                    if (collision = query_position.squaredDistance(actor->ar_nodes_AbsPosition[j]) < proximity)
                         break;
                 }
 
@@ -1070,13 +1071,14 @@ Vector3 Actor::calculateCollisionOffset(Vector3 direction)
             for (int i = 0; i < ar_num_collcabs; i++)
             {
                 int tmpv = ar_collcabs[i] * 3;
-                node_t* no = &ar_nodes[ar_cabs[tmpv]];
-                node_t* na = &ar_nodes[ar_cabs[tmpv + 1]];
-                node_t* nb = &ar_nodes[ar_cabs[tmpv + 2]];
+                const NodeNum_t no = ar_cabs[tmpv];
+                const NodeNum_t na = ar_cabs[tmpv + 1];
+                const NodeNum_t nb = ar_cabs[tmpv + 2];
 
-                m_inter_point_col_detector->query(no->AbsPosition + collision_offset,
-                    na->AbsPosition + collision_offset,
-                    nb->AbsPosition + collision_offset,
+                m_inter_point_col_detector->query(
+                    ar_nodes_AbsPosition[no] + collision_offset,
+                    ar_nodes_AbsPosition[na] + collision_offset,
+                    ar_nodes_AbsPosition[nb] + collision_offset,
                     ar_collision_range * 3.0f);
 
                 if (collision = !m_inter_point_col_detector->hit_list.empty())
@@ -1121,7 +1123,7 @@ void Actor::resolveCollisions(Ogre::Vector3 direction)
     // Additional 20 cm safe-guard (horizontally)
     offset += 0.2f * Vector3(offset.x, 0.0f, offset.z).normalisedCopy();
 
-    resetPosition(ar_nodes[0].AbsPosition.x + offset.x, ar_nodes[0].AbsPosition.z + offset.z, false, this->getMinHeight() + offset.y);
+    resetPosition(ar_nodes_AbsPosition[0].x + offset.x, ar_nodes_AbsPosition[0].z + offset.z, false, this->getMinHeight() + offset.y);
 }
 
 void Actor::resolveCollisions(float max_distance, bool consider_up)
@@ -1160,7 +1162,7 @@ void Actor::resolveCollisions(float max_distance, bool consider_up)
     // Additional 20 cm safe-guard (horizontally)
     offset += 0.2f * Vector3(offset.x, 0.0f, offset.z).normalisedCopy();
 
-    resetPosition(ar_nodes[0].AbsPosition.x + offset.x, ar_nodes[0].AbsPosition.z + offset.z, true, this->getMinHeight() + offset.y);
+    resetPosition(ar_nodes_AbsPosition[0].x + offset.x, ar_nodes_AbsPosition[0].z + offset.z, true, this->getMinHeight() + offset.y);
 }
 
 void Actor::calculateAveragePosition()
@@ -1168,17 +1170,17 @@ void Actor::calculateAveragePosition()
     // calculate average position
     if (ar_custom_camera_node != NODENUM_INVALID)
     {
-        m_avg_node_position = ar_nodes[ar_custom_camera_node].AbsPosition;
+        m_avg_node_position = ar_nodes_AbsPosition[ar_custom_camera_node];
     }
     else if (ar_extern_camera_mode == ExtCameraMode::CINECAM && ar_num_cinecams > 0)
     {
         // the new (strange) approach: reuse the cinecam node
-        m_avg_node_position = ar_nodes[ar_cinecam_node[0]].AbsPosition;
+        m_avg_node_position = ar_nodes_AbsPosition[ar_cinecam_node[0]];
     }
     else if (ar_extern_camera_mode == ExtCameraMode::NODE && ar_extern_camera_node != NODENUM_INVALID)
     {
         // the new (strange) approach #2: reuse a specified node
-        m_avg_node_position = ar_nodes[ar_extern_camera_node].AbsPosition;
+        m_avg_node_position = ar_nodes_AbsPosition[ar_extern_camera_node];
     }
     else
     {
@@ -1186,7 +1188,7 @@ void Actor::calculateAveragePosition()
         Vector3 aposition = Vector3::ZERO;
         for (int n = 0; n < static_cast<int>(ar_nodes.size()); n++)
         {
-            aposition += ar_nodes[n].AbsPosition;
+            aposition += ar_nodes_AbsPosition[n];
         }
         m_avg_node_position = aposition / static_cast<int>(ar_nodes.size());
     }
@@ -1213,17 +1215,17 @@ void Actor::UpdateBoundingBoxes()
     // To avoid performance choking by overstretched bounding box (happens when vehicle drops some nodes),
     // we set a maximum distance limit from the main camera.
     const float CABNODE_MAX_CAMDIST = 15.f;
-    const Ogre::Vector3 mainCamPos = ar_nodes[ar_cameras[0].camera_node_pos].RelPosition;
+    const Ogre::Vector3 mainCamPos = ar_nodes_RelPosition[ar_cameras[0].camera_node_pos];
 
     // Update
     for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
-        Vector3 vel = ar_nodes[i].Velocity;
-        Vector3 pos = ar_nodes[i].AbsPosition;
+        Vector3 vel = ar_nodes_Velocity[i];
+        Vector3 pos = ar_nodes_AbsPosition[i];
         BboxID_t cid = ar_nodes[i].nd_coll_bbox_id;
 
         ar_bounding_box.merge(pos);                                  // Current box
-        if (mainCamPos.squaredDistance(ar_nodes[i].RelPosition) < (CABNODE_MAX_CAMDIST*CABNODE_MAX_CAMDIST))
+        if (mainCamPos.squaredDistance(ar_nodes_RelPosition[i]) < (CABNODE_MAX_CAMDIST*CABNODE_MAX_CAMDIST))
         {
             ar_evboxes_bounding_box.merge(pos);
         }
@@ -1249,13 +1251,13 @@ void Actor::UpdateBoundingBoxes()
 
 void Actor::UpdatePhysicsOrigin()
 {
-    if (ar_nodes[0].RelPosition.squaredLength() > 10000.0)
+    if (ar_nodes_RelPosition[0].squaredLength() > 10000.0)
     {
-        Vector3 offset = ar_nodes[0].RelPosition;
+        Vector3 offset = ar_nodes_RelPosition[0];
         ar_origin += offset;
         for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
         {
-            ar_nodes[i].RelPosition -= offset;
+            ar_nodes_RelPosition[i] -= offset;
         }
     }
 }
@@ -1263,7 +1265,7 @@ void Actor::UpdatePhysicsOrigin()
 void Actor::ResetAngle(float rot)
 {
     // Set origin of rotation to camera node
-    Vector3 origin = ar_nodes[ar_cameras[0].camera_node_pos].AbsPosition;
+    Vector3 origin = ar_nodes_AbsPosition[ar_cameras[0].camera_node_pos];
 
     // Set up matrix for yaw rotation
     Matrix3 matrix;
@@ -1272,10 +1274,10 @@ void Actor::ResetAngle(float rot)
     for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
         // Move node back to origin, apply rotation matrix, and move node back
-        ar_nodes[i].AbsPosition -= origin;
-        ar_nodes[i].AbsPosition = matrix * ar_nodes[i].AbsPosition;
-        ar_nodes[i].AbsPosition += origin;
-        ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - this->ar_origin;
+        ar_nodes_AbsPosition[i] -= origin;
+        ar_nodes_AbsPosition[i] = matrix * ar_nodes_AbsPosition[i];
+        ar_nodes_AbsPosition[i] += origin;
+        ar_nodes_RelPosition[i] = ar_nodes_AbsPosition[i] - this->ar_origin;
     }
 
     this->UpdateBoundingBoxes();
@@ -1286,18 +1288,18 @@ void Actor::updateInitPosition()
 {
     for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
-        ar_initial_node_positions[i] = ar_nodes[i].AbsPosition;
+        ar_initial_node_positions[i] = ar_nodes_AbsPosition[i];
     }
 }
 
 void Actor::resetPosition(float px, float pz, bool setInitPosition, float miny)
 {
     // horizontal displacement
-    Vector3 offset = Vector3(px, ar_nodes[0].AbsPosition.y, pz) - ar_nodes[0].AbsPosition;
+    Vector3 offset = Vector3(px, ar_nodes_AbsPosition[0].y, pz) - ar_nodes_AbsPosition[0];
     for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
-        ar_nodes[i].AbsPosition += offset;
-        ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+        ar_nodes_AbsPosition[i] += offset;
+        ar_nodes_RelPosition[i] = ar_nodes_AbsPosition[i] - ar_origin;
     }
 
     // vertical displacement
@@ -1310,13 +1312,13 @@ void Actor::resetPosition(float px, float pz, bool setInitPosition, float miny)
     {
         if (ar_nodes[i].nd_no_ground_contact)
             continue;
-        float terrainHeight = App::GetGameContext()->GetTerrain()->getHeightAt(ar_nodes[i].AbsPosition.x, ar_nodes[i].AbsPosition.z);
-        vertical_offset += std::max(0.0f, terrainHeight - (ar_nodes[i].AbsPosition.y + vertical_offset));
+        float terrainHeight = App::GetGameContext()->GetTerrain()->getHeightAt(ar_nodes_AbsPosition[i].x, ar_nodes_AbsPosition[i].z);
+        vertical_offset += std::max(0.0f, terrainHeight - (ar_nodes_AbsPosition[i].y + vertical_offset));
     }
     for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
-        ar_nodes[i].AbsPosition.y += vertical_offset;
-        ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+        ar_nodes_AbsPosition[i].y += vertical_offset;
+        ar_nodes_RelPosition[i] = ar_nodes_AbsPosition[i] - ar_origin;
     }
 
     // mesh displacement
@@ -1330,7 +1332,7 @@ void Actor::resetPosition(float px, float pz, bool setInitPosition, float miny)
         float offset = mesh_offset;
         while (offset < 1.0f)
         {
-            Vector3 query = ar_nodes[i].AbsPosition + Vector3(0.0f, offset, 0.0f);
+            Vector3 query = ar_nodes_AbsPosition[i] + Vector3(0.0f, offset, 0.0f);
             if (!App::GetGameContext()->GetTerrain()->GetCollisions()->collisionCorrect(&query, false))
             {
                 mesh_offset = offset;
@@ -1341,8 +1343,8 @@ void Actor::resetPosition(float px, float pz, bool setInitPosition, float miny)
     }
     for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
-        ar_nodes[i].AbsPosition.y += mesh_offset;
-        ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+        ar_nodes_AbsPosition[i].y += mesh_offset;
+        ar_nodes_RelPosition[i] = ar_nodes_AbsPosition[i] - ar_origin;
     }
 
     resetPosition(Vector3::ZERO, setInitPosition);
@@ -1353,11 +1355,11 @@ void Actor::resetPosition(Ogre::Vector3 translation, bool setInitPosition)
     // total displacement
     if (translation != Vector3::ZERO)
     {
-        Vector3 offset = translation - ar_nodes[0].AbsPosition;
+        Vector3 offset = translation - ar_nodes_AbsPosition[0];
         for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
         {
-            ar_nodes[i].AbsPosition += offset;
-            ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+            ar_nodes_AbsPosition[i] += offset;
+            ar_nodes_RelPosition[i] = ar_nodes_AbsPosition[i] - ar_origin;
         }
     }
 
@@ -1365,7 +1367,7 @@ void Actor::resetPosition(Ogre::Vector3 translation, bool setInitPosition)
     {
         for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
         {
-            ar_initial_node_positions[i] = ar_nodes[i].AbsPosition;
+            ar_initial_node_positions[i] = ar_nodes_AbsPosition[i];
         }
     }
 
@@ -1382,18 +1384,18 @@ void Actor::softRespawn(Ogre::Vector3 spawnpos, Ogre::Quaternion spawnrot)
     ar_origin = spawnpos;
     for (NodeNum_t i = 0; i < this->getNodeCount(); i++)
     {
-        ar_nodes[i].AbsPosition = spawnpos + ar_nodes_spawn_offsets[i];
-        ar_nodes[i].RelPosition = ar_nodes_spawn_offsets[i];
-        ar_nodes[i].Forces = Ogre::Vector3::ZERO;
-        ar_nodes[i].Velocity = Ogre::Vector3::ZERO;
+        ar_nodes_AbsPosition[i] = spawnpos + ar_nodes_spawn_offsets[i];
+        ar_nodes_RelPosition[i] = ar_nodes_spawn_offsets[i];
+        ar_nodes_Forces[i] = Ogre::Vector3::ZERO;
+        ar_nodes_Velocity[i] = Ogre::Vector3::ZERO;
     }
 
     // Apply spawn position & spawn rotation
     // (code taken as-is from `ActorManager::CreateNewActor()`)
     for (NodeNum_t i = 0; i < this->getNodeCount(); i++)
     {
-        ar_nodes[i].AbsPosition = spawnpos + spawnrot * (ar_nodes[i].AbsPosition - spawnpos);
-        ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+        ar_nodes_AbsPosition[i] = spawnpos + spawnrot * (ar_nodes_AbsPosition[i] - spawnpos);
+        ar_nodes_RelPosition[i] = ar_nodes_AbsPosition[i] - ar_origin;
     };
 }
 
@@ -1553,7 +1555,7 @@ Ogre::Vector3 Actor::getRotationCenter()
     std::vector<Vector3> positions;
     for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
-        Vector3 pos = ar_nodes[i].AbsPosition;
+        Vector3 pos = ar_nodes_AbsPosition[i];
         const auto it = std::find_if(positions.begin(), positions.end(),
             [pos](const Vector3 ref) { return pos.positionEquals(ref, 0.01f); });
         if (it == positions.end())
@@ -1572,7 +1574,7 @@ float Actor::getMinHeight(bool skip_virtual_nodes)
     {
         if (!skip_virtual_nodes || !ar_nodes[i].nd_no_ground_contact)
         {
-            height = std::min(ar_nodes[i].AbsPosition.y, height);
+            height = std::min(ar_nodes_AbsPosition[i].y, height);
         }
     }
     return (!skip_virtual_nodes || height < std::numeric_limits<float>::max()) ? height : getMinHeight(false);
@@ -1585,7 +1587,7 @@ float Actor::getMaxHeight(bool skip_virtual_nodes)
     {
         if (!skip_virtual_nodes || !ar_nodes[i].nd_no_ground_contact)
         {
-            height = std::max(height, ar_nodes[i].AbsPosition.y);
+            height = std::max(height, ar_nodes_AbsPosition[i].y);
         }
     }
     return (!skip_virtual_nodes || height > std::numeric_limits<float>::min()) ? height : getMaxHeight(false);
@@ -1598,7 +1600,7 @@ float Actor::getHeightAboveGround(bool skip_virtual_nodes)
     {
         if (!skip_virtual_nodes || !ar_nodes[i].nd_no_ground_contact)
         {
-            Vector3 pos = ar_nodes[i].AbsPosition;
+            Vector3 pos = ar_nodes_AbsPosition[i];
             agl = std::min(pos.y - App::GetGameContext()->GetTerrain()->GetCollisions()->getSurfaceHeight(pos.x, pos.z), agl);
         }
     }
@@ -1612,7 +1614,7 @@ float Actor::getHeightAboveGroundBelow(float height, bool skip_virtual_nodes)
     {
         if (!skip_virtual_nodes || !ar_nodes[i].nd_no_ground_contact)
         {
-            Vector3 pos = ar_nodes[i].AbsPosition;
+            Vector3 pos = ar_nodes_AbsPosition[i];
             agl = std::min(pos.y - App::GetGameContext()->GetTerrain()->GetCollisions()->getSurfaceHeightBelow(pos.x, pos.z, height), agl);
         }
     }
@@ -1644,10 +1646,10 @@ void Actor::SoftReset()
     if (agl < 0.0f)
     {
         Vector3 translation = -agl * Vector3::UNIT_Y;
-        this->resetPosition(ar_nodes[0].AbsPosition + translation, false);
+        this->resetPosition(ar_nodes_AbsPosition[0] + translation, false);
         for (ActorPtr& actor : ar_linked_actors)
         {
-            actor->resetPosition(actor->ar_nodes[0].AbsPosition + translation, false);
+            actor->resetPosition(actor->ar_nodes_AbsPosition[0] + translation, false);
         }
     }
 
@@ -1680,16 +1682,16 @@ void Actor::SyncReset(bool reset_position)
 
     ar_origin = Vector3::ZERO;
     float cur_rot = getRotation();
-    Vector3 cur_position = ar_nodes[0].AbsPosition;
+    Vector3 cur_position = ar_nodes_AbsPosition[0];
 
     this->DisjoinInterActorBeams(); // OK to be invoked here - SyncReset() - `processing MSG_SIM_MODIFY_ACTOR_REQUESTED`
 
     for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
     {
-        ar_nodes[i].AbsPosition = ar_initial_node_positions[i];
-        ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
-        ar_nodes[i].Velocity = Vector3::ZERO;
-        ar_nodes[i].Forces = Vector3::ZERO;
+        ar_nodes_AbsPosition[i] = ar_initial_node_positions[i];
+        ar_nodes_RelPosition[i] = ar_nodes_AbsPosition[i] - ar_origin;
+        ar_nodes_Velocity[i] = Vector3::ZERO;
+        ar_nodes_Forces[i] = Vector3::ZERO;
     }
 
     for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
@@ -1781,7 +1783,7 @@ void Actor::SyncReset(bool reset_position)
         }
         if (agl < 0.0f)
         {
-            this->resetPosition(ar_nodes[0].AbsPosition - agl * Vector3::UNIT_Y, false);
+            this->resetPosition(ar_nodes_AbsPosition[0] - agl * Vector3::UNIT_Y, false);
         }
     }
     else
@@ -1908,14 +1910,14 @@ void Actor::searchBeamDefaults()
         this->CalcForcesEulerCompute(false, ar_nb_measure_steps);
         for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
         {
-            float v = ar_nodes[i].Velocity.length();
+            float v = ar_nodes_Velocity[i].length();
             sum_movement += v / (float)ar_nb_measure_steps;
             movement = std::max(movement, v);
         }
         for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
         {
-            Vector3 dis = (ar_nodes[ar_beams[i].p1num].RelPosition - ar_nodes[ar_beams[i].p2num].RelPosition).normalisedCopy();
-            float v = (ar_nodes[ar_beams[i].p1num].Velocity - ar_nodes[ar_beams[i].p2num].Velocity).dotProduct(dis);
+            Vector3 dis = (ar_nodes_RelPosition[ar_beams[i].p1num] - ar_nodes_RelPosition[ar_beams[i].p2num]).normalisedCopy();
+            float v = (ar_nodes_Velocity[ar_beams[i].p1num] - ar_nodes_Velocity[ar_beams[i].p2num]).dotProduct(dis);
             sum_velocity += std::abs(v) / (float)ar_nb_measure_steps;
             velocity = std::max(velocity, std::abs(v));
             sum_stress += std::abs(ar_beams[i].stress) / (float)ar_nb_measure_steps;
@@ -1966,12 +1968,12 @@ void Actor::HandleInputEvents(float dt)
 
         for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
         {
-            ar_nodes[i].AbsPosition -= m_rotation_request_center;
-            ar_nodes[i].AbsPosition = rot * ar_nodes[i].AbsPosition;
-            ar_nodes[i].AbsPosition += m_rotation_request_center;
-            ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
-            ar_nodes[i].Velocity = rot * ar_nodes[i].Velocity;
-            ar_nodes[i].Forces = rot * ar_nodes[i].Forces;
+            ar_nodes_AbsPosition[i] -= m_rotation_request_center;
+            ar_nodes_AbsPosition[i] = rot * ar_nodes_AbsPosition[i];
+            ar_nodes_AbsPosition[i] += m_rotation_request_center;
+            ar_nodes_RelPosition[i] = ar_nodes_AbsPosition[i] - ar_origin;
+            ar_nodes_Velocity[i] = rot * ar_nodes_Velocity[i];
+            ar_nodes_Forces[i] = rot * ar_nodes_Forces[i];
         }
 
         m_rotation_request = 0.0f;
@@ -1983,8 +1985,8 @@ void Actor::HandleInputEvents(float dt)
     {
         for (int i = 0; i < static_cast<int>(ar_nodes.size()); i++)
         {
-            ar_nodes[i].AbsPosition += m_translation_request;
-            ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+            ar_nodes_AbsPosition[i] += m_translation_request;
+            ar_nodes_RelPosition[i] = ar_nodes_AbsPosition[i] - ar_origin;
         }
 
         m_translation_request = Vector3::ZERO;
@@ -2117,7 +2119,7 @@ void Actor::sendStreamData()
         int i;
 
         // reference node first
-        Vector3& refpos = ar_nodes[0].AbsPosition;
+        Vector3& refpos = ar_nodes_AbsPosition[0];
         send_nodes[0] = refpos.x;
         send_nodes[1] = refpos.y;
         send_nodes[2] = refpos.z;
@@ -2128,7 +2130,7 @@ void Actor::sendStreamData()
         half_float::half* sbuf = (half_float::half*)ptr;
         for (i = 1; i < m_net_first_wheel_node; i++)
         {
-            Ogre::Vector3 relpos = ar_nodes[i].AbsPosition - ar_nodes[0].AbsPosition;
+            Ogre::Vector3 relpos = ar_nodes_AbsPosition[i] - ar_nodes_AbsPosition[i];
             sbuf[(i-1) * 3 + 0] = static_cast<half_float::half>(relpos.x);
             sbuf[(i-1) * 3 + 1] = static_cast<half_float::half>(relpos.y);
             sbuf[(i-1) * 3 + 2] = static_cast<half_float::half>(relpos.z);
@@ -2428,8 +2430,8 @@ void Actor::CalcAnimators(hydrobeam_t const& hydrobeam, float &cstate, int &div)
     // airspeed indicator
     if (hydrobeam.hb_anim_flags & ANIM_FLAG_AIRSPEED)
     {
-        float ground_speed_kt = ar_nodes[0].Velocity.length() * 1.9438;
-        float altitude = ar_nodes[0].AbsPosition.y;
+        float ground_speed_kt = ar_nodes_Velocity[0].length() * 1.9438;
+        float altitude = ar_nodes_AbsPosition[0].y;
         float sea_level_pressure = 101325; //in Pa
         float airpressure = sea_level_pressure * pow(1.0 - 0.0065 * altitude / 288.15, 5.24947); //in Pa
         float airdensity = airpressure * 0.0000120896;//1.225 at sea level
@@ -2441,7 +2443,7 @@ void Actor::CalcAnimators(hydrobeam_t const& hydrobeam, float &cstate, int &div)
     // vvi indicator
     if (hydrobeam.hb_anim_flags & ANIM_FLAG_VVI)
     {
-        float vvi = ar_nodes[0].Velocity.y * 196.85;
+        float vvi = ar_nodes_Velocity[0].y * 196.85;
         // limit vvi scale to +/- 6m/s
         cstate -= vvi / 6000.0f;
         if (cstate >= 1.0f)
@@ -2457,7 +2459,7 @@ void Actor::CalcAnimators(hydrobeam_t const& hydrobeam, float &cstate, int &div)
         //altimeter indicator 1k oscillating
         if (hydrobeam.hb_anim_param == 3.0f)
         {
-            float altimeter = (ar_nodes[0].AbsPosition.y * 1.1811) / 360.0f;
+            float altimeter = (ar_nodes_AbsPosition[0].y * 1.1811) / 360.0f;
             int alti_int = int(altimeter);
             float alti_mod = (altimeter - alti_int);
             cstate -= alti_mod;
@@ -2466,7 +2468,7 @@ void Actor::CalcAnimators(hydrobeam_t const& hydrobeam, float &cstate, int &div)
         //altimeter indicator 10k oscillating
         if (hydrobeam.hb_anim_param == 2.0f)
         {
-            float alti = ar_nodes[0].AbsPosition.y * 1.1811 / 3600.0f;
+            float alti = ar_nodes_AbsPosition[0].y * 1.1811 / 3600.0f;
             int alti_int = int(alti);
             float alti_mod = (alti - alti_int);
             cstate -= alti_mod;
@@ -2477,7 +2479,7 @@ void Actor::CalcAnimators(hydrobeam_t const& hydrobeam, float &cstate, int &div)
         //altimeter indicator 100k limited
         if (hydrobeam.hb_anim_param == 1.0f)
         {
-            float alti = ar_nodes[0].AbsPosition.y * 1.1811 / 36000.0f;
+            float alti = ar_nodes_AbsPosition[0].y * 1.1811 / 36000.0f;
             cstate -= alti;
             if (cstate <= -1.0f)
                 cstate = -1.0f;
@@ -2491,7 +2493,7 @@ void Actor::CalcAnimators(hydrobeam_t const& hydrobeam, float &cstate, int &div)
         float aoa = 0;
         if (ar_wings.size() > 4)
             aoa = (ar_wings[4].fa->aoa) / 25.0f;
-        if ((ar_nodes[0].Velocity.length() * 1.9438) < 10.0f)
+        if ((ar_nodes_Velocity[0].length() * 1.9438) < 10.0f)
             aoa = 0;
         cstate -= aoa;
         if (cstate <= -1.0f)
@@ -2721,6 +2723,7 @@ void Actor::CalcShocks3(int i, Real difftoBeamL, Real &k, Real& d, Real v)
 
 void Actor::CalcTriggers(int i, Real difftoBeamL, bool trigger_hooks)
 {
+    assert(ar_beams[i].bm_shockid != SHOCKID_INVALID);
     shock_t& shock = ar_shocks[ar_beams[i].bm_shockid];
 
     if ((shock.sk_flags & SHOCK_FLAG_ISTRIGGER) && shock.trigger_enabled) // this is a trigger and its enabled
@@ -3018,7 +3021,9 @@ void Actor::updateSkidmarks()
 
         for (size_t j = 0; j < ar_wheels[i].wh_tire_nodes.size(); j++)
         {
-            node_t* n = &ar_nodes[ar_wheels[i].wh_tire_nodes[j]];
+            const NodeNum_t nodenum = ar_wheels[i].wh_tire_nodes[j];
+            node_t* n = &ar_nodes[nodenum];
+
             if (!n || !n->nd_has_ground_contact || n->nd_last_collision_gm == nullptr ||
                     n->nd_last_collision_gm->fx_type != Collisions::FX_HARD)
             {
@@ -3026,7 +3031,7 @@ void Actor::updateSkidmarks()
             }
             if (n->nd_avg_collision_slip > 6.f && n->nd_last_collision_slip.squaredLength() > 9.f)
             {
-                ar_wheels[i].wh_skidmark->update(n->AbsPosition, j, n->nd_avg_collision_slip, n->nd_last_collision_gm->name);
+                ar_wheels[i].wh_skidmark->update(ar_nodes_AbsPosition[nodenum], j, n->nd_avg_collision_slip, n->nd_last_collision_gm->name);
                 return;
             }
         }
@@ -3286,11 +3291,11 @@ void Actor::updateSoundSources()
     for (size_t i = 0; i < ar_soundsources.size(); i++)
     {
         // TODO: Investigate segfaults after terrain reloads ~ ulteq 11/2018
-        ar_soundsources[i].ssi->setPosition(ar_nodes[ar_soundsources[i].nodenum].AbsPosition);
-        ar_soundsources[i].ssi->setVelocity(ar_nodes[ar_soundsources[i].nodenum].Velocity);
+        ar_soundsources[i].ssi->setPosition(ar_nodes_AbsPosition[ar_soundsources[i].nodenum]);
+        ar_soundsources[i].ssi->setVelocity(ar_nodes_Velocity[ar_soundsources[i].nodenum]);
     }
     //also this, so it is updated always, and for any vehicle
-    SOUND_MODULATE(ar_instance_id, SS_MOD_AIRSPEED, ar_nodes[0].Velocity.length() * 1.9438);
+    SOUND_MODULATE(ar_instance_id, SS_MOD_AIRSPEED, ar_nodes_Velocity[0].length() * 1.9438);
     SOUND_MODULATE(ar_instance_id, SS_MOD_WHEELSPEED, ar_wheel_speed * 3.6);
 #endif //OPENAL
 }
@@ -3578,7 +3583,7 @@ void Actor::tieToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_t
                             continue;
 
                         // calculate the distance and record the nearest ropable
-                        float dist = (actor->ar_nodes[tiebeam.p1num].AbsPosition - actor->ar_nodes[itr->rb_nodenum].AbsPosition).length();
+                        float dist = (actor->ar_nodes_AbsPosition[tiebeam.p1num] - actor->ar_nodes_AbsPosition[itr->rb_nodenum]).length();
                         if (dist < mindist)
                         {
                             mindist = dist;
@@ -3673,7 +3678,7 @@ void Actor::ropeToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_
                         continue;
 
                     // calculate the distance and record the nearest ropable
-                    float dist = (ar_nodes[ropebeam.p1num].AbsPosition - actor->ar_nodes[itr->rb_nodenum].AbsPosition).length();
+                    float dist = (ar_nodes_AbsPosition[ropebeam.p1num] - actor->ar_nodes_AbsPosition[itr->rb_nodenum]).length();
                     if (dist < mindist)
                     {
                         mindist = dist;
@@ -3786,7 +3791,7 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
                         continue;
 
                     // measure distance
-                    float n2n_distance = (ar_nodes[it->hk_hook_node].AbsPosition - actor->ar_nodes[i].AbsPosition).length();
+                    float n2n_distance = (ar_nodes_AbsPosition[it->hk_hook_node] - actor->ar_nodes_AbsPosition[i]).length();
                     if (n2n_distance < mindist)
                     {
                         if (distance >= n2n_distance)
@@ -3809,7 +3814,9 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
                     {
                         hookbeam.p2num = it->hk_locked_node;
                         hookbeam.bm_inter_actor = (it->hk_locked_actor != nullptr);
-                        hookbeam.L = (ar_nodes[it->hk_hook_node].AbsPosition - ar_nodes[it->hk_locked_node].AbsPosition).length();
+                        hookbeam.L = (ar_nodes_AbsPosition[it->hk_hook_node] - ar_nodes_AbsPosition[it->hk_locked_node]).length();
+                        hookbeam.L = ar_nodes_AbsPosition[it->hk_hook_node].distance(
+                            it->hk_locked_actor->ar_nodes_AbsPosition[it->hk_locked_node]);
                         hookbeam.bm_disabled = false;
                         this->AddInterActorBeam(&hookbeam, it->hk_locked_actor, mode); // OK to invoke here - hookToggle() - processing `MSG_SIM_ACTOR_LINKING_REQUESTED`
                     }
@@ -3833,7 +3840,7 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
             //disable hook-assistance beam
             hookbeam.p2num = NodeNum_t(0);
             hookbeam.bm_inter_actor = false;
-            hookbeam.L = (ar_nodes[0].AbsPosition - ar_nodes[it->hk_hook_node].AbsPosition).length();
+            hookbeam.L = (ar_nodes_AbsPosition[0] - ar_nodes_AbsPosition[it->hk_hook_node]).length();
             hookbeam.bm_disabled = true;
         }
     }
@@ -4053,10 +4060,10 @@ void Actor::updateDashBoards(float dt)
     Vector3 cam_roll = this->GetCameraRoll();
 
     // speedo
-    float velocity = ar_nodes[0].Velocity.length();
+    float velocity = ar_nodes_Velocity[0].length();
     if (cam_dir != Vector3::ZERO)
     {
-        velocity = cam_dir.dotProduct(ar_nodes[0].Velocity);
+        velocity = cam_dir.dotProduct(ar_nodes_Velocity[0]);
     }
 
     // KPH
@@ -4169,7 +4176,7 @@ void Actor::updateDashBoards(float dt)
 
         // water speed
         Vector3 hdir = this->GetCameraDir();
-        float knots = hdir.dotProduct(ar_nodes[ar_cameras[0].camera_node_pos].Velocity) * 1.9438f; // 1.943 = m/s in knots/s
+        float knots = hdir.dotProduct(ar_nodes_Velocity[ar_cameras[0].camera_node_pos]) * 1.9438f; // 1.943 = m/s in knots/s
         ar_dashboard->setFloat(DD_WATER_SPEED, knots);
     }
 
@@ -4205,10 +4212,10 @@ void Actor::updateDashBoards(float dt)
     {
         //airspeed
         {
-            float ground_speed_kt = ar_nodes[0].Velocity.length() * 1.9438f; // 1.943 = m/s in knots/s
+            float ground_speed_kt = ar_nodes_Velocity[0].length() * 1.9438f; // 1.943 = m/s in knots/s
 
             //tropospheric model valid up to 11.000m (33.000ft)
-            float altitude = ar_nodes[0].AbsPosition.y;
+            float altitude = ar_nodes_AbsPosition[0].y;
             //float sea_level_temperature = 273.15 + 15.0; //in Kelvin // MAGICs D:
             float sea_level_pressure = 101325; //in Pa
             //float airtemperature        = sea_level_temperature - altitude * 0.0065f; //in Kelvin
@@ -4221,11 +4228,11 @@ void Actor::updateDashBoards(float dt)
 
         // altimeter (height above ground)
         {
-            float alt = ar_nodes[0].AbsPosition.y * 1.1811f; // MAGIC
+            float alt = ar_nodes_AbsPosition[0].y * 1.1811f; // MAGIC
             ar_dashboard->setFloat(DD_ALTITUDE, alt);
 
             char altc[11];
-            sprintf(altc, "%03u", (int)(ar_nodes[0].AbsPosition.y / 30.48f)); // MAGIC
+            sprintf(altc, "%03u", (int)(ar_nodes_AbsPosition[0].y / 30.48f)); // MAGIC
             ar_dashboard->setChar(DD_ALTITUDE_STRING, altc);
         }
     }
@@ -4300,12 +4307,12 @@ void Actor::updateDashBoards(float dt)
 #if 0
     // ADI - attitude director indicator
     //roll
-	Vector3 rollv=curr_truck->ar_nodes[curr_truck->ar_camera_node_pos[0]].RelPosition-curr_truck->ar_nodes[curr_truck->ar_camera_node_roll[0]].RelPosition;
+	Vector3 rollv=curr_truck->ar_nodes_RelPosition[curr_truck->ar_camera_node_pos[0]].RelPosition-curr_truck->ar_nodes[curr_truck->ar_camera_node_roll[0]];
 	rollv.normalise();
 	float rollangle=asin(rollv.dotProduct(Vector3::UNIT_Y));
 
     //pitch
-	Vector3 dirv=curr_truck->ar_nodes[curr_truck->ar_camera_node_pos[0]].RelPosition-curr_truck->ar_nodes[curr_truck->ar_camera_node_dir[0]].RelPosition;
+	Vector3 dirv=curr_truck->ar_nodes_RelPosition[curr_truck->ar_camera_node_pos[0]].RelPosition-curr_truck->ar_nodes[curr_truck->ar_camera_node_dir[0]];
 	dirv.normalise();
 	float pitchangle=asin(dirv.dotProduct(Vector3::UNIT_Y));
 	Vector3 upv=dirv.crossProduct(-rollv);
@@ -4315,7 +4322,7 @@ void Actor::updateDashBoards(float dt)
 	RoR::App::GetOverlayWrapper()->aditapetexture->setTextureRotate(Radian(-rollangle));
 
     // HSI - Horizontal Situation Indicator
-	Vector3 idir=curr_truck->ar_nodes[curr_truck->ar_camera_node_pos[0]].RelPosition-curr_truck->ar_nodes[curr_truck->ar_camera_node_dir[0]].RelPosition;
+	Vector3 idir=curr_truck->ar_nodes_RelPosition[curr_truck->ar_camera_node_pos[0]].RelPosition-curr_truck->ar_nodes[curr_truck->ar_camera_node_dir[0]];
     //			idir.normalise();
 	float dirangle=atan2(idir.dotProduct(Vector3::UNIT_X), idir.dotProduct(-Vector3::UNIT_Z));
 	RoR::App::GetOverlayWrapper()->hsirosetexture->setTextureRotate(Radian(dirangle));
@@ -4334,7 +4341,7 @@ void Actor::updateDashBoards(float dt)
 	}
 
     // VVI - Vertical Velocity Indicator
-	float vvi=curr_truck->ar_nodes[0].Velocity.y*196.85;
+	float vvi=curr_truck->ar_nodes_Velocity[0].y*196.85;
 	if (vvi<1000.0 && vvi>-1000.0) angle=vvi*0.047;
 	if (vvi>1000.0 && vvi<6000.0) angle=47.0+(vvi-1000.0)*0.01175;
 	if (vvi>6000.0) angle=105.75;
@@ -4721,7 +4728,7 @@ Vector3 Actor::getNodePosition(int nodeNumber)
 {
     if (nodeNumber >= 0 && nodeNumber < static_cast<int>(ar_nodes.size()))
     {
-        return ar_nodes[nodeNumber].AbsPosition;
+        return ar_nodes_AbsPosition[nodeNumber];
     }
     else
     {
@@ -4757,7 +4764,7 @@ Vector3 Actor::getNodeVelocity(int nodeNumber)
 {
     if (nodeNumber >= 0 && nodeNumber < this->getNodeCount())
     {
-        return ar_nodes[nodeNumber].Velocity;
+        return ar_nodes_Velocity[nodeNumber];
     }
     else
     {
@@ -4769,7 +4776,7 @@ Vector3 Actor::getNodeForces(int nodeNumber)
 {
     if (nodeNumber >= 0 && nodeNumber < this->getNodeCount())
     {
-        return ar_nodes[nodeNumber].Forces;
+        return ar_nodes_Forces[nodeNumber];
     }
     else
     {

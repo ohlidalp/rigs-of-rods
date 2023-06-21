@@ -57,7 +57,7 @@ void PointColDetector::UpdateInterPoint(bool ignorestate)
             collision_partners.push_back(actor);
             bool is_linked = std::find(m_actor->ar_linked_actors.begin(), m_actor->ar_linked_actors.end(), actor) != m_actor->ar_linked_actors.end();
             contacters_size += is_linked ? actor->ar_num_contacters : actor->ar_num_contactable_nodes;
-            if (m_actor->ar_nodes[0].Velocity.squaredDistance(actor->ar_nodes[0].Velocity) > 16)
+            if (m_actor->ar_nodes_Velocity[0].squaredDistance(actor->ar_nodes_Velocity[0]) > 16)
             {
                 for (int i = 0; i < m_actor->ar_num_collcabs; i++)
                 {
@@ -105,7 +105,7 @@ void PointColDetector::update_structures_for_contacters(bool ignoreinternal)
                 m_pointid_list[refi].actor = actor;
                 m_pointid_list[refi].node_id = i;
                 m_ref_list[refi].pidref = &m_pointid_list[refi];
-                m_ref_list[refi].point = actor->ar_nodes[i].AbsPosition.ptr();
+                m_ref_list[refi].point = actor->ar_nodes_AbsPosition[i].ptr();
                 refi++;
             }
         }
@@ -230,7 +230,7 @@ void PointColDetector::build_kdtree_incr(int axis, int index)
             m_kdtree[index].min = m_ref_list[begin].point[axis];
             m_kdtree[index].max = m_ref_list[median].point[axis];
             m_kdtree[index].middle = m_kdtree[index].max;
-            m_kdtree[index].ref = NULL;
+            m_kdtree[index].ref = nullptr;
 
             axis++;
             if (axis >= 3)
@@ -259,7 +259,7 @@ void PointColDetector::build_kdtree_incr(int axis, int index)
         }
 
         m_kdtree[index].middle = m_ref_list[median].point[axis];
-        m_kdtree[index].ref = NULL;
+        m_kdtree[index].ref = nullptr;
 
         m_kdtree[newindex].begin = begin;
         m_kdtree[newindex].end = -median;

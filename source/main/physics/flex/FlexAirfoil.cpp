@@ -287,17 +287,22 @@ FlexAirfoil::FlexAirfoil(Ogre::String const & name, ActorPtr actor, NodeNum_t pn
     cdnfaces[4]=29;
     cdnfaces[5]=28;
 
-    auto& nodes = m_actor->ar_nodes;
+    const Vector3 nfrd_RelPosition = m_actor->ar_nodes_RelPosition[nfrd];
+    const Vector3 nfld_RelPosition = m_actor->ar_nodes_RelPosition[nfld];
+    const Vector3 nbld_RelPosition = m_actor->ar_nodes_RelPosition[nbld];
+    const Vector3 nbrd_RelPosition = m_actor->ar_nodes_RelPosition[nbrd];
+    const Vector3 nflu_RelPosition = m_actor->ar_nodes_RelPosition[nflu];
+    const Vector3 nfru_RelPosition = m_actor->ar_nodes_RelPosition[nfru];
 
-    float tsref=2.0*(nodes[nfrd].RelPosition-nodes[nfld].RelPosition).crossProduct(nodes[nbld].RelPosition-nodes[nfld].RelPosition).length();
-    sref=2.0*(nodes[nfrd].RelPosition-nodes[nfld].RelPosition).crossProduct(nodes[nbrd].RelPosition-nodes[nfrd].RelPosition).length();
+    float tsref=2.0*(nfrd_RelPosition-nfld_RelPosition).crossProduct(nbld_RelPosition-nfld_RelPosition).length();
+    sref=2.0*(nfrd_RelPosition-nfld_RelPosition).crossProduct(nbrd_RelPosition-nfrd_RelPosition).length();
     if (tsref>sref) sref=tsref;
     sref=sref*sref;
 
-    lratio=(nodes[nfld].RelPosition-nodes[nflu].RelPosition).length()/(nodes[nfld].RelPosition-nodes[nbld].RelPosition).length();
-    rratio=(nodes[nfrd].RelPosition-nodes[nfru].RelPosition).length()/(nodes[nfrd].RelPosition-nodes[nbrd].RelPosition).length();
+    lratio=(nfld_RelPosition-nflu_RelPosition).length()/(nfld_RelPosition-nbld_RelPosition).length();
+    rratio=(nfrd_RelPosition-nfru_RelPosition).length()/(nfrd_RelPosition-nbrd_RelPosition).length();
 
-    thickness=(nodes[nfld].RelPosition-nodes[nflu].RelPosition).length();
+    thickness=(nfld_RelPosition-nflu_RelPosition).length();
 
     //update coords
     this->updateVerticesPhysics();
@@ -413,16 +418,13 @@ FlexAirfoil::FlexAirfoil(Ogre::String const & name, ActorPtr actor, NodeNum_t pn
 
 void FlexAirfoil::updateVerticesPhysics()
 {
-    auto& nodes = m_actor->ar_nodes;
+    const Vector3 center=m_actor->ar_nodes_AbsPosition[nfld];
 
-    Vector3 center;
-    center=nodes[nfld].AbsPosition;
-
-    Vector3 vx=nodes[nfrd].AbsPosition-nodes[nfld].AbsPosition;
-    Vector3 vyl=nodes[nflu].AbsPosition-nodes[nfld].AbsPosition;
-    Vector3 vzl=nodes[nbld].AbsPosition-nodes[nfld].AbsPosition;
-    Vector3 vyr=nodes[nfru].AbsPosition-nodes[nfrd].AbsPosition;
-    Vector3 vzr=nodes[nbrd].AbsPosition-nodes[nfrd].AbsPosition;
+    const Vector3 vx =m_actor->ar_nodes_AbsPosition[nfrd] - m_actor->ar_nodes_AbsPosition[nfld];
+    const Vector3 vyl=m_actor->ar_nodes_AbsPosition[nflu] - m_actor->ar_nodes_AbsPosition[nfld];
+    const Vector3 vzl=m_actor->ar_nodes_AbsPosition[nbld] - m_actor->ar_nodes_AbsPosition[nfld];
+    const Vector3 vyr=m_actor->ar_nodes_AbsPosition[nfru] - m_actor->ar_nodes_AbsPosition[nfrd];
+    const Vector3 vzr=m_actor->ar_nodes_AbsPosition[nbrd] - m_actor->ar_nodes_AbsPosition[nfrd];
 
     if (breakable) {broken=broken || (vx.crossProduct(vzl).squaredLength()>sref)||(vx.crossProduct(vzr).squaredLength()>sref);}
     else {broken=(vx.crossProduct(vzl).squaredLength()>sref)||(vx.crossProduct(vzr).squaredLength()>sref);}
@@ -595,20 +597,23 @@ void FlexAirfoil::updateForces()
     if (!airfoil) return;
     if (broken) return;
 
-    auto& nodes = m_actor->ar_nodes;
+    const Vector3 nfrd_RelPosition = m_actor->ar_nodes_RelPosition[nfrd];
+    const Vector3 nfld_RelPosition = m_actor->ar_nodes_RelPosition[nfld];
+    const Vector3 nbld_RelPosition = m_actor->ar_nodes_RelPosition[nbld];
+    const Vector3 nbrd_RelPosition = m_actor->ar_nodes_RelPosition[nbrd];
 
     //evaluate wind direction
-    Vector3 wind=-(nodes[nfld].Velocity+nodes[nfrd].Velocity)/2.0;
+    Vector3 wind=-(m_actor->ar_nodes_Velocity[nfld]+m_actor->ar_nodes_Velocity[nfrd])/2.0;
     //add wash
     int i;
     for (i=0; i<free_wash; i++)
         wind-=(0.5*washpropratio[i]*m_actor->ar_aeroengines[washpropnum[i]]->getpropwash())*m_actor->ar_aeroengines[washpropnum[i]]->getAxis();
     float wspeed=wind.length();
     //chord vector, front to back
-    Vector3 chordv=((nodes[nbld].RelPosition-nodes[nfld].RelPosition)+(nodes[nbrd].RelPosition-nodes[nfrd].RelPosition))/2.0;
+    Vector3 chordv=((nbld_RelPosition-nfld_RelPosition)+(nbrd_RelPosition-nfrd_RelPosition))/2.0;
     float chord=chordv.length();
     //span vector, left to right
-    Vector3 spanv=((nodes[nfrd].RelPosition-nodes[nfld].RelPosition)+(nodes[nbrd].RelPosition-nodes[nbld].RelPosition))/2.0;
+    Vector3 spanv=((nfrd_RelPosition-nfld_RelPosition)+(nbrd_RelPosition-nbld_RelPosition))/2.0;
     float span=spanv.length();
     //lift vector
     Vector3 liftv=spanv.crossProduct(-wind);
@@ -636,7 +641,7 @@ void FlexAirfoil::updateForces()
 
 
     //tropospheric model valid up to 11.000m (33.000ft)
-    float altitude=nodes[nfld].AbsPosition.y;
+    float altitude=m_actor->ar_nodes_AbsPosition[nfld].y;
     float sea_level_pressure=101325; //in Pa
     float airpressure=sea_level_pressure*approx_pow(1.0-0.0065*altitude/288.15, 5.24947); //in Pa
     float airdensity=airpressure*0.0000120896;//1.225 at sea level
@@ -652,13 +657,13 @@ void FlexAirfoil::updateForces()
 
         if (idLeft)
         {
-            nodes[nblu].Forces+=idf;
-            nodes[nbld].Forces+=idf;
+            m_actor->ar_nodes_Forces[nblu]+=idf;
+            m_actor->ar_nodes_Forces[nbld]+=idf;
         }
         else
         {
-            nodes[nbru].Forces+=idf;
-            nodes[nbrd].Forces+=idf;
+            m_actor->ar_nodes_Forces[nbru]+=idf;
+            m_actor->ar_nodes_Forces[nbrd]+=idf;
         }
     }
 
@@ -673,14 +678,14 @@ void FlexAirfoil::updateForces()
     Vector3 f2=wforce*(liftcoef *0.25/4.0f)-normv*(liftcoef *moment/(4.0f*0.75f));
 
     //focal at 0.25 chord
-    nodes[nfld].Forces+=f1;
-    nodes[nflu].Forces+=f1;
-    nodes[nfrd].Forces+=f1;
-    nodes[nfru].Forces+=f1;
-    nodes[nbld].Forces+=f2;
-    nodes[nblu].Forces+=f2;
-    nodes[nbrd].Forces+=f2;
-    nodes[nbru].Forces+=f2;
+    m_actor->ar_nodes_Forces[nfld]+=f1;
+    m_actor->ar_nodes_Forces[nflu]+=f1;
+    m_actor->ar_nodes_Forces[nfrd]+=f1;
+    m_actor->ar_nodes_Forces[nfru]+=f1;
+    m_actor->ar_nodes_Forces[nbld]+=f2;
+    m_actor->ar_nodes_Forces[nblu]+=f2;
+    m_actor->ar_nodes_Forces[nbrd]+=f2;
+    m_actor->ar_nodes_Forces[nbru]+=f2;
 
 }
 

@@ -424,14 +424,14 @@ void ActorSpawner::FinalizeRig()
 
     //calculate gwps height offset
     //get a starting value
-    m_actor->ar_posnode_spawn_height=m_actor->ar_nodes[0].RelPosition.y;
+    m_actor->ar_posnode_spawn_height=m_actor->ar_nodes_RelPosition[0].y;
     //start at 0 to avoid a crash whith a 1-node truck
     for (int i=0; i<static_cast<int>(m_actor->ar_nodes.size()); i++)
     {
         // scan and store the y-coord for the lowest node of the truck
-        if (m_actor->ar_nodes[i].RelPosition.y <= m_actor->ar_posnode_spawn_height)
+        if (m_actor->ar_nodes_RelPosition[i].y <= m_actor->ar_posnode_spawn_height)
         {
-            m_actor->ar_posnode_spawn_height = m_actor->ar_nodes[i].RelPosition.y;
+            m_actor->ar_posnode_spawn_height = m_actor->ar_nodes_RelPosition[i].y;
         }
     }
 
@@ -526,13 +526,13 @@ void ActorSpawner::FinalizeRig()
 
     if (maincam.camera_node_dir == 0 || maincam.camera_node_dir == NODENUM_INVALID)
     {
-        Ogre::Vector3 ref = m_actor->ar_nodes[maincam.camera_node_pos].RelPosition;
+        Ogre::Vector3 ref = m_actor->ar_nodes_RelPosition[maincam.camera_node_pos];
         // Step 1: Find a suitable camera node dir
         float max_dist = 0.0f;
         NodeNum_t furthest_node = 0;
         for (int i = 0; i < static_cast<int>(m_actor->ar_nodes.size()); i++)
         {
-            float dist = m_actor->ar_nodes[i].RelPosition.squaredDistance(ref);
+            float dist = m_actor->ar_nodes_RelPosition[i].squaredDistance(ref);
             if (dist > max_dist)
             {
                 max_dist = dist;
@@ -541,7 +541,7 @@ void ActorSpawner::FinalizeRig()
         }
         maincam.camera_node_dir = furthest_node;
         // Step 2: Correct the misalignment
-        Ogre::Vector3 dir = m_actor->ar_nodes[furthest_node].RelPosition - ref;
+        Ogre::Vector3 dir = m_actor->ar_nodes_RelPosition[furthest_node] - ref;
         float offset = atan2(dir.dotProduct(Ogre::Vector3::UNIT_Z), dir.dotProduct(Ogre::Vector3::UNIT_X));
         maincam.camera_dir_corr = Ogre::Quaternion(Ogre::Radian(offset), Ogre::Vector3::UNIT_Y);
     }
@@ -549,7 +549,7 @@ void ActorSpawner::FinalizeRig()
     if (maincam.camera_node_pos != NODENUM_INVALID)
     {
         // store the y-difference between the trucks lowest node and the campos-node for the gwps system
-        m_actor->ar_posnode_spawn_height = m_actor->ar_nodes[maincam.camera_node_pos].RelPosition.y - m_actor->ar_posnode_spawn_height;
+        m_actor->ar_posnode_spawn_height = m_actor->ar_nodes_RelPosition[maincam.camera_node_pos].y - m_actor->ar_posnode_spawn_height;
     } 
     else
     {
@@ -560,8 +560,8 @@ void ActorSpawner::FinalizeRig()
     //cameras workaround
     for (size_t i=0; i<m_actor->ar_cameras.size(); i++)
     {
-        Ogre::Vector3 dir_node_offset = m_actor->ar_nodes[m_actor->ar_cameras[i].camera_node_dir].RelPosition - m_actor->ar_nodes[m_actor->ar_cameras[i].camera_node_pos].RelPosition;
-        Ogre::Vector3 roll_node_offset = m_actor->ar_nodes[m_actor->ar_cameras[i].camera_node_roll].RelPosition - m_actor->ar_nodes[m_actor->ar_cameras[i].camera_node_pos].RelPosition;
+        Ogre::Vector3 dir_node_offset = m_actor->ar_nodes_RelPosition[m_actor->ar_cameras[i].camera_node_dir] - m_actor->ar_nodes_RelPosition[m_actor->ar_cameras[i].camera_node_pos];
+        Ogre::Vector3 roll_node_offset = m_actor->ar_nodes_RelPosition[m_actor->ar_cameras[i].camera_node_roll] - m_actor->ar_nodes_RelPosition[m_actor->ar_cameras[i].camera_node_pos];
         Ogre::Vector3 cross = dir_node_offset.crossProduct(roll_node_offset);
         
         m_actor->ar_cameras[i].camera_node_roll_inv=cross.y > 0;
@@ -584,7 +584,8 @@ void ActorSpawner::FinalizeRig()
                 );
         }
         //inform wing segments
-        float span=m_actor->ar_nodes[m_actor->ar_wings[m_first_wing_index].fa->nfrd].RelPosition.distance(m_actor->ar_nodes[m_actor->ar_wings[m_actor->ar_wings.size()-1].fa->nfld].RelPosition);
+        float span=m_actor->ar_nodes_RelPosition[m_actor->ar_wings[m_first_wing_index].fa->nfrd].distance(
+            m_actor->ar_nodes_RelPosition[m_actor->ar_wings[m_actor->ar_wings.size()-1].fa->nfld]);
         
         m_actor->ar_wings[m_first_wing_index].fa->enableInducedDrag(span,m_wing_area, false);
         m_actor->ar_wings[m_actor->ar_wings.size()-1].fa->enableInducedDrag(span,m_wing_area, true);
@@ -609,12 +610,12 @@ void ActorSpawner::WashCalculator()
     int w,p;
     for (p=0; p<m_actor->ar_num_aeroengines; p++)
     {
-        Ogre::Vector3 prop=m_actor->ar_nodes[m_actor->ar_aeroengines[p]->getNoderef()].RelPosition;
+        Ogre::Vector3 prop=m_actor->ar_nodes_RelPosition[m_actor->ar_aeroengines[p]->getNoderef()];
         float radius=m_actor->ar_aeroengines[p]->getRadius();
         for (w=0; w<m_actor->ar_wings.size(); w++)
         {
             //left wash
-            Ogre::Vector3 wcent=((m_actor->ar_nodes[m_actor->ar_wings[w].fa->nfld].RelPosition+m_actor->ar_nodes[m_actor->ar_wings[w].fa->nfrd].RelPosition)/2.0);
+            Ogre::Vector3 wcent=((m_actor->ar_nodes_RelPosition[m_actor->ar_wings[w].fa->nfld]+m_actor->ar_nodes_RelPosition[m_actor->ar_wings[w].fa->nfrd])/2.0);
             //check if wing is near enough along X (less than 15m back)
             if (wcent.x>prop.x && wcent.x<prop.x+15.0)
             {
@@ -622,8 +623,8 @@ void ActorSpawner::WashCalculator()
                 if (wcent.y>prop.y-radius && wcent.y<prop.y+radius)
                 {
                     //okay, compute wash coverage ratio along Z
-                    float wleft=(m_actor->ar_nodes[m_actor->ar_wings[w].fa->nfld].RelPosition).z;
-                    float wright=(m_actor->ar_nodes[m_actor->ar_wings[w].fa->nfrd].RelPosition).z;
+                    float wleft=(m_actor->ar_nodes_RelPosition[m_actor->ar_wings[w].fa->nfld]).z;
+                    float wright=(m_actor->ar_nodes_RelPosition[m_actor->ar_wings[w].fa->nfrd]).z;
                     float pleft=prop.z+radius;
                     float pright=prop.z-radius;
                     float aleft=wleft;
@@ -801,7 +802,7 @@ void ActorSpawner::BuildAeroEngine(
     }
 
     /* Visuals */
-    float scale = m_actor->ar_nodes[ref_node_index].RelPosition.distance(m_actor->ar_nodes[blade_1_node_index].RelPosition) / 2.25f;
+    float scale = m_actor->ar_nodes_RelPosition[ref_node_index].distance(m_actor->ar_nodes_RelPosition[blade_1_node_index]) / 2.25f;
     for (RoR::Prop& prop: m_actor->m_gfx_actor->m_props)
     {
         if ((prop.pp_node_ref == ref_node_index) && (prop.pp_aero_propeller_blade || prop.pp_aero_propeller_spin))
@@ -968,8 +969,8 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
     {
         m_first_wing_index = static_cast<WingID_t>(m_actor->ar_wings.size());
         m_wing_area=ComputeWingArea(
-            m_actor->ar_nodes[flex_airfoil->nfld].AbsPosition,    m_actor->ar_nodes[flex_airfoil->nfrd].AbsPosition,
-            m_actor->ar_nodes[flex_airfoil->nbld].AbsPosition,    m_actor->ar_nodes[flex_airfoil->nbrd].AbsPosition
+            m_actor->ar_nodes_AbsPosition[flex_airfoil->nfld],    m_actor->ar_nodes_AbsPosition[flex_airfoil->nfrd],
+            m_actor->ar_nodes_AbsPosition[flex_airfoil->nbld],    m_actor->ar_nodes_AbsPosition[flex_airfoil->nbrd]
         );
     }
     else
@@ -982,7 +983,7 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
 
             //discontinuity
             //inform wing segments
-            float span = m_actor->ar_nodes[start_wing.fa->nfrd].RelPosition.distance(m_actor->ar_nodes[previous_wing.fa->nfld].RelPosition );
+            float span = m_actor->ar_nodes_RelPosition[start_wing.fa->nfrd].distance(m_actor->ar_nodes_RelPosition[previous_wing.fa->nfld] );
             
             start_wing.fa->enableInducedDrag(span, m_wing_area, false);
             previous_wing.fa->enableInducedDrag(span, m_wing_area, true);
@@ -1120,15 +1121,15 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
 
             m_first_wing_index = m_actor->ar_wings.size();
             m_wing_area=ComputeWingArea(
-                m_actor->ar_nodes[flex_airfoil->nfld].AbsPosition,    m_actor->ar_nodes[flex_airfoil->nfrd].AbsPosition,
-                m_actor->ar_nodes[flex_airfoil->nbld].AbsPosition,    m_actor->ar_nodes[flex_airfoil->nbrd].AbsPosition
+                m_actor->ar_nodes_AbsPosition[flex_airfoil->nfld],    m_actor->ar_nodes_AbsPosition[flex_airfoil->nfrd],
+                m_actor->ar_nodes_AbsPosition[flex_airfoil->nbld],    m_actor->ar_nodes_AbsPosition[flex_airfoil->nbrd]
             );
         }
         else 
         {
             m_wing_area+=ComputeWingArea(
-                m_actor->ar_nodes[flex_airfoil->nfld].AbsPosition,    m_actor->ar_nodes[flex_airfoil->nfrd].AbsPosition,
-                m_actor->ar_nodes[flex_airfoil->nbld].AbsPosition,    m_actor->ar_nodes[flex_airfoil->nbrd].AbsPosition
+                m_actor->ar_nodes_AbsPosition[flex_airfoil->nfld],    m_actor->ar_nodes_AbsPosition[flex_airfoil->nfrd],
+                m_actor->ar_nodes_AbsPosition[flex_airfoil->nbld],    m_actor->ar_nodes_AbsPosition[flex_airfoil->nbrd]
             );
         }
     }
@@ -1294,7 +1295,7 @@ void ActorSpawner::ProcessExhaust(RigDef::Exhaust & def)
 
         exhaust.smokeNode = m_particles_parent_scenenode->createChildSceneNode(this->ComposeName("exhaust", (int)m_actor->m_gfx_actor->m_exhausts.size()));
         exhaust.smokeNode->attachObject(exhaust.smoker);
-        exhaust.smokeNode->setPosition(m_actor->ar_nodes[exhaust.emitterNode].AbsPosition);
+        exhaust.smokeNode->setPosition(m_actor->ar_nodes_AbsPosition[exhaust.emitterNode]);
 
         m_actor->m_gfx_actor->SetNodeHot(exhaust.emitterNode, true);
         m_actor->m_gfx_actor->SetNodeHot(exhaust.directionNode, true);
@@ -2943,7 +2944,7 @@ void ActorSpawner::ProcessParticle(RigDef::Particle & def)
 
     particle.snode = m_particles_parent_scenenode->createChildSceneNode(this->ComposeName("cparticles", particle_id));
     particle.snode->attachObject(particle.psys);
-    particle.snode->setPosition(m_actor->ar_nodes[particle.emitterNode].AbsPosition);
+    particle.snode->setPosition(m_actor->ar_nodes_AbsPosition[particle.emitterNode]);
 
     m_actor->m_gfx_actor->m_cparticles.push_back(particle);
 }
@@ -3014,7 +3015,7 @@ void ActorSpawner::ProcessRope(RigDef::Rope & def)
     beam.d = def.beam_defaults->GetScaledDamping();
     beam.bounded = ROPE;
     beam.bm_type = BEAM_HYDRO;
-    beam.L = root_node.AbsPosition.distance(end_node.AbsPosition);
+    beam.L = m_actor->ar_nodes_AbsPosition[root_node.pos].distance(m_actor->ar_nodes_AbsPosition[end_node.pos]);
     beam.refL = beam.L;
 
     this->CreateBeamVisuals(beam, beam_index, true, def.beam_defaults, "tracks/beam");
@@ -4036,13 +4037,13 @@ void ActorSpawner::ProcessShock3(RigDef::Shock3 & def)
 
     if (BITMASK_IS_1(def.options, RigDef::Shock3::OPTION_m_METRIC))
     {
-        float beam_length = node_1.AbsPosition.distance(node_2.AbsPosition);
+        float beam_length = m_actor->ar_nodes_AbsPosition[node_1.pos].distance(m_actor->ar_nodes_AbsPosition[node_2.pos]);
         short_bound /= beam_length;
         long_bound /= beam_length;
     }
     if (BITMASK_IS_1(def.options, RigDef::Shock3::OPTION_M_ABSOLUTE_METRIC))
     {
-        float beam_length = node_1.AbsPosition.distance(node_2.AbsPosition);
+        float beam_length = m_actor->ar_nodes_AbsPosition[node_1.pos].distance(m_actor->ar_nodes_AbsPosition[node_2.pos]);
         short_bound = (beam_length - short_bound) / beam_length;
         long_bound = (long_bound - beam_length) / beam_length;
 
@@ -4125,13 +4126,13 @@ void ActorSpawner::ProcessShock2(RigDef::Shock2 & def)
     }
     if (BITMASK_IS_1(def.options, RigDef::Shock2::OPTION_m_METRIC))
     {
-        float beam_length = node_1.AbsPosition.distance(node_2.AbsPosition);
+        float beam_length = m_actor->ar_nodes_AbsPosition[node_1.pos].distance(m_actor->ar_nodes_AbsPosition[node_2.pos]);
         short_bound /= beam_length;
         long_bound /= beam_length;
     }
     if (BITMASK_IS_1(def.options, RigDef::Shock2::OPTION_M_ABSOLUTE_METRIC))
     {
-        float beam_length = node_1.AbsPosition.distance(node_2.AbsPosition);
+        float beam_length = m_actor->ar_nodes_AbsPosition[node_1.pos].distance(m_actor->ar_nodes_AbsPosition[node_2.pos]);
         short_bound = (beam_length - short_bound) / beam_length;
         long_bound = (long_bound - beam_length) / beam_length;
 
@@ -4219,7 +4220,7 @@ void ActorSpawner::ProcessShock(RigDef::Shock & def)
     }
     if (BITMASK_IS_1(def.options, RigDef::Shock::OPTION_m_METRIC))
     {
-        float beam_length = node_1.AbsPosition.distance(node_2.AbsPosition);
+        float beam_length = m_actor->ar_nodes_AbsPosition[node_1.pos].distance(m_actor->ar_nodes_AbsPosition[node_2.pos]);
         short_bound /= beam_length;
         long_bound /= beam_length;
     }
@@ -4278,8 +4279,8 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
     if (def.rigidity_node.IsValidAnyState())
     {
         rigidity_node = this->ResolveNodeRef(def.rigidity_node);
-        Ogre::Real distance_1 = (m_actor->ar_nodes[rigidity_node].RelPosition - m_actor->ar_nodes[axis_node_1].RelPosition).length();
-        Ogre::Real distance_2 = (m_actor->ar_nodes[rigidity_node].RelPosition - m_actor->ar_nodes[axis_node_2].RelPosition).length();
+        Ogre::Real distance_1 = (m_actor->ar_nodes_RelPosition[rigidity_node] - m_actor->ar_nodes_RelPosition[axis_node_1]).length();
+        Ogre::Real distance_2 = (m_actor->ar_nodes_RelPosition[rigidity_node] - m_actor->ar_nodes_RelPosition[axis_node_2]).length();
         axis_node_closest_to_rigidity_node = ((distance_1 < distance_2)) ? axis_node_1 : axis_node_2;
     }
 
@@ -4288,7 +4289,7 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
     float override_tire_radius = TuneupUtil::getTweakedWheelTireRadius(m_actor->getWorkingTuneupDef(), wheel_id, def.tyre_radius);
 
     // Node&beam generation
-    Ogre::Vector3 axis_vector = m_actor->ar_nodes[axis_node_2].RelPosition - m_actor->ar_nodes[axis_node_1].RelPosition;
+    Ogre::Vector3 axis_vector = m_actor->ar_nodes_RelPosition[axis_node_2] - m_actor->ar_nodes_RelPosition[axis_node_1];
     wheel.wh_width = axis_vector.length(); // wheel_def.width is ignored.
     axis_vector.normalise();
     Ogre::Vector3 rim_ray_vector = axis_vector.perpendicular() * override_rim_radius;
@@ -4300,12 +4301,11 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
         float node_mass = def.mass / (4.f * def.num_rays);
 
         // Outer ring
-        Ogre::Vector3 ray_point = m_actor->ar_nodes[axis_node_1].RelPosition + rim_ray_vector;
+        Ogre::Vector3 ray_point = m_actor->ar_nodes_RelPosition[axis_node_1] + rim_ray_vector;
         rim_ray_vector = rim_ray_rotator * rim_ray_vector;
 
         {
-            node_t& outer_node = AddNode();
-            InitNode(outer_node, ray_point, def.node_defaults);
+            node_t& outer_node = AddNode(ray_point, def.node_defaults);
 
             outer_node.mass = node_mass;
             outer_node.friction_coef = def.node_defaults->friction;
@@ -4318,12 +4318,11 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
         }
 
         // Inner ring
-        ray_point = m_actor->ar_nodes[axis_node_2].RelPosition + rim_ray_vector;
+        ray_point = m_actor->ar_nodes_RelPosition[axis_node_2] + rim_ray_vector;
         rim_ray_vector = rim_ray_rotator * rim_ray_vector;
 
         {
-            node_t& inner_node = AddNode();
-            InitNode(inner_node, ray_point, def.node_defaults);
+            node_t& inner_node = AddNode(ray_point, def.node_defaults);
 
             inner_node.mass = node_mass;
             inner_node.friction_coef = def.node_defaults->friction;
@@ -4347,16 +4346,12 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
     {
         /* Outer ring */
         float node_mass = def.mass / (4.f * def.num_rays);
-        Ogre::Vector3 ray_point = m_actor->ar_nodes[axis_node_1].RelPosition + tyre_ray_vector;
+        Ogre::Vector3 ray_point = m_actor->ar_nodes_RelPosition[axis_node_1] + tyre_ray_vector;
         tyre_ray_vector = tyre_ray_rotator * tyre_ray_vector;
 
         {
-            node_t& outer_node = AddNode();
-            InitNode(outer_node, ray_point);
+            node_t& outer_node = AddNode(ray_point, def.node_defaults);
             outer_node.mass = node_mass;
-            outer_node.friction_coef = def.node_defaults->friction;
-            outer_node.volume_coef = def.node_defaults->volume;
-            outer_node.surface_coef = def.node_defaults->surface;
             outer_node.nd_contacter = true;
             outer_node.nd_tyre_node = true;
             AdjustNodeBuoyancy(outer_node, def.node_defaults);
@@ -4366,16 +4361,12 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
         }
 
         // Inner ring
-        ray_point = m_actor->ar_nodes[axis_node_2].RelPosition + tyre_ray_vector;
+        ray_point = m_actor->ar_nodes_RelPosition[axis_node_2] + tyre_ray_vector;
         tyre_ray_vector = tyre_ray_rotator * tyre_ray_vector;
 
         {
-            node_t& inner_node = AddNode();
-            InitNode(inner_node, ray_point);
+            node_t& inner_node = AddNode(ray_point, def.node_defaults);
             inner_node.mass = node_mass;
-            inner_node.friction_coef = def.node_defaults->friction;
-            inner_node.volume_coef = def.node_defaults->volume;
-            inner_node.surface_coef = def.node_defaults->surface;
             inner_node.nd_contacter = true;
             inner_node.nd_tyre_node = true;
             AdjustNodeBuoyancy(inner_node, def.node_defaults);
@@ -4508,8 +4499,8 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
     }
 
     // Find near attach
-    Ogre::Real length_1 = (m_actor->ar_nodes[axis_node_1].RelPosition - m_actor->ar_nodes[wheel.wh_arm_nodenum].RelPosition).length();
-    Ogre::Real length_2 = (m_actor->ar_nodes[axis_node_2].RelPosition - m_actor->ar_nodes[wheel.wh_arm_nodenum].RelPosition).length();
+    Ogre::Real length_1 = (m_actor->ar_nodes_RelPosition[axis_node_1] - m_actor->ar_nodes_RelPosition[wheel.wh_arm_nodenum]).length();
+    Ogre::Real length_2 = (m_actor->ar_nodes_RelPosition[axis_node_2] - m_actor->ar_nodes_RelPosition[wheel.wh_arm_nodenum]).length();
     wheel.wh_near_attach_nodenum = (length_1 < length_2) ? m_actor->ar_nodes[axis_node_1].pos : m_actor->ar_nodes[axis_node_2].pos;
 
     // Commit the wheel - usually done by `BuildWheelObjectAndNodes()` but we work manually here.
@@ -4550,7 +4541,7 @@ bool ActorSpawner::GetWheelAxisNodes(RigDef::BaseWheel& def, NodeNum_t& out_node
     }
 
     /* Enforce the "second node must have a larger Z coordinate than the first" constraint */
-    if (m_actor->ar_nodes[def_node_1].AbsPosition.z > m_actor->ar_nodes[def_node_2].AbsPosition.z)
+    if (m_actor->ar_nodes_AbsPosition[def_node_1].z > m_actor->ar_nodes_AbsPosition[def_node_2].z)
     {
         out_node_1 = def_node_2;
         out_node_2 = def_node_1;
@@ -4775,7 +4766,7 @@ void ActorSpawner::BuildWheelObjectAndNodes(
     wheel_t wheel;
 
     /* Axis */
-    Ogre::Vector3 axis_vector = m_actor->ar_nodes[axis_node_2].RelPosition - m_actor->ar_nodes[axis_node_1].RelPosition;
+    Ogre::Vector3 axis_vector = m_actor->ar_nodes_RelPosition[axis_node_2] - m_actor->ar_nodes_RelPosition[axis_node_1];
     float axis_length = axis_vector.length();
     axis_vector.normalise();
 
@@ -4789,8 +4780,8 @@ void ActorSpawner::BuildWheelObjectAndNodes(
     wheel.wh_arm_nodenum     = reference_arm_node;
 
     /* Find near attach */
-    Ogre::Real length_1 = (m_actor->ar_nodes[axis_node_1].RelPosition - m_actor->ar_nodes[wheel.wh_arm_nodenum].RelPosition).length();
-    Ogre::Real length_2 = (m_actor->ar_nodes[axis_node_2].RelPosition - m_actor->ar_nodes[wheel.wh_arm_nodenum].RelPosition).length();
+    Ogre::Real length_1 = (m_actor->ar_nodes_RelPosition[axis_node_1] - m_actor->ar_nodes_RelPosition[wheel.wh_arm_nodenum]).length();
+    Ogre::Real length_2 = (m_actor->ar_nodes_RelPosition[axis_node_2] - m_actor->ar_nodes_RelPosition[wheel.wh_arm_nodenum]).length();
     wheel.wh_near_attach_nodenum = (length_1 < length_2) ? axis_node_1 : axis_node_2;
 
     if (propulsion != WheelPropulsion::NONE)
@@ -4807,13 +4798,12 @@ void ActorSpawner::BuildWheelObjectAndNodes(
     for (unsigned int i = 0; i < num_rays; i++)
     {
         /* Outer ring */
-        Ogre::Vector3 ray_point = m_actor->ar_nodes[axis_node_1].RelPosition + ray_vector;
+        Ogre::Vector3 ray_point = m_actor->ar_nodes_RelPosition[axis_node_1] + ray_vector;
         Ogre::Vector3 ray_spawnpoint = m_actor->ar_nodes_spawn_offsets[axis_node_1] + ray_vector;
         ray_vector = ray_rotator * ray_vector;
 
         {
-            node_t& outer_node = AddNode();
-            InitNode(outer_node, ray_point, node_defaults);
+            node_t& outer_node = AddNode(ray_point, node_defaults);
             outer_node.mass = wheel_mass / (2.f * num_rays);
             outer_node.nd_contacter = true;
             outer_node.nd_tyre_node = true;
@@ -4825,13 +4815,12 @@ void ActorSpawner::BuildWheelObjectAndNodes(
         }
 
         /* Inner ring */
-        ray_point = m_actor->ar_nodes[axis_node_2].RelPosition + ray_vector;
+        ray_point = m_actor->ar_nodes_RelPosition[axis_node_2] + ray_vector;
         ray_spawnpoint = m_actor->ar_nodes_spawn_offsets[axis_node_2] + ray_vector;
         ray_vector = ray_rotator * ray_vector;
 
         {
-            node_t& inner_node = AddNode();
-            InitNode(inner_node, ray_point, node_defaults);
+            node_t& inner_node = AddNode(ray_point, node_defaults);
             inner_node.mass = wheel_mass / (2.f * num_rays);
             inner_node.nd_contacter = true;
             inner_node.nd_tyre_node = true;
@@ -4878,8 +4867,8 @@ void ActorSpawner::BuildWheelBeams(
     if (rigidity_node_id.IsValidAnyState())
     {
         rigidity_node = ResolveNodeRef(rigidity_node_id);
-        float distance_1 = m_actor->ar_nodes[rigidity_node].RelPosition.distance(m_actor->ar_nodes[axis_node_1].RelPosition);
-        float distance_2 = m_actor->ar_nodes[rigidity_node].RelPosition.distance(m_actor->ar_nodes[axis_node_2].RelPosition);
+        float distance_1 = m_actor->ar_nodes_RelPosition[rigidity_node].distance(m_actor->ar_nodes_RelPosition[axis_node_1]);
+        float distance_2 = m_actor->ar_nodes_RelPosition[rigidity_node].distance(m_actor->ar_nodes_RelPosition[axis_node_2]);
         rigidity_beam_side_1 = distance_1 < distance_2;
     }
 
@@ -5003,8 +4992,8 @@ void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
     if (wheel_2_def.rigidity_node.IsValidAnyState())
     {
         node_t & rigidity_node = m_actor->ar_nodes[this->GetNodeIndexOrThrow(wheel_2_def.rigidity_node)];
-        Ogre::Real distance_1 = (rigidity_node.RelPosition - m_actor->ar_nodes[axis_node_1].RelPosition).length();
-        Ogre::Real distance_2 = (rigidity_node.RelPosition - m_actor->ar_nodes[axis_node_2].RelPosition).length();
+        Ogre::Real distance_1 = (m_actor->ar_nodes_RelPosition[rigidity_node.pos] - m_actor->ar_nodes_RelPosition[axis_node_1]).length();
+        Ogre::Real distance_2 = (m_actor->ar_nodes_RelPosition[rigidity_node.pos] - m_actor->ar_nodes_RelPosition[axis_node_2]).length();
         rigidity_beam_side_1 = distance_1 < distance_2;
     }
 
@@ -5014,7 +5003,7 @@ void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
 
     /* Node&beam generation */
     wheel_t wheel;
-    Ogre::Vector3 axis_vector = m_actor->ar_nodes[axis_node_2].RelPosition - m_actor->ar_nodes[axis_node_1].RelPosition;
+    Ogre::Vector3 axis_vector = m_actor->ar_nodes_RelPosition[axis_node_2] - m_actor->ar_nodes_RelPosition[axis_node_1];
     axis_vector.normalise();
     Ogre::Vector3 rim_ray_vector = Ogre::Vector3(0, override_rim_radius, 0);
     Ogre::Quaternion rim_ray_rotator = Ogre::Quaternion(Ogre::Degree(-360.f / wheel_2_def.num_rays), axis_vector);
@@ -5028,11 +5017,10 @@ void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
         float node_mass = wheel_2_def.mass / (4.f * wheel_2_def.num_rays);
 
         /* Outer ring */
-        Ogre::Vector3 ray_point = m_actor->ar_nodes[axis_node_1].RelPosition + rim_ray_vector;
+        Ogre::Vector3 ray_point = m_actor->ar_nodes_RelPosition[axis_node_1] + rim_ray_vector;
 
         {
-            node_t& outer_node = AddNode();
-            InitNode(outer_node, ray_point, wheel_2_def.node_defaults);
+            node_t& outer_node = AddNode(ray_point, wheel_2_def.node_defaults);
             outer_node.mass = node_mass;
             outer_node.nd_rim_node = true;
 
@@ -5042,11 +5030,10 @@ void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
         }
 
         /* Inner ring */
-        ray_point = m_actor->ar_nodes[axis_node_2].RelPosition + rim_ray_vector;
+        ray_point = m_actor->ar_nodes_RelPosition[axis_node_2] + rim_ray_vector;
 
         {
-            node_t& inner_node = AddNode();
-            InitNode(inner_node, ray_point, wheel_2_def.node_defaults);
+            node_t& inner_node = AddNode(ray_point, wheel_2_def.node_defaults);
             inner_node.mass = node_mass;
             inner_node.nd_rim_node = true;
 
@@ -5066,15 +5053,12 @@ void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
     for (unsigned int i = 0; i < wheel_2_def.num_rays; i++)
     {
         /* Outer ring */
-        Ogre::Vector3 ray_point = m_actor->ar_nodes[axis_node_1].RelPosition + tyre_ray_vector;
+        Ogre::Vector3 ray_point = m_actor->ar_nodes_RelPosition[axis_node_1] + tyre_ray_vector;
 
         {
-            node_t& outer_node = AddNode();
-            InitNode(outer_node, ray_point);
+            node_t& outer_node = AddNode(ray_point, wheel_2_def.node_defaults);
             outer_node.mass = (0.67f * wheel_2_def.mass) / (2.f * wheel_2_def.num_rays);
-            outer_node.friction_coef = wheel.wh_width * WHEEL_FRICTION_COEF;
-            outer_node.volume_coef = wheel_2_def.node_defaults->volume;
-            outer_node.surface_coef = wheel_2_def.node_defaults->surface;
+            outer_node.friction_coef = wheel.wh_width * WHEEL_FRICTION_COEF; // overrides defaults!!
             outer_node.nd_contacter = true;
             outer_node.nd_tyre_node = true;
 
@@ -5083,15 +5067,12 @@ void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
         }
 
         /* Inner ring */
-        ray_point = m_actor->ar_nodes[axis_node_2].RelPosition + tyre_ray_vector;
+        ray_point = m_actor->ar_nodes_RelPosition[axis_node_2] + tyre_ray_vector;
 
         {
-            node_t& inner_node = AddNode();
-            InitNode(inner_node, ray_point);
+            node_t& inner_node = AddNode(ray_point, wheel_2_def.node_defaults);
             inner_node.mass = (0.33f * wheel_2_def.mass) / (2.f * wheel_2_def.num_rays);
-            inner_node.friction_coef = wheel.wh_width * WHEEL_FRICTION_COEF;
-            inner_node.volume_coef = wheel_2_def.node_defaults->volume;
-            inner_node.surface_coef = wheel_2_def.node_defaults->surface;
+            inner_node.friction_coef = wheel.wh_width * WHEEL_FRICTION_COEF; // overrides defaults!!
             inner_node.nd_contacter = true;
             inner_node.nd_tyre_node = true;
 
@@ -5211,8 +5192,8 @@ void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
     }
 
     /* Find near attach */
-    Ogre::Real length_1 = (m_actor->ar_nodes[axis_node_1].RelPosition - m_actor->ar_nodes[wheel.wh_arm_nodenum].RelPosition).length();
-    Ogre::Real length_2 = (m_actor->ar_nodes[axis_node_2].RelPosition - m_actor->ar_nodes[wheel.wh_arm_nodenum].RelPosition).length();
+    Ogre::Real length_1 = (m_actor->ar_nodes_RelPosition[axis_node_1] - m_actor->ar_nodes_RelPosition[wheel.wh_arm_nodenum]).length();
+    Ogre::Real length_2 = (m_actor->ar_nodes_RelPosition[axis_node_2] - m_actor->ar_nodes_RelPosition[wheel.wh_arm_nodenum]).length();
     wheel.wh_near_attach_nodenum = (length_1 < length_2) ? m_actor->ar_nodes[axis_node_1].pos : m_actor->ar_nodes[axis_node_2].pos;
 
     // Commit the wheel - usually done by `CreateWheelObjectAndNodes()`, but since we're doing custom node/beam generation here, we need to do it manually.
@@ -5839,7 +5820,7 @@ void ActorSpawner::CreateBeamVisuals(beam_t & beam, int beam_index, bool visible
 
 void ActorSpawner::CalculateBeamLength(beam_t & beam)
 {
-    float beam_length = (m_actor->ar_nodes[beam.p1num].RelPosition - m_actor->ar_nodes[beam.p2num].RelPosition).length();
+    float beam_length = (m_actor->ar_nodes_RelPosition[beam.p1num] - m_actor->ar_nodes_RelPosition[beam.p2num]).length();
     beam.L = beam_length;
     beam.refL = beam_length;
 }
@@ -5926,7 +5907,7 @@ NodeNum_t ActorSpawner::ResolveNodeRef(RigDef::Node::Ref const & node_ref, bool 
     }
 }
 
-NodeNum_t ActorSpawner::RegisterNode(RigDef::Node::Id & id)
+NodeNum_t ActorSpawner::AddNode(RigDef::Node::Id & id, const Ogre::Vector3 position, const std::shared_ptr<RigDef::NodeDefaults>& node_defaults)
 {
     if (!id.IsValid())
     {
@@ -5947,7 +5928,7 @@ NodeNum_t ActorSpawner::RegisterNode(RigDef::Node::Id & id)
             this->AddMessage(Message::TYPE_ERROR, msg.str());
             return NODENUM_INVALID;
         }
-        node_t& node = AddNode();
+        node_t& node = AddNode(position, node_defaults);
         m_actor->ar_nodes_name[node.pos] = id.Str();
         m_actor->ar_nodes_name_top_length = std::max(m_actor->ar_nodes_name_top_length, (int)id.Str().length());
 
@@ -5961,7 +5942,7 @@ NodeNum_t ActorSpawner::RegisterNode(RigDef::Node::Id & id)
             msg << "Duplicate node number, previous definition will be overriden! - " << id.ToString() << " (number of nodes at this point: " << static_cast<int>(m_actor->ar_nodes.size()) << ")";
             this->AddMessage(Message::TYPE_WARNING, msg.str());
         }
-        node_t& node = AddNode();
+        node_t& node = AddNode(position, node_defaults);
         return node.pos;
     }
     // Invalid node ID without type flag!
@@ -5970,29 +5951,18 @@ NodeNum_t ActorSpawner::RegisterNode(RigDef::Node::Id & id)
 
 void ActorSpawner::ProcessNode(RigDef::Node& def)
 {
-    const NodeNum_t nodeid = RegisterNode(def.id);
+    NodeNum_t early_nodeid = (NodeNum_t)m_actor->ar_nodes.size();
+    const Ogre::Vector3 spawn_offset = TuneupUtil::getTweakedNodePosition(m_actor->getWorkingTuneupDef(), early_nodeid, def.position);
+    NodeNum_t nodeid = AddNode(def.id, m_spawn_position + spawn_offset, def.node_defaults);
+
     if (nodeid == NODENUM_INVALID)
     {
         return; // Error already logged
     }
 
+    m_actor->ar_nodes_spawn_offsets[nodeid] = spawn_offset;
     node_t & node = m_actor->ar_nodes[nodeid];
     node.pos = nodeid;
-
-    /* Positioning */
-    const Ogre::Vector3 spawn_offset = TuneupUtil::getTweakedNodePosition(m_actor->getWorkingTuneupDef(), node.pos, def.position);
-    m_actor->ar_nodes_spawn_offsets[nodeid] = spawn_offset;
-
-    Ogre::Vector3 node_position = m_spawn_position + spawn_offset;
-    ROR_ASSERT(!std::isnan(node_position.x));
-    ROR_ASSERT(!std::isnan(node_position.y));
-    ROR_ASSERT(!std::isnan(node_position.z));
-    node.AbsPosition = node_position;
-    node.RelPosition = node_position - m_actor->ar_origin;
-
-    node.friction_coef = def.node_defaults->friction;
-    node.volume_coef = def.node_defaults->volume;
-    node.surface_coef = def.node_defaults->surface;
 
     /* Mass */
     if (def.default_minimass)
@@ -6149,7 +6119,7 @@ void ActorSpawner::AddExhaust(
 
     exhaust.smokeNode = m_particles_parent_scenenode->createChildSceneNode(this->ComposeName("exhaust", exhaust_id));
     exhaust.smokeNode->attachObject(exhaust.smoker);
-    exhaust.smokeNode->setPosition(m_actor->ar_nodes[exhaust.emitterNode].AbsPosition);
+    exhaust.smokeNode->setPosition(m_actor->ar_nodes_AbsPosition[exhaust.emitterNode]);
 
     m_actor->m_gfx_actor->SetNodeHot(exhaust.emitterNode, true);
     m_actor->m_gfx_actor->SetNodeHot(exhaust.directionNode, true);
@@ -6161,11 +6131,10 @@ void ActorSpawner::ProcessCinecam(RigDef::Cinecam & def)
 {
     // Node
     Ogre::Vector3 node_pos = m_spawn_position + TuneupUtil::getTweakedCineCameraPosition(m_actor->getWorkingTuneupDef(), m_actor->ar_num_cinecams, def.position);
-    node_t& camera_node = AddNode();
-    InitNode(camera_node, node_pos);
+    node_t& camera_node = AddNode(node_pos, def.node_defaults);
     camera_node.nd_no_ground_contact = true; // Orig: hardcoded in BTS_CINECAM
     camera_node.nd_cinecam_node = true;
-    camera_node.friction_coef = NODE_FRICTION_COEF_DEFAULT; // Node defaults are ignored here.
+    camera_node.friction_coef = NODE_FRICTION_COEF_DEFAULT; // Overrides defaults!!
     AdjustNodeBuoyancy(camera_node, def.node_defaults);
     camera_node.volume_coef   = def.node_defaults->volume;
     camera_node.surface_coef  = def.node_defaults->surface;
@@ -6188,25 +6157,6 @@ void ActorSpawner::ProcessCinecam(RigDef::Cinecam & def)
         beam.d = def.damping;
     }
 };
-
-void ActorSpawner::InitNode(node_t & node, Ogre::Vector3 const & position)
-{
-    /* Position */
-    node.AbsPosition = position;
-    node.RelPosition = position - m_actor->ar_origin;
-}
-
-void ActorSpawner::InitNode(
-    node_t & node, 
-    Ogre::Vector3 const & position,
-    std::shared_ptr<RigDef::NodeDefaults> node_defaults
-)
-{
-    InitNode(node, position);
-    node.friction_coef = node_defaults->friction;
-    node.volume_coef = node_defaults->volume;
-    node.surface_coef = node_defaults->surface;
-}
 
 void ActorSpawner::ProcessGlobals(RigDef::Globals & def)
 {
@@ -6320,17 +6270,12 @@ bool ActorSpawner::CheckScrewpropLimit(unsigned int count)
     return true;
 }
 
-void ActorSpawner::InitNode(unsigned int node_index, Ogre::Vector3 const & position)
-{
-    InitNode(m_actor->ar_nodes[node_index], position);
-}
-
 beam_t & ActorSpawner::GetBeam(unsigned int index)
 {
     return m_actor->ar_beams[index];
 }
 
-node_t & ActorSpawner::AddNode()
+node_t & ActorSpawner::AddNode(const Ogre::Vector3 position, const std::shared_ptr<RigDef::NodeDefaults>& node_defaults)
 {
     NodeNum_t pos = static_cast<NodeNum_t>(m_actor->ar_nodes.size());
     m_actor->ar_nodes.push_back(node_t(pos));
@@ -6338,6 +6283,20 @@ node_t & ActorSpawner::AddNode()
     // By default, fill empty values (assume a generated node)
     m_actor->ar_nodes_name.push_back("");
     m_actor->ar_nodes_id.push_back(-1);
+
+    // InitNode(node, pos, defaults) {
+        // InitNode(node, pos) {
+            m_actor->ar_nodes_AbsPosition.push_back(position);
+            m_actor->ar_nodes_RelPosition.push_back(position - m_actor->ar_origin);
+            // placeholders:
+            m_actor->ar_nodes_Forces.push_back(Ogre::Vector3::ZERO);
+            m_actor->ar_nodes_Velocity.push_back(Ogre::Vector3::ZERO);
+        // }
+        m_actor->ar_nodes[pos].friction_coef = node_defaults->friction;
+        m_actor->ar_nodes[pos].volume_coef = node_defaults->volume;
+        m_actor->ar_nodes[pos].surface_coef = node_defaults->surface;
+    // }
+
 
     return m_actor->ar_nodes.back();
 }
@@ -6940,14 +6899,14 @@ void ActorSpawner::FinalizeGfxSetup()
 void ActorSpawner::ValidateRotator(int id, int axis1, int axis2, NodeNum_t *nodes1, NodeNum_t *nodes2)
 {
     const float eps = 0.001f;
-    const Ogre::Vector3 ax1 = m_actor->ar_nodes[axis1].AbsPosition;
-    const Ogre::Vector3 ax2 = m_actor->ar_nodes[axis2].AbsPosition;
+    const Ogre::Vector3 ax1 = m_actor->ar_nodes_AbsPosition[axis1];
+    const Ogre::Vector3 ax2 = m_actor->ar_nodes_AbsPosition[axis2];
     Ogre::Plane pl = Ogre::Plane((ax1 - ax2).normalisedCopy(), 0);
 
-    Ogre::Vector3 a1 = pl.projectVector(ax1 - m_actor->ar_nodes[nodes1[0]].AbsPosition);
-    Ogre::Vector3 a2 = pl.projectVector(ax1 - m_actor->ar_nodes[nodes1[1]].AbsPosition);
-    Ogre::Vector3 a3 = pl.projectVector(ax1 - m_actor->ar_nodes[nodes1[2]].AbsPosition);
-    Ogre::Vector3 a4 = pl.projectVector(ax1 - m_actor->ar_nodes[nodes1[3]].AbsPosition);
+    Ogre::Vector3 a1 = pl.projectVector(ax1 - m_actor->ar_nodes_AbsPosition[nodes1[0]]);
+    Ogre::Vector3 a2 = pl.projectVector(ax1 - m_actor->ar_nodes_AbsPosition[nodes1[1]]);
+    Ogre::Vector3 a3 = pl.projectVector(ax1 - m_actor->ar_nodes_AbsPosition[nodes1[2]]);
+    Ogre::Vector3 a4 = pl.projectVector(ax1 - m_actor->ar_nodes_AbsPosition[nodes1[3]]);
     float a1len = a1.normalise();
     float a2len = a2.normalise();
     float a3len = a3.normalise();
@@ -6959,10 +6918,10 @@ void ActorSpawner::ValidateRotator(int id, int axis1, int axis2, NodeNum_t *node
         AddMessage(Message::TYPE_WARNING, msg);	
     }
 
-    Ogre::Vector3 b1 = pl.projectVector(ax2 - m_actor->ar_nodes[nodes2[0]].AbsPosition);
-    Ogre::Vector3 b2 = pl.projectVector(ax2 - m_actor->ar_nodes[nodes2[1]].AbsPosition);
-    Ogre::Vector3 b3 = pl.projectVector(ax2 - m_actor->ar_nodes[nodes2[2]].AbsPosition);
-    Ogre::Vector3 b4 = pl.projectVector(ax2 - m_actor->ar_nodes[nodes2[3]].AbsPosition);
+    Ogre::Vector3 b1 = pl.projectVector(ax2 - m_actor->ar_nodes_AbsPosition[nodes2[0]]);
+    Ogre::Vector3 b2 = pl.projectVector(ax2 - m_actor->ar_nodes_AbsPosition[nodes2[1]]);
+    Ogre::Vector3 b3 = pl.projectVector(ax2 - m_actor->ar_nodes_AbsPosition[nodes2[2]]);
+    Ogre::Vector3 b4 = pl.projectVector(ax2 - m_actor->ar_nodes_AbsPosition[nodes2[3]]);
     float b1len = b1.normalise();
     float b2len = b2.normalise();
     float b3len = b3.normalise();

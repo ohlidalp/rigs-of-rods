@@ -78,9 +78,9 @@ FlexObj::FlexObj(ActorPtr& actor, std::vector<CabTexcoord>& texcoords, int numtr
 
     for (size_t i=0; i<(unsigned int)numtriangles;i++)
     {
-        Ogre::Vector3 base_pos = m_actor->ar_nodes[m_vertex_nodes[m_indices[i*3]]].RelPosition;
-        Ogre::Vector3 v1       = m_actor->ar_nodes[m_vertex_nodes[m_indices[i*3+1]]].RelPosition - base_pos;
-        Ogre::Vector3 v2       = m_actor->ar_nodes[m_vertex_nodes[m_indices[i*3+2]]].RelPosition - base_pos;
+        Ogre::Vector3 base_pos = m_actor->ar_nodes_RelPosition[m_vertex_nodes[m_indices[i*3]]];
+        Ogre::Vector3 v1       = m_actor->ar_nodes_RelPosition[m_vertex_nodes[m_indices[i*3+1]]] - base_pos;
+        Ogre::Vector3 v2       = m_actor->ar_nodes_RelPosition[m_vertex_nodes[m_indices[i*3+2]]] - base_pos;
         m_s_ref[i]=v1.crossProduct(v2).length()*2.0;
     }
 

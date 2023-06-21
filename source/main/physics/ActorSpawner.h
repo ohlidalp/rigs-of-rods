@@ -286,11 +286,8 @@ private:
         float wheel_mass,
         float wheel_width = -1.f);
 
-    /// @return Valid node number if resolved, or `NODENUM_INVALID` if not.
-    NodeNum_t                     RegisterNode(RigDef::Node::Id & id);
-    void                          InitNode(node_t & node, Ogre::Vector3 const & position);
-    void                          InitNode(unsigned int node_index, Ogre::Vector3 const & position);
-    void                          InitNode(node_t & node, Ogre::Vector3 const & position, std::shared_ptr<RigDef::NodeDefaults> node_defaults);
+    NodeNum_t                     AddNode(RigDef::Node::Id & id, const Ogre::Vector3 position, const std::shared_ptr<RigDef::NodeDefaults>& node_defaults); //!< Returns NODENUM_INVALID if the ID couldn't be assigned.
+    node_t&                       AddNode(const Ogre::Vector3 position, const std::shared_ptr<RigDef::NodeDefaults>& node_defaults);
     beam_t&                       AddBeam(node_t & node_1, node_t & node_2, std::shared_ptr<RigDef::BeamDefaults> & defaults, int detacher_group);
     BeamID_t                      AddWheelRimBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1, node_t *node_2);
     BeamID_t                      AddTyreBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1, node_t *node_2);
@@ -325,7 +322,6 @@ private:
     /// Finds wheel with given axle nodes and returns it's WheelID_t index (or WHEELID_INVALID if such wheel wasn't found).
     WheelID_t                     AssignWheelToAxle(NodeNum_t axis_node_1, NodeNum_t axis_node_2);
 
-    node_t&                       AddNode();
     beam_t&                       AddBeam();
     shock_t&                      AddShock();
 

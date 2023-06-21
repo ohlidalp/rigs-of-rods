@@ -667,7 +667,7 @@ void GameContext::ShowLoaderGUI(int type, const Ogre::String& instance, const Og
         {
             for (int i = 0; i < static_cast<int>(actor->ar_nodes.size()); i++)
             {
-                if (m_terrain->GetCollisions()->isInside(actor->ar_nodes[i].AbsPosition, spawnbox))
+                if (m_terrain->GetCollisions()->isInside(actor->ar_nodes_AbsPosition[i], spawnbox))
                 {
                     App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_INFO, Console::CONSOLE_SYSTEM_NOTICE, _L("Please clear the place first"), "error.png");
                     return;
@@ -913,7 +913,7 @@ void GameContext::TeleportPlayer(float x, float z)
 
     TRIGGER_EVENT_ASYNC(SE_TRUCK_TELEPORT, this->GetPlayerActor()->ar_instance_id);
 
-    Ogre::Vector3 translation = Ogre::Vector3(x, y, z) - this->GetPlayerActor()->ar_nodes[0].AbsPosition;
+    Ogre::Vector3 translation = Ogre::Vector3(x, y, z) - this->GetPlayerActor()->ar_nodes_AbsPosition[0];
 
     std::vector<ActorPtr> actorsToBeamUp;
     actorsToBeamUp.assign(this->GetPlayerActor()->ar_linked_actors.begin(), this->GetPlayerActor()->ar_linked_actors.end());
@@ -925,7 +925,7 @@ void GameContext::TeleportPlayer(float x, float z)
     {
         for (int i = 0; i < static_cast<int>(actor->ar_nodes.size()); i++)
         {
-            Ogre::Vector3 pos = actor->ar_nodes[i].AbsPosition;
+            Ogre::Vector3 pos = actor->ar_nodes_AbsPosition[i];
             src_agl = std::min(pos.y - m_terrain->GetCollisions()->getSurfaceHeight(pos.x, pos.z), src_agl);
             pos += translation;
             dst_agl = std::min(pos.y - m_terrain->GetCollisions()->getSurfaceHeight(pos.x, pos.z), dst_agl);
@@ -936,7 +936,7 @@ void GameContext::TeleportPlayer(float x, float z)
 
     for (ActorPtr& actor : actorsToBeamUp)
     {
-        actor->resetPosition(actor->ar_nodes[0].AbsPosition + translation, false);
+        actor->resetPosition(actor->ar_nodes_AbsPosition[0] + translation, false);
     }
 }
 
@@ -1085,7 +1085,7 @@ void GameContext::UpdateSimInputEvents(float dt)
                 float len = 0.0f;
                 if (this->GetPlayerCharacter())
                 {
-                    len = actor->ar_nodes[actor->ar_cinecam_node[0]].AbsPosition.distance(this->GetPlayerCharacter()->getPosition() + Ogre::Vector3(0.0, 2.0, 0.0));
+                    len = actor->ar_nodes_AbsPosition[actor->ar_cinecam_node[0]].distance(this->GetPlayerCharacter()->getPosition() + Ogre::Vector3(0.0, 2.0, 0.0));
                 }
                 if (len < mindist)
                 {
@@ -1101,7 +1101,7 @@ void GameContext::UpdateSimInputEvents(float dt)
         }
         else // We're in a vehicle -> If moving slowly enough, get out
         {
-            if (this->GetPlayerActor()->ar_nodes[0].Velocity.squaredLength() < 1.0f ||
+            if (this->GetPlayerActor()->ar_nodes_Velocity[0].squaredLength() < 1.0f ||
                 this->GetPlayerActor()->ar_state == ActorState::NETWORKED_OK || this->GetPlayerActor()->ar_state == ActorState::NETWORKED_HIDDEN ||
                 this->GetPlayerActor()->ar_driveable == AI)
             {
@@ -1152,7 +1152,7 @@ void GameContext::UpdateSimInputEvents(float dt)
         float min_squared_distance = std::numeric_limits<float>::max();
         for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
         {
-            float squared_distance = position.squaredDistance(actor->ar_nodes[0].AbsPosition);
+            float squared_distance = position.squaredDistance(actor->ar_nodes_AbsPosition[0]);
             if (squared_distance < min_squared_distance)
             {
                 min_squared_distance = squared_distance;

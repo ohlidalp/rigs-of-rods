@@ -91,9 +91,9 @@ Turboprop::Turboprop(
     nodep[1] = np2;
     if (torquenode != NODENUM_INVALID)
     {
-        Plane pplane = Plane((m_actor->ar_nodes[nr].RelPosition - m_actor->ar_nodes[nb].RelPosition).normalisedCopy(), 0.0);
-        Vector3 apos = pplane.projectVector(m_actor->ar_nodes[nr].RelPosition);
-        Vector3 tpos = pplane.projectVector(m_actor->ar_nodes[tqn].RelPosition);
+        Plane pplane = Plane((m_actor->ar_nodes_RelPosition[nr] - m_actor->ar_nodes_RelPosition[nb]).normalisedCopy(), 0.0);
+        Vector3 apos = pplane.projectVector(m_actor->ar_nodes_RelPosition[nr]);
+        Vector3 tpos = pplane.projectVector(m_actor->ar_nodes_RelPosition[tqn]);
         torquedist = (apos - tpos).length();
     }
     else
@@ -118,7 +118,7 @@ Turboprop::Turboprop(
     fullpower = power;
     max_torque = 9549.3 * fullpower / 1000.0;
     indicated_torque = 0.0;
-    radius = (m_actor->ar_nodes[noderef].RelPosition - m_actor->ar_nodes[nodep[0]].RelPosition).length();
+    radius = (m_actor->ar_nodes_RelPosition[noderef] - m_actor->ar_nodes_RelPosition[nodep[0]]).length();
     //bladewidth=radius/5.75;
     bladewidth = 0.4;
     proparea = 3.14159 * radius * radius;
@@ -224,7 +224,7 @@ void Turboprop::updateForces(float dt, int doUpdate)
     if (doUpdate)
     {
         //tropospheric model valid up to 11.000m (33.000ft)
-        float altitude = m_actor->ar_nodes[noderef].AbsPosition.y;
+        float altitude = m_actor->ar_nodes_AbsPosition[noderef].y;
         //float sea_level_temperature=273.15+15.0; //in Kelvin
         float sea_level_pressure = 101325; //in Pa
         //float airtemperature=sea_level_temperature-altitude*0.0065; //in Kelvin
@@ -238,17 +238,17 @@ void Turboprop::updateForces(float dt, int doUpdate)
     float velacc = 0;
     for (int i = 0; i < numblades; i++)
     {
-        velacc += (m_actor->ar_nodes[nodep[i]].Velocity - m_actor->ar_nodes[noderef].Velocity).length();
+        velacc += (m_actor->ar_nodes_Velocity[nodep[i]] - m_actor->ar_nodes_Velocity[noderef]).length();
     }
     rpm = (velacc / numblades) * RAD_PER_SEC_TO_RPM / radius;
     //check for broken prop
     Vector3 avg = Vector3::ZERO;
     for (int i = 0; i < numblades; i++)
     {
-        avg += m_actor->ar_nodes[nodep[i]].RelPosition;
+        avg += m_actor->ar_nodes_RelPosition[nodep[i]];
     }
     avg = avg / numblades;
-    if ((avg - m_actor->ar_nodes[noderef].RelPosition).length() > 0.4)
+    if ((avg - m_actor->ar_nodes_RelPosition[noderef]).length() > 0.4)
     {
         failed = true;
     }
@@ -276,12 +276,12 @@ void Turboprop::updateForces(float dt, int doUpdate)
 
     if (torquenode != NODENUM_INVALID)
     {
-        Vector3 along = m_actor->ar_nodes[noderef].RelPosition - m_actor->ar_nodes[nodeback].RelPosition;
+        Vector3 along = m_actor->ar_nodes_RelPosition[noderef] - m_actor->ar_nodes_RelPosition[nodeback];
         Plane ppl = Plane(along, 0);
-        Vector3 orth = ppl.projectVector(m_actor->ar_nodes[noderef].RelPosition) - ppl.projectVector(m_actor->ar_nodes[torquenode].RelPosition);
+        Vector3 orth = ppl.projectVector(m_actor->ar_nodes_RelPosition[noderef]) - ppl.projectVector(m_actor->ar_nodes_RelPosition[torquenode]);
         Vector3 cdir = orth.crossProduct(along);
         cdir.normalise();
-        m_actor->ar_nodes[torquenode].Forces += (enginecouple / torquedist) * cdir;
+        m_actor->ar_nodes_Forces[torquenode] += (enginecouple / torquedist) * cdir;
     }
 
     float tipforce = (enginecouple / radius) / numblades;
@@ -330,7 +330,7 @@ void Turboprop::updateForces(float dt, int doUpdate)
     }
     if (!failed)
     {
-        axis = m_actor->ar_nodes[noderef].RelPosition - m_actor->ar_nodes[nodeback].RelPosition;
+        axis = m_actor->ar_nodes_RelPosition[noderef] - m_actor->ar_nodes_RelPosition[nodeback];
         axis.normalise();
     }
     //estimate amount of energy
@@ -344,7 +344,7 @@ void Turboprop::updateForces(float dt, int doUpdate)
         {
             Vector3 totaltipforce = Vector3::ZERO;
             //span vector, left to right
-            Vector3 spanv = (m_actor->ar_nodes[nodep[i]].RelPosition - m_actor->ar_nodes[noderef].RelPosition);
+            Vector3 spanv = (m_actor->ar_nodes_RelPosition[nodep[i]] - m_actor->ar_nodes_RelPosition[noderef]);
             spanv.normalise();
             //chord vector, front to back
             Vector3 refchordv = -axis.crossProduct(spanv);
@@ -357,7 +357,7 @@ void Turboprop::updateForces(float dt, int doUpdate)
                 //proportion
                 float proport = ((float)j + 0.5) / 6.0;
                 //evaluate wind direction
-                Vector3 wind = -(m_actor->ar_nodes[nodep[i]].Velocity * (1.0 - proport) + m_actor->ar_nodes[noderef].Velocity * proport);
+                Vector3 wind = -(m_actor->ar_nodes_Velocity[nodep[i]] * (1.0 - proport) + m_actor->ar_nodes_Velocity[noderef] * proport);
                 float wspeed = wind.length();
 
                 Vector3 liftv = spanv.crossProduct(-wind);
@@ -393,7 +393,7 @@ void Turboprop::updateForces(float dt, int doUpdate)
                 totthrust += eforce.dotProduct(axis);
 
                 //apply forces
-                m_actor->ar_nodes[noderef].Forces += eforce * proport;
+                m_actor->ar_nodes_Forces[noderef] += eforce * proport;
                 totaltipforce += eforce * (1.0 - proport);
             }
             tottorque += tipf.dotProduct(totaltipforce) * radius;
@@ -405,23 +405,23 @@ void Turboprop::updateForces(float dt, int doUpdate)
                 correctfm_actor = 1000.0;
             if (correctfm_actor < -1000.0)
                 correctfm_actor = -1000.0;
-            m_actor->ar_nodes[nodep[i]].Forces += totaltipforce + correctfm_actor * tipf;
+            m_actor->ar_nodes_Forces[nodep[i]] += totaltipforce + correctfm_actor * tipf;
         }
-        else if (!m_actor->ar_nodes[noderef].Velocity.isZeroLength())
+        else if (!m_actor->ar_nodes_Velocity[noderef].isZeroLength())
         {
             //failed case
             //add drag
-            Vector3 wind = -m_actor->ar_nodes[nodep[i]].Velocity;
+            Vector3 wind = -m_actor->ar_nodes_Velocity[nodep[i]];
             // determine nodes speed and divide by engines speed (with some magic numbers for tuning) to keep it rotating longer when shutoff in flight and stop after a while when plane is stopped (on the ground)
-            float wspeed = (wind.length() / 15.0f) / (m_actor->ar_nodes[noderef].Velocity.length() / 2.0f);
-            m_actor->ar_nodes[nodep[i]].Forces += airdensity * wspeed * wind;
+            float wspeed = (wind.length() / 15.0f) / (m_actor->ar_nodes_Velocity[noderef].length() / 2.0f);
+            m_actor->ar_nodes_Forces[nodep[i]] += airdensity * wspeed * wind;
         }
     }
     //compute the next energy level
     rotenergy += (double)tottorque * dt * rpm / RAD_PER_SEC_TO_RPM;
     //	sprintf(debug, "pitch %i thrust %i totenergy=%i apparentenergy=%i", (int)pitch, (int)totthrust, (int)rotenergy, (int)estrotenergy);
     //prop wash
-    float speed = m_actor->ar_nodes[noderef].Velocity.length();
+    float speed = m_actor->ar_nodes_Velocity[noderef].length();
     float thrsign = 1.0;
     if (totthrust < 0)
     {

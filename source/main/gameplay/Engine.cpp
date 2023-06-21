@@ -611,12 +611,12 @@ void Engine::UpdateEngine(float dt, int doUpdate)
     if (doUpdate && !m_shifting && !m_post_shifting)
     {
         // gear hack
-        float velocity = m_actor->ar_nodes[0].Velocity.length();
+        float velocity = m_actor->ar_nodes_Velocity[0].length();
 
         Vector3 hdir = m_actor->GetCameraDir();
         if (hdir != Vector3::ZERO)
         {
-            velocity = hdir.dotProduct(m_actor->ar_nodes[0].Velocity);
+            velocity = hdir.dotProduct(m_actor->ar_nodes_Velocity[0]);
         }
 
         if (m_actor->ar_wheels[0].wh_radius != 0)
@@ -1325,7 +1325,7 @@ void Engine::UpdateInputEvents(float dt)
         if (fabs(m_actor->ar_avg_wheel_speed) <= 1.0f)
         {
             Ogre::Vector3 hdir = m_actor->getDirection();
-            float velocity = hdir.dotProduct(m_actor->ar_nodes[0].Velocity);
+            float velocity = hdir.dotProduct(m_actor->ar_nodes_Velocity[0]);
 
             // switching point, does the user want to drive forward from backward or the other way round? change gears?
             if (velocity < 1.0f && brake > 0.5f && accl < 0.5f && this->getGear() > 0)

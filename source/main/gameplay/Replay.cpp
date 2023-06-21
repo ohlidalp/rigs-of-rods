@@ -191,8 +191,8 @@ void Replay::onPhysicsStep()
         {
             for (int i = 0; i < static_cast<int>(m_actor->ar_nodes.size()); i++)
             {
-                nbuff[i].position = m_actor->ar_nodes[i].AbsPosition;
-                nbuff[i].velocity = m_actor->ar_nodes[i].Velocity;
+                nbuff[i].position = m_actor->ar_nodes_AbsPosition[i];
+                nbuff[i].velocity = m_actor->ar_nodes_Velocity[i];
             }
         }
 
@@ -223,11 +223,11 @@ void Replay::replayStepActor()
         {
             for (int i = 0; i < static_cast<int>(m_actor->ar_nodes.size()); i++)
             {
-                m_actor->ar_nodes[i].AbsPosition = nbuff[i].position;
-                m_actor->ar_nodes[i].RelPosition = nbuff[i].position - m_actor->ar_origin;
+                m_actor->ar_nodes_AbsPosition[i] = nbuff[i].position;
+                m_actor->ar_nodes_RelPosition[i] = nbuff[i].position - m_actor->ar_origin;
 
-                m_actor->ar_nodes[i].Velocity = nbuff[i].velocity;
-                m_actor->ar_nodes[i].Forces = Vector3::ZERO;
+                m_actor->ar_nodes_Velocity[i] = nbuff[i].velocity;
+                m_actor->ar_nodes_Forces[i] = Vector3::ZERO;
             }
 
             m_actor->updateSlideNodePositions();

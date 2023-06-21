@@ -275,10 +275,12 @@ struct node_t
         , nd_no_mouse_grab(false)
     {}
 
+    /* == MIGRATED to `Actor` ==
     Ogre::Vector3   RelPosition = Ogre::Vector3::ZERO; //!< relative to the local physics origin (one origin per actor) (shaky)
     Ogre::Vector3   AbsPosition = Ogre::Vector3::ZERO; //!< absolute position in the world (shaky)
     Ogre::Vector3   Velocity = Ogre::Vector3::ZERO;
     Ogre::Vector3   Forces = Ogre::Vector3::ZERO;
+    */
 
     float           mass = 0.f;
     float           buoyancy = 0.f;

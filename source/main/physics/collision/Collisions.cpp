@@ -959,12 +959,12 @@ bool Collisions::permitEvent(Actor* b, CollisionEventFilter filter)
 bool Collisions::nodeCollision(Actor* const actor, const NodeNum_t node, float dt)
 {
     // find the correct cell
-    int refx = (int)(actor->ar_nodes[node].AbsPosition.x / CELL_SIZE);
-    int refz = (int)(actor->ar_nodes[node].AbsPosition.z / CELL_SIZE);
+    int refx = (int)(actor->ar_nodes_AbsPosition[node].x / CELL_SIZE);
+    int refz = (int)(actor->ar_nodes_AbsPosition[node].z / CELL_SIZE);
     int hash = hash_find(refx, refz);
     unsigned int cell_id = (refx << 16) + refz;
 
-    if (actor->ar_nodes[node].AbsPosition.y > hashtable_height[hash])
+    if (actor->ar_nodes_AbsPosition[node].y > hashtable_height[hash])
         return false;
 
     collision_tri_t *minctri = 0;
@@ -988,12 +988,12 @@ bool Collisions::nodeCollision(Actor* const actor, const NodeNum_t node, float d
             if (!cbox->enabled)
                 continue;
 
-            if (actor->ar_nodes[node].AbsPosition > cbox->lo && actor->ar_nodes[node].AbsPosition < cbox->hi)
+            if (actor->ar_nodes_AbsPosition[node] > cbox->lo && actor->ar_nodes_AbsPosition[node] < cbox->hi)
             {
                 if (cbox->refined || cbox->selfrotated)
                 {
                     // we may have a collision, do a change of repere
-                    Vector3 Pos = actor->ar_nodes[node].AbsPosition-cbox->center;
+                    Vector3 Pos = actor->ar_nodes_AbsPosition[node]-cbox->center;
                     if (cbox->refined)
                     {
                         Pos = cbox->unrot * Pos;
@@ -1036,7 +1036,7 @@ bool Collisions::nodeCollision(Actor* const actor, const NodeNum_t node, float d
                             if (cbox->refined) normal = cbox->rot * normal;
 
                             // collision boxes are always out of concrete as it seems
-                            actor->ar_nodes[node].Forces += primitiveCollision(actor, node, actor->ar_nodes[node].Velocity, actor->ar_nodes[node].mass, normal, dt, defaultgm);
+                            actor->ar_nodes_Forces[node] += primitiveCollision(actor, node, actor->ar_nodes_Velocity[node], actor->ar_nodes[node].mass, normal, dt, defaultgm);
                             actor->ar_nodes[node].nd_last_collision_gm = defaultgm;
                         }
                     }
@@ -1052,17 +1052,17 @@ bool Collisions::nodeCollision(Actor* const actor, const NodeNum_t node, float d
                         // we have a collision
                         contacted=true;
                         // determine which side collided
-                        float t = cbox->hi.z - actor->ar_nodes[node].AbsPosition.z;
-                        float min = actor->ar_nodes[node].AbsPosition.z - cbox->lo.z;
+                        float t = cbox->hi.z - actor->ar_nodes_AbsPosition[node].z;
+                        float min = actor->ar_nodes_AbsPosition[node].z - cbox->lo.z;
                         Vector3 normal = Vector3(0, 0, -1);
                         if (t < min) {min = t; normal = Vector3(0,0,1);}; //north
-                        t = actor->ar_nodes[node].AbsPosition.x - cbox->lo.x;
+                        t = actor->ar_nodes_AbsPosition[node].x - cbox->lo.x;
                         if (t < min) {min = t; normal = Vector3(-1,0,0);}; //west
-                        t = cbox->hi.x - actor->ar_nodes[node].AbsPosition.x;
+                        t = cbox->hi.x - actor->ar_nodes_AbsPosition[node].x;
                         if (t < min) {min = t; normal = Vector3(1,0,0);}; //east
-                        t = actor->ar_nodes[node].AbsPosition.y - cbox->lo.y;
+                        t = actor->ar_nodes_AbsPosition[node].y - cbox->lo.y;
                         if (t < min) {min = t; normal = Vector3(0,-1,0);}; //down
-                        t = cbox->hi.y - actor->ar_nodes[node].AbsPosition.y;
+                        t = cbox->hi.y - actor->ar_nodes_AbsPosition[node].y;
                         if (t < min) {min = t; normal = Vector3(0,1,0);}; //up
 
                         // resume repere for the normal
@@ -1070,7 +1070,7 @@ bool Collisions::nodeCollision(Actor* const actor, const NodeNum_t node, float d
                         if (cbox->refined) normal = cbox->rot * normal;
 
                         // collision boxes are always out of concrete as it seems
-                        actor->ar_nodes[node].Forces += primitiveCollision(actor, node, actor->ar_nodes[node].Velocity, actor->ar_nodes[node].mass, normal, dt, defaultgm);
+                        actor->ar_nodes_Forces[node] += primitiveCollision(actor, node, actor->ar_nodes_Velocity[node], actor->ar_nodes[node].mass, normal, dt, defaultgm);
                         actor->ar_nodes[node].nd_last_collision_gm = defaultgm;
                     }
                 }
@@ -1083,13 +1083,13 @@ bool Collisions::nodeCollision(Actor* const actor, const NodeNum_t node, float d
             collision_tri_t *ctri = &m_collision_tris[ctri_index];
             if (!ctri->enabled)
                 continue;
-            if (actor->ar_nodes[node].AbsPosition.y > ctri->aab.getMaximum().y || actor->ar_nodes[node].AbsPosition.y < ctri->aab.getMinimum().y ||
-                actor->ar_nodes[node].AbsPosition.x > ctri->aab.getMaximum().x || actor->ar_nodes[node].AbsPosition.x < ctri->aab.getMinimum().x ||
-                actor->ar_nodes[node].AbsPosition.z > ctri->aab.getMaximum().z || actor->ar_nodes[node].AbsPosition.z < ctri->aab.getMinimum().z)
+            if (actor->ar_nodes_AbsPosition[node].y > ctri->aab.getMaximum().y || actor->ar_nodes_AbsPosition[node].y < ctri->aab.getMinimum().y ||
+                actor->ar_nodes_AbsPosition[node].x > ctri->aab.getMaximum().x || actor->ar_nodes_AbsPosition[node].x < ctri->aab.getMinimum().x ||
+                actor->ar_nodes_AbsPosition[node].z > ctri->aab.getMaximum().z || actor->ar_nodes_AbsPosition[node].z < ctri->aab.getMinimum().z)
                 continue;
             // check if this tri is minimal
             // transform
-            Vector3 point = ctri->forward * (actor->ar_nodes[node].AbsPosition - ctri->a);
+            Vector3 point = ctri->forward * (actor->ar_nodes_AbsPosition[node] - ctri->a);
             // test if within tri collision volume (potential cause of bug!)
             if (point.x >= 0 && point.y >= 0 && (point.x + point.y) <= 1.0 && point.z < 0 && point.z > -0.1)
             {
@@ -1111,7 +1111,7 @@ bool Collisions::nodeCollision(Actor* const actor, const NodeNum_t node, float d
         // we need the normal
         // resume repere for the normal
         Vector3 normal = minctri->reverse * Vector3::UNIT_Z;
-        actor->ar_nodes[node].Forces += primitiveCollision(actor, node, actor->ar_nodes[node].Velocity, actor->ar_nodes[node].mass, normal, dt, minctri->gm);
+        actor->ar_nodes_Forces[node] += primitiveCollision(actor, node, actor->ar_nodes_Velocity[node], actor->ar_nodes[node].mass, normal, dt, minctri->gm);
         actor->ar_nodes[node].nd_last_collision_gm = minctri->gm;
     }
 
@@ -1244,14 +1244,14 @@ bool Collisions::isInside(Ogre::Vector3 pos, collision_box_t *cbox, float border
 
 bool Collisions::groundCollision(Actor* actor, const NodeNum_t node, float dt)
 {
-    Real v = App::GetGameContext()->GetTerrain()->getHeightAt(actor->ar_nodes[node].AbsPosition.x, actor->ar_nodes[node].AbsPosition.z);
-    if (v > actor->ar_nodes[node].AbsPosition.y)
+    Real v = App::GetGameContext()->GetTerrain()->getHeightAt(actor->ar_nodes_AbsPosition[node].x, actor->ar_nodes_AbsPosition[node].z);
+    if (v > actor->ar_nodes_AbsPosition[node].y)
     {
-        ground_model_t* ogm = landuse ? landuse->getGroundModelAt(actor->ar_nodes[node].AbsPosition.x, actor->ar_nodes[node].AbsPosition.z) : nullptr;
+        ground_model_t* ogm = landuse ? landuse->getGroundModelAt(actor->ar_nodes_AbsPosition[node].x, actor->ar_nodes_AbsPosition[node].z) : nullptr;
         // when landuse fails or we don't have it, use the default value
         if (!ogm) ogm = defaultgroundgm;
-        Ogre::Vector3 normal = App::GetGameContext()->GetTerrain()->GetNormalAt(actor->ar_nodes[node].AbsPosition.x, v, actor->ar_nodes[node].AbsPosition.z);
-        actor->ar_nodes[node].Forces += primitiveCollision(actor, node, actor->ar_nodes[node].Velocity, actor->ar_nodes[node].mass, normal, dt, ogm, v - actor->ar_nodes[node].AbsPosition.y);
+        Ogre::Vector3 normal = App::GetGameContext()->GetTerrain()->GetNormalAt(actor->ar_nodes_AbsPosition[node].x, v, actor->ar_nodes_AbsPosition[node].z);
+        actor->ar_nodes_Forces[node] += primitiveCollision(actor, node, actor->ar_nodes_Velocity[node], actor->ar_nodes[node].mass, normal, dt, ogm, v - actor->ar_nodes_AbsPosition[node].y);
         actor->ar_nodes[node].nd_last_collision_gm = ogm;
         return true;
     }
@@ -1262,7 +1262,7 @@ Vector3 RoR::primitiveCollision(Actor* actor, const NodeNum_t node, Ogre::Vector
 {
     Vector3 force = Vector3::ZERO;
     float Vnormal = velocity.dotProduct(normal);
-    float Fnormal = actor->ar_nodes[node].Forces.dotProduct(normal);
+    float Fnormal = actor->ar_nodes_Forces[node].dotProduct(normal);
 
     // if we are inside the fluid (solid ground is below us)
     if (gm->solid_ground_level != 0.0f && penetration >= 0)
@@ -1314,7 +1314,7 @@ Vector3 RoR::primitiveCollision(Actor* actor, const NodeNum_t node, Ogre::Vector
         }
         if (Freaction > 0)
         {
-            Vector3 slipf = actor->ar_nodes[node].Forces - Fnormal * normal;
+            Vector3 slipf = actor->ar_nodes_Forces[node] - Fnormal * normal;
             Vector3 slip = velocity - Vnormal * normal;
             float slipv = slip.normalise();
             // If the velocity that we slip is lower than adhesion velocity and

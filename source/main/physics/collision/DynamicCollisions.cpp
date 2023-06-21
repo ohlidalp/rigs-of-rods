@@ -72,7 +72,7 @@ static bool BackfaceCollisionTest(
     {
         for (NodeNum_t id : hit_actor->ar_node_to_node_connections[hit_node])
         {
-            const auto neighbour_distance = normal.dotProduct(hit_actor->ar_nodes[id].AbsPosition - surface_actor->ar_nodes[surface_point].AbsPosition);
+            const auto neighbour_distance = normal.dotProduct(hit_actor->ar_nodes_AbsPosition[id] - surface_actor->ar_nodes_AbsPosition[surface_point]);
             face_indicator += sign(neighbour_distance);
         }
     }
@@ -120,10 +120,10 @@ void ResolveCollisionForces(
 {
     //OLD: const auto velocity = hitnode.Velocity - (na.Velocity * alpha + nb.Velocity * beta + no.Velocity * gamma);
     const Ogre::Vector3 velocity
-        = hit_actor->ar_nodes[hit_node].Velocity - (
-            local_actor->ar_nodes[na].Velocity * alpha,
-            local_actor->ar_nodes[nb].Velocity * beta,
-            local_actor->ar_nodes[no].Velocity * gamma);
+        = hit_actor->ar_nodes_Velocity[hit_node] - (
+            local_actor->ar_nodes_Velocity[na] * alpha,
+            local_actor->ar_nodes_Velocity[nb] * beta,
+            local_actor->ar_nodes_Velocity[no] * gamma);
 
     //OLD: const float tr_mass = na.mass * alpha + nb.mass * beta + no.mass * gamma;
     const float tr_mass
@@ -136,10 +136,10 @@ void ResolveCollisionForces(
 
     const Ogre::Vector3 forcevec = primitiveCollision(hit_actor, hit_node, velocity, mass, normal, dt, &submesh_ground_model, penetration_depth);
 
-    hit_actor->ar_nodes[hit_node].Forces += forcevec;
-    local_actor->ar_nodes[na].Forces -= forcevec * alpha;
-    local_actor->ar_nodes[nb].Forces -= forcevec * beta;
-    local_actor->ar_nodes[no].Forces -= forcevec * gamma;
+    hit_actor->ar_nodes_Forces[hit_node] += forcevec;
+    local_actor->ar_nodes_Forces[na] -= forcevec * alpha;
+    local_actor->ar_nodes_Forces[nb] -= forcevec * beta;
+    local_actor->ar_nodes_Forces[no] -= forcevec * gamma;
 }
 
 
@@ -164,9 +164,9 @@ void RoR::ResolveInterActorCollisions(Actor* const actor, PointColDetector &inte
         const NodeNum_t no = static_cast<NodeNum_t>(cabs[tmpv]);
         const NodeNum_t na = static_cast<NodeNum_t>(cabs[tmpv+1]);
         const NodeNum_t nb = static_cast<NodeNum_t>(cabs[tmpv+2]);
-        const Ogre::Vector3 no_AbsPosition = actor->ar_nodes[no].AbsPosition;
-        const Ogre::Vector3 na_AbsPosition = actor->ar_nodes[na].AbsPosition;
-        const Ogre::Vector3 nb_AbsPosition = actor->ar_nodes[nb].AbsPosition;
+        const Ogre::Vector3 no_AbsPosition = actor->ar_nodes_AbsPosition[no];
+        const Ogre::Vector3 na_AbsPosition = actor->ar_nodes_AbsPosition[na];
+        const Ogre::Vector3 nb_AbsPosition = actor->ar_nodes_AbsPosition[nb];
 
         interPointCD.query(
                 no_AbsPosition,
@@ -185,7 +185,7 @@ void RoR::ResolveInterActorCollisions(Actor* const actor, PointColDetector &inte
                 const NodeNum_t hit_node = h->node_id;
 
                 // transform point to triangle local coordinates
-                const auto local_point = transform(hit_actor->ar_nodes[hit_node].AbsPosition);
+                const auto local_point = transform(hit_actor->ar_nodes_AbsPosition[hit_node]);
 
                 // collision test
                 const bool is_colliding = InsideTriangleTest(local_point, collrange);
@@ -264,9 +264,9 @@ void RoR::ResolveIntraActorCollisions(Actor* const actor, PointColDetector &intr
         const NodeNum_t no = static_cast<NodeNum_t>(cabs[tmpv]);
         const NodeNum_t na = static_cast<NodeNum_t>(cabs[tmpv+1]);
         const NodeNum_t nb = static_cast<NodeNum_t>(cabs[tmpv+2]);
-        const Ogre::Vector3 no_AbsPosition = actor->ar_nodes[no].AbsPosition;
-        const Ogre::Vector3 na_AbsPosition = actor->ar_nodes[na].AbsPosition;
-        const Ogre::Vector3 nb_AbsPosition = actor->ar_nodes[nb].AbsPosition;
+        const Ogre::Vector3 no_AbsPosition = actor->ar_nodes_AbsPosition[no];
+        const Ogre::Vector3 na_AbsPosition = actor->ar_nodes_AbsPosition[na];
+        const Ogre::Vector3 nb_AbsPosition = actor->ar_nodes_AbsPosition[nb];
 
         intraPointCD.query(
                 no_AbsPosition,
@@ -290,7 +290,7 @@ void RoR::ResolveIntraActorCollisions(Actor* const actor, PointColDetector &intr
                 if (no == hitnode_num || na == hitnode_num || nb == hitnode_num) continue;
 
                 // transform point to triangle local coordinates
-                const auto local_point = transform(actor->ar_nodes[hitnode_num].AbsPosition);
+                const auto local_point = transform(actor->ar_nodes_AbsPosition[hitnode_num]);
 
                 // collision test
                 const bool is_colliding = InsideTriangleTest(local_point, collrange);
