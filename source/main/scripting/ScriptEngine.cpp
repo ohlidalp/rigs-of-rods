@@ -402,6 +402,8 @@ ScriptRetCode_t ScriptEngine::validateScriptModule(ScriptUnitID_t nid, asIScript
 
 void ScriptEngine::framestep(Real dt)
 {
+    rmt_ScopedCPUSample(ScriptEngine_framestep, 0);
+
     // Check if we need to execute any strings
     std::vector<String> tmpQueue;
     stringExecutionQueue.pull(tmpQueue);

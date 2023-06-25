@@ -747,6 +747,8 @@ bool ActorManager::AreActorsDirectlyLinked(const ActorPtr& a1, const ActorPtr& a
 
 void ActorManager::UpdateSleepingState(ActorPtr player_actor, float dt)
 {
+    rmt_ScopedCPUSample(ActorManager_UpdateSleepingState, 0);
+
     if (!m_forced_awake)
     {
         for (ActorPtr& actor: m_actors)
@@ -1023,6 +1025,7 @@ const ActorPtr& ActorManager::FetchRescueVehicle()
 
 void ActorManager::UpdateActors(ActorPtr player_actor)
 {
+    rmt_ScopedCPUSample(ActorManager_UpdateActors, 0);
     float dt = m_simulation_time;
 
     // do not allow dt > 1/20
@@ -1134,7 +1137,7 @@ void ActorManager::UpdateActors(ActorPtr player_actor)
     m_total_sim_time += dt;
 
     if (!App::app_async_physics->getBool())
-        m_sim_task->join();
+        this->SyncWithSimThread();
 }
 
 const ActorPtr& ActorManager::GetActorById(ActorInstanceID_t actor_id)
@@ -1231,6 +1234,8 @@ void ActorManager::UpdatePhysicsSimulation()
 
 void ActorManager::SyncWithSimThread()
 {
+    rmt_ScopedCPUSample(ActorManager_SyncWithSimThread, 0);
+
     if (m_sim_task)
         m_sim_task->join();
 }

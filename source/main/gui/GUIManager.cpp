@@ -153,6 +153,7 @@ void GUIManager::ApplyUiPreset() //!< reads cvar 'ui_preset'
 
 void GUIManager::DrawSimulationGui(float dt)
 {
+    rmt_ScopedCPUSample(GUIManager_DrawSimulationGui, 0);
     if (App::app_state->getEnum<AppState>() == AppState::SIMULATION)
     {
         this->TopMenubar.Draw(dt);
@@ -186,6 +187,8 @@ void GUIManager::DrawSimulationGui(float dt)
 
 void GUIManager::DrawSimGuiBuffered(GfxActor* player_gfx_actor)
 {
+    rmt_ScopedCPUSample(GUIManager_DrawSimGuiBuffered, 0);
+
     this->DrawCommonGui();
 
     if (player_gfx_actor && !this->GameMainMenu.IsVisible())
@@ -390,6 +393,8 @@ void GUIManager::SetupImGui()
 
 void GUIManager::DrawCommonGui()
 {
+    rmt_ScopedCPUSample(GUIManager_DrawCommonGui, 0);
+
     if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED && !App::ui_hide_gui->getBool() && !this->SurveyMap.IsVisible())
     {
         this->MpClientList.Draw();
@@ -413,6 +418,7 @@ void GUIManager::DrawCommonGui()
 
 void GUIManager::DrawMainMenuGui()
 {
+    rmt_ScopedCPUSample(GUIManager_DrawMainMenuGui, 0);
     this->DrawCommonGui();
 
     if (this->MultiplayerSelector.IsVisible())
@@ -482,6 +488,7 @@ void GUIManager::SupressCursor(bool do_supress)
 
 void GUIManager::UpdateInputEvents(float dt)
 {
+    rmt_ScopedCPUSample(GUIManager_UpdateInputEvents, 0);
     // EV_COMMON_CONSOLE_TOGGLE - display console GUI (anytime)
     if (App::GetInputEngine()->getEventBoolValueBounce(EV_COMMON_CONSOLE_TOGGLE))
     {

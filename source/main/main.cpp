@@ -62,10 +62,6 @@
 #include <iomanip>
 #include <string>
 
-#ifdef USE_REMOTERY
-#include "Remotery.h"
-#endif //USE_REMOTERY
-
 #ifdef USE_CURL
 #   include <curl/curl.h>
 #endif //USE_CURL
@@ -81,6 +77,11 @@ int main(int argc, char *argv[])
 #ifdef USE_CURL
     curl_global_init(CURL_GLOBAL_ALL); // MUST init before any threads are started
 #endif
+
+    // Remotery profiling macros are toggled using `RMT_ENABLED` in 'main/CMakeLists.txt'
+    Remotery* rmt;
+    rmt_CreateGlobalInstance(&rmt);
+    rmt_SetCurrentThreadName("Main (render) thread");
 
 #ifndef _DEBUG
     try
@@ -134,10 +135,7 @@ int main(int argc, char *argv[])
         {
             return -1; // Error already displayed
         }
-#ifdef USE_REMOTERY
-        Remotery* rmt;
-        rmt_CreateGlobalInstance(&rmt);
-#endif
+
         // Make sure config directory exists - to save 'ogre.cfg'
         CreateFolder(App::sys_config_dir->getStr());
 
@@ -334,9 +332,8 @@ int main(int argc, char *argv[])
 
         while (App::app_state->getEnum<AppState>() != AppState::SHUTDOWN)
         {
-#ifdef USE_REMOTERY
             rmt_ScopedCPUSample(MainLoop, 0);
-#endif
+
             OgreBites::WindowEventUtilities::messagePump();
 
             // Halt physics (wait for async tasks to finish)
@@ -346,6 +343,7 @@ int main(int argc, char *argv[])
             }
 
             // Game events
+            rmt_BeginCPUSample(MainLoop__message_queue, 0);
             while (App::GetGameContext()->HasMessages())
             {
                 Message m = App::GetGameContext()->PopMessage();
@@ -1848,6 +1846,7 @@ int main(int argc, char *argv[])
                 }
 
             } // Game events block
+            rmt_EndCPUSample(); // MainLoop__message_queue
 
             // Check FPS limit
             if (App::gfx_fps_limit->getInt() > 0)
@@ -1866,10 +1865,12 @@ int main(int argc, char *argv[])
             start_time = now;
 
 #ifdef USE_SOCKETW
+            rmt_BeginCPUSample(MainLoop__net_incoming, 0);
             // Process incoming network traffic
             if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED)
             {
                 std::vector<RoR::NetRecvPacket> packets = App::GetNetwork()->GetIncomingStreamData();
+
                 if (!packets.empty())
                 {
                     RoR::ChatSystem::HandleStreamData(packets);
@@ -1880,9 +1881,11 @@ int main(int argc, char *argv[])
                     }
                 }
             }
+            rmt_EndCPUSample(); //MainLoop__net_incoming
 #endif // USE_SOCKETW
 
             // Process input events
+            rmt_BeginCPUSample(MainLoop__input_events, 0);
             if (dt != 0.f)
             {
                 App::GetInputEngine()->Capture();
@@ -1949,6 +1952,7 @@ int main(int argc, char *argv[])
                     } // app state SIMULATION
                 } // interactive key binding mode
             } // dt != 0
+            rmt_EndCPUSample(); // MainLoop__input_events
 
             // Update OutGauge device
             if (App::io_outgauge_mode->getInt() > 0)
@@ -1957,6 +1961,7 @@ int main(int argc, char *argv[])
             }
 
             // Early GUI updates which require halted physics
+            rmt_BeginCPUSample(MainLoop__early_gui, 0);
             App::GetGuiManager()->NewImGuiFrame(dt);
             if (App::app_state->getEnum<AppState>() == AppState::SIMULATION)
             {
@@ -1974,6 +1979,7 @@ int main(int argc, char *argv[])
                     }
                 }
             }
+            rmt_EndCPUSample(); // MainLoop__early_gui
 
 #ifdef USE_MUMBLE
             if (App::GetMumble())
@@ -2032,6 +2038,7 @@ int main(int argc, char *argv[])
             }
 
             // Render!
+            rmt_BeginCPUSample(MainLoop__render, 0);
             Ogre::RenderWindow* render_window = RoR::App::GetAppContext()->GetRenderWindow();
             if (render_window->isClosed())
             {
@@ -2045,6 +2052,7 @@ int main(int argc, char *argv[])
                     render_window->update(); // update even when in background !
                 }
             } // Render block
+            rmt_EndCPUSample(); // MainLoop__render
 
             App::GetGuiManager()->ApplyGuiCaptureKeyboard();
 
@@ -2065,6 +2073,8 @@ int main(int argc, char *argv[])
         ErrorUtils::ShowError(_L("An exception (std::runtime_error) has occured!"), e.what());
     }
 #endif
+
+    rmt_DestroyGlobalInstance(rmt);
 
     return 0;
 }

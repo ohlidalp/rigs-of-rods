@@ -610,6 +610,8 @@ void Water::FrameStepWater(float dt)
 {
     // Update even if game paused to account for camera movement (important for reflections).
     // --------------------------------------------------------------------------------------
+    rmt_ScopedCPUSample(Water_FrameStepWater, 0);
+
     this->UpdateWater();
     m_sim_time_counter += dt;
 }

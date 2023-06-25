@@ -469,6 +469,8 @@ void RoR::GfxActor::SetVideoCamState(VideoCamState state)
 
 void RoR::GfxActor::UpdateVideoCameras(float dt)
 {
+    rmt_ScopedCPUSample(GfxActor_UpdateVideoCameras, 0);
+
     if (m_vidcam_state != VideoCamState::VCSTATE_ENABLED_ONLINE)
         return;
 
@@ -590,6 +592,8 @@ void RoR::GfxActor::UpdateVideoCameras(float dt)
 
 void RoR::GfxActor::UpdateParticles(float dt)
 {
+    rmt_ScopedCPUSample(GfxActor_UpdateParticles, 0);
+
     float water_height = 0.f; // Unused if terrain has no water
     if (App::GetGameContext()->GetTerrain()->getWater() != nullptr)
     {
@@ -722,6 +726,7 @@ const float NODE_IMMOVABLE_RADIUS    (2.8f);
 
 void RoR::GfxActor::UpdateDebugView()
 {
+    rmt_ScopedCPUSample(GfxActor_UpdateDebugView, 0);
     if (m_debug_view == DebugViewType::DEBUGVIEW_NONE && !m_actor->ar_physics_paused)
     {
         return; // Nothing to do
@@ -1646,6 +1651,8 @@ void RoR::GfxActor::CycleDebugViews()
 
 void RoR::GfxActor::UpdateRods()
 {
+    rmt_ScopedCPUSample(GfxActor_UpdateRods, 0);
+
     for (BeamGfx& rod: m_gfx_beams)
     {
         rod.rod_scenenode->setVisible(rod.rod_is_visible);
@@ -1906,6 +1913,8 @@ bool RoR::GfxActor::IsActorLive() const
 
 void RoR::GfxActor::UpdateCabMesh()
 {
+    rmt_ScopedCPUSample(GfxActor_UpdateCabMesh, 0);
+
     if ((m_cab_entity != nullptr) && (m_cab_mesh != nullptr))
     {
         m_cab_scene_node->setPosition(m_cab_mesh->UpdateFlexObj());
@@ -1932,6 +1941,8 @@ void RoR::GfxActor::UpdateWheelVisuals()
 
 void RoR::GfxActor::FinishWheelUpdates()
 {
+    rmt_ScopedCPUSample(GfxActor_FinishWheelUpdates, 0);
+
     for (auto& task: m_flexwheel_tasks)
     {
         task->join();
@@ -1966,6 +1977,8 @@ int RoR::GfxActor::GetActorState       () const { return static_cast<int>(m_acto
 
 void RoR::GfxActor::UpdateAirbrakes()
 {
+    rmt_ScopedCPUSample(GfxActor_UpdateAirbrakes, 0);
+
     const size_t num_airbrakes = m_gfx_airbrakes.size();
     for (size_t i=0; i<num_airbrakes; ++i)
     {
@@ -1994,6 +2007,8 @@ void RoR::GfxActor::UpdateAirbrakes()
 
 void RoR::GfxActor::UpdateCParticles()
 {
+    rmt_ScopedCPUSample(GfxActor_UpdateCParticles, 0);
+
     for (CParticle& cparticle: m_cparticles)
     {
         App::GetGfxScene()->AdjustParticleSystemTimeFactor(cparticle.psys);
@@ -2037,6 +2052,8 @@ void RoR::GfxActor::UpdateExhausts()
 
 void RoR::GfxActor::UpdateAeroEngines()
 {
+    rmt_ScopedCPUSample(GfxActor_UpdateAeroEngines, 0);
+
     for (int i = 0; i < m_actor->ar_num_aeroengines; i++)
     {
         m_actor->ar_aeroengines[i]->updateVisuals(this);
@@ -2257,6 +2274,8 @@ void RoR::GfxActor::UpdateBeaconFlare(Prop & prop, float dt, bool is_player_acto
 
 void RoR::GfxActor::UpdateProps(float dt, bool is_player_actor)
 {
+    rmt_ScopedCPUSample(GfxActor_UpdateProps, 0);
+
     using namespace Ogre;
 
     NodeSB* nodes = this->GetSimNodeBuffer();
@@ -2360,6 +2379,8 @@ void RoR::GfxActor::SetRenderdashActive(bool active)
 
 void RoR::GfxActor::UpdateRenderdashRTT()
 {
+    rmt_ScopedCPUSample(GfxActor_UpdateREnderdashRTT, 0);
+
     if (m_renderdash != nullptr)
     {
         m_renderdash->getRenderTarget()->update();
@@ -2926,6 +2947,8 @@ void RoR::GfxActor::CalcPropAnimation(PropAnim& anim, float& cstate, int& div, f
 
 void RoR::GfxActor::UpdatePropAnimations(float dt)
 {
+    rmt_ScopedCPUSample(GfxActor_UpdatePropAnimations, 0);
+
     int prop_anim_key_index = 0;
 
     for (Prop& prop: m_props)
@@ -3185,6 +3208,8 @@ void RoR::GfxActor::SetFlexbodyVisible(bool visible)
 
 void RoR::GfxActor::FinishFlexbodyTasks()
 {
+    rmt_ScopedCPUSample(GfxActor_FinishFlexbodyTasks, 0);
+
     for (auto& task: m_flexbody_tasks)
     {
         task->join();
@@ -3218,6 +3243,8 @@ void RoR::GfxActor::UpdateFlares(float dt, bool is_player)
 {
     // Flare states are determined in simulation, this function only applies them to OGRE objects
     // ------------------------------------------------------------------------------------------
+
+    rmt_ScopedCPUSample(GfxActor_UpdateFlares, 0);
 
     NodeSB* nodes = this->GetSimNodeBuffer();
 
@@ -3365,6 +3392,8 @@ void RoR::GfxActor::SetWingsVisible(bool visible)
 
 void RoR::GfxActor::UpdateWingMeshes()
 {
+    rmt_ScopedCPUSample(GfxActor_UpdateWingMeshes, 0);
+
     for (int i = 0; i < m_actor->ar_num_wings; ++i)
     {
         wing_t& wing = m_actor->ar_wings[i];
