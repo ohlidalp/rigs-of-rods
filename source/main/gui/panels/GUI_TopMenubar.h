@@ -115,6 +115,9 @@ private:
     std::string m_quicksave_name;
     std::vector<std::string> m_savegame_names;
 
+    void DrawUiPresetCombo();
+    std::string m_cached_uipreset_combo_string;
+
     void GetPresets();
     rapidjson::Document j_doc;
 };

@@ -249,6 +249,18 @@ enum class SimResetMode
 };
 std::string ToLocalizedString(SimResetMode e);
 
+/// See `UiPresets[]` list in GUIManager.cpp (declared extern in GUIManager.h)
+// Do NOT change numbers - used for indexing `RoR::UiPresetEntry::uip_values`
+enum class UiPreset
+{
+    NOVICE,
+    REGULAR,
+    EXPERT,
+    MINIMALLIST,
+    Count
+};
+std::string ToLocalizedString(UiPreset e);
+
 enum VisibilityMasks
 {
     DEPTHMAP_ENABLED  = BITMASK(1),
@@ -458,7 +470,8 @@ extern CVar* flexbody_defrag_reorder_texcoords;
 extern CVar* flexbody_defrag_invert_lookup;
 
 // GUI
-extern CVar* ui_show_live_repair_controls;
+extern CVar* ui_show_live_repair_controls; //!< bool
+extern CVar* ui_preset; //!< enum `RoR::UiPreset`
 
 // ------------------------------------------------------------------------------------------------
 // Global objects

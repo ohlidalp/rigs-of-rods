@@ -508,9 +508,17 @@ void TopMenubar::Update()
         ImGui::SetNextWindowPos(menu_pos);
         if (ImGui::Begin(_LC("TopMenubar", "Settings menu"), nullptr, static_cast<ImGuiWindowFlags_>(flags)))
         {
+            // UI SETTINGS
+            ImGui::TextColored(GRAY_HINT_TEXT, "%s", _LC("TopMenubar",  "User interface:"));
+            this->DrawUiPresetCombo();
+
+            // AUDIO SETTINGS
+            ImGui::Separator();
             ImGui::PushItemWidth(125.f); // Width includes [+/-] buttons
             ImGui::TextColored(GRAY_HINT_TEXT, "%s", _LC("TopMenubar",  "Audio:"));
             DrawGFloatSlider(App::audio_master_volume, _LC("TopMenubar", "Volume"), 0, 1);
+
+            // RENDER SETTINGS
             ImGui::Separator();
             ImGui::TextColored(GRAY_HINT_TEXT, "%s", _LC("TopMenubar", "Frames per second:"));
             if (App::gfx_envmap_enabled->getBool())
@@ -519,6 +527,7 @@ void TopMenubar::Update()
             }
             DrawGIntSlider(App::gfx_fps_limit, _LC("TopMenubar", "Game"), 0, 240);
 
+            // SIM SETTINGS
             ImGui::Separator();
             ImGui::TextColored(GRAY_HINT_TEXT, "%s", _LC("TopMenubar", "Simulation:"));
             float slowmotion = std::min(App::GetGameContext()->GetActorManager()->GetSimulationSpeed(), 1.0f);
@@ -531,6 +540,8 @@ void TopMenubar::Update()
             {
                 App::GetGameContext()->GetActorManager()->SetSimulationSpeed(timelapse);
             }
+
+            // CAMERA SETTINGS
             if (App::GetCameraManager()->GetCurrentBehavior() == CameraManager::CAMERA_BEHAVIOR_STATIC)
             {
                 ImGui::Separator();
@@ -563,6 +574,8 @@ void TopMenubar::Update()
                     DrawGCheckbox(App::gfx_fixed_cam_tracking, _LC("TopMenubar", "Tracking"));
                 }
             }
+
+            // SKY SETTINGS
 #ifdef USE_CAELUM
             if (App::gfx_sky_mode->getEnum<GfxSkyMode>() == GfxSkyMode::CAELUM)
             {
@@ -581,6 +594,8 @@ void TopMenubar::Update()
                 }
             }       
 #endif // USE_CAELUM
+
+            // WATER SETTINGS
             if (RoR::App::gfx_water_waves->getBool() && App::mp_state->getEnum<MpState>() != MpState::CONNECTED && App::GetGameContext()->GetTerrain()->getWater())
             {
                 if (App::gfx_water_mode->getEnum<GfxWaterMode>() != GfxWaterMode::HYDRAX && App::gfx_water_mode->getEnum<GfxWaterMode>() != GfxWaterMode::NONE)
@@ -595,12 +610,15 @@ void TopMenubar::Update()
                 }
             }    
             
+            // VEHICLE CONTROL SETTINGS
             if (current_actor != nullptr)
             {
                 ImGui::Separator();
                 ImGui::TextColored(GRAY_HINT_TEXT, "%s", _LC("TopMenubar",  "Vehicle control options:"));
                 DrawGCheckbox(App::io_hydro_coupling, _LC("TopMenubar", "Keyboard steering speed coupling"));
             }
+
+            // MULTIPLAYER SETTINGS
             if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED)
             {
                 ImGui::Separator();
@@ -1848,4 +1866,71 @@ void TopMenubar::GetPresets()
     std::packaged_task<void()> task(GetJson);
     std::thread(std::move(task)).detach();
 #endif // defined(USE_CURL)
+}
+
+void TopMenubar::DrawUiPresetCombo()
+{
+    ImGui::PushID("uiPreset");
+    
+    if (m_cached_uipreset_combo_string == "")
+    {
+        ImAddItemToComboboxString(m_cached_uipreset_combo_string, ToLocalizedString(UiPreset::NOVICE));
+        ImAddItemToComboboxString(m_cached_uipreset_combo_string, ToLocalizedString(UiPreset::REGULAR));
+        ImAddItemToComboboxString(m_cached_uipreset_combo_string, ToLocalizedString(UiPreset::EXPERT));
+        ImAddItemToComboboxString(m_cached_uipreset_combo_string, ToLocalizedString(UiPreset::MINIMALLIST));
+        ImTerminateComboboxString(m_cached_uipreset_combo_string);
+    }
+    DrawGCombo(App::ui_preset, _LC("TopMenubar", "UI Preset"), m_cached_uipreset_combo_string.c_str());
+    if (ImGui::IsItemEdited())
+    {
+        App::GetGuiManager()->ApplyUiPreset();
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        const float COLLUMNWIDTH_NAME = 175.f;
+        const float COLLUMNWIDTH_VALUE = 60.f;
+        // Hack to make space for the table (doesn't autoresize)
+        ImGui::Dummy(ImVec2(COLLUMNWIDTH_NAME + COLLUMNWIDTH_VALUE*((int)UiPreset::Count), 1.f));
+
+        // UiPresets table
+        ImGui::Columns((int)UiPreset::Count + 1);
+        ImGui::SetColumnWidth(0, COLLUMNWIDTH_NAME);
+        for (int i = 0; i < (int)UiPreset::Count; i++)
+        {
+            ImGui::SetColumnWidth(i+1, COLLUMNWIDTH_VALUE);
+        }
+
+        // table header
+        ImGui::TextDisabled("%s", "Setting");
+        ImGui::NextColumn();
+        for (int i = 0; i < (int)UiPreset::Count; i++)
+        {
+            ImGui::TextDisabled("%s", ToLocalizedString((UiPreset)i).c_str());
+            ImGui::NextColumn();
+        }
+
+        // table body
+        ImGui::Separator();
+
+        int presetId = 0;
+        while (UiPresets[presetId].uip_cvar != nullptr)
+        {
+            ImGui::Text("%s", UiPresets[presetId].uip_cvar);
+            ImGui::NextColumn();
+            for (int i = 0; i < (int)UiPreset::Count; i++)
+            {
+                ImGui::Text("%s", UiPresets[presetId].uip_values[i].c_str());
+                ImGui::NextColumn();
+            }
+
+            presetId++;
+        }
+
+        // end table
+        ImGui::Columns(1);
+        ImGui::EndTooltip();
+    }
+
+    ImGui::PopID(); //"uiPreset"
 }
