@@ -214,6 +214,8 @@ void Replay::onPhysicsStep()
 
 void Replay::replayStepActor()
 {
+    rmt_ScopedCPUSample(Replay_replayStepActor, 0);
+
     if (ar_replay_pos != m_replay_pos_prev)
     {
         unsigned long time = 0;

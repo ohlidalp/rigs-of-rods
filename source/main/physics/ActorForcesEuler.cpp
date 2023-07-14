@@ -45,6 +45,8 @@ using namespace RoR;
 
 void Actor::CalcForcesEulerCompute(bool doUpdate, int num_steps)
 {
+    rmt_ScopedCPUSample(Actor_CalcForcesEulerCompute, 0);
+
     this->CalcNodes(); // must be done directly after the inter truck collisions are handled
     this->UpdateBoundingBoxes();
     this->CalcEventBoxes();
@@ -93,6 +95,8 @@ void Actor::CalcForceFeedback(bool doUpdate)
 
 void Actor::CalcMouse()
 {
+    rmt_ScopedCPUSample(Actor_CalcMouse, 0);
+
     if (m_mouse_grab_node != NODENUM_INVALID)
     {
         Vector3 dir = m_mouse_grab_pos - ar_nodes[m_mouse_grab_node].AbsPosition;
@@ -102,6 +106,8 @@ void Actor::CalcMouse()
 
 void Actor::CalcAircraftForces(bool doUpdate)
 {
+    rmt_ScopedCPUSample(Actor_CalcAircraftForces, 0);
+
     //airbrake forces
     for (Airbrake* ab: ar_airbrakes)
         ab->applyForce();
@@ -124,6 +130,8 @@ void Actor::CalcAircraftForces(bool doUpdate)
 
 void Actor::CalcFuseDrag()
 {
+    rmt_ScopedCPUSample(Actor_CalcFuseDrag, 0);
+
     if (m_fusealge_airfoil && m_fusealge_width > 0.0f)
     {
         Vector3 wind = -m_fusealge_front->Velocity;
@@ -150,6 +158,8 @@ void Actor::CalcFuseDrag()
 
 void Actor::CalcBuoyance(bool doUpdate)
 {
+    rmt_ScopedCPUSample(Actor_CalcBuoyance, 0);
+
     if (ar_num_buoycabs && App::GetGameContext()->GetTerrain()->getWater())
     {
         for (int i = 0; i < ar_num_buoycabs; i++)
@@ -162,6 +172,8 @@ void Actor::CalcBuoyance(bool doUpdate)
 
 void Actor::CalcDifferentials()
 {
+    rmt_ScopedCPUSample(Actor_CalcDifferentials, 0);
+
     if (ar_engine && m_num_proped_wheels > 0)
     {
         float torque = ar_engine->getTorque() / m_num_proped_wheels;
@@ -263,6 +275,8 @@ void Actor::CalcDifferentials()
 
 void Actor::CalcWheels(bool doUpdate, int num_steps)
 {
+    rmt_ScopedCPUSample(Actor_CalcWheels, 0);
+
     // driving aids traction control & anti-lock brake pulse
     tc_timer += PHYSICS_DT;
     alb_timer += PHYSICS_DT;
@@ -492,6 +506,8 @@ void Actor::CalcWheels(bool doUpdate, int num_steps)
 
 void Actor::CalcShocks(bool doUpdate, int num_steps)
 {
+    rmt_ScopedCPUSample(Actor_CalcShocks, 0);
+
     //variable shocks for stabilization
     if (this->ar_has_active_shocks && m_stabilizer_shock_request)
     {
@@ -547,6 +563,8 @@ void Actor::CalcShocks(bool doUpdate, int num_steps)
 
 void Actor::CalcHydros()
 {
+    rmt_ScopedCPUSample(Actor_CalcHydros, 0);
+
     //direction
     if (ar_hydro_dir_state != 0 || ar_hydro_dir_command != 0)
     {
@@ -738,6 +756,8 @@ void Actor::CalcHydros()
 
 void Actor::CalcCommands(bool doUpdate)
 {
+    rmt_ScopedCPUSample(Actor_CalcCommands, 0);
+
     if (m_has_command_beams)
     {
         int active = 0;
@@ -1053,6 +1073,8 @@ void Actor::CalcCommands(bool doUpdate)
 
 void Actor::CalcTies()
 {
+    rmt_ScopedCPUSample(Actor_CalcTies, 0);
+
     // go through all ties and process them
     for (std::vector<tie_t>::iterator it = ar_ties.begin(); it != ar_ties.end(); it++)
     {
@@ -1084,6 +1106,8 @@ void Actor::CalcTies()
 }
 void Actor::CalcTruckEngine(bool doUpdate)
 {
+    rmt_ScopedCPUSample(Actor_CalcTruckEngine, 0);
+
     if (ar_engine)
     {
         ar_engine->UpdateEngine(PHYSICS_DT, doUpdate);
@@ -1092,6 +1116,8 @@ void Actor::CalcTruckEngine(bool doUpdate)
 
 void Actor::CalcReplay()
 {
+    rmt_ScopedCPUSample(Actor_CalcReplay, 0);
+
     if (m_replay_handler && m_replay_handler->isValid())
     {
         m_replay_handler->onPhysicsStep();
@@ -1100,6 +1126,8 @@ void Actor::CalcReplay()
 
 bool Actor::CalcForcesEulerPrepare(bool doUpdate)
 {
+    rmt_ScopedCPUSample(Actor_CalcForcesEulerPrepare, 0);
+
     if (m_ongoing_reset)
         return false;
     if (ar_physics_paused)
@@ -1141,6 +1169,8 @@ void LogBeamNodes(RoR::Str<L>& msg, beam_t& beam) // Internal helper
 
 void Actor::CalcBeams(bool trigger_hooks)
 {
+    rmt_ScopedCPUSample(Actor_CalcBeams, 0);
+
     for (int i = 0; i < ar_num_beams; i++)
     {
         if (!ar_beams[i].bm_disabled && !ar_beams[i].bm_inter_actor)
@@ -1400,6 +1430,8 @@ void Actor::CalcBeams(bool trigger_hooks)
 
 void Actor::CalcBeamsInterActor()
 {
+    rmt_ScopedCPUSample(Actor_CalcBeamsInterActor, 0);
+
     for (int i = 0; i < static_cast<int>(ar_inter_beams.size()); i++)
     {
         if (!ar_inter_beams[i]->bm_disabled && ar_inter_beams[i]->bm_inter_actor)
@@ -1533,6 +1565,8 @@ void Actor::CalcBeamsInterActor()
 
 void Actor::CalcNodes()
 {
+    rmt_ScopedCPUSample(Actor_CalcNodes, 0);
+
     const auto water = App::GetGameContext()->GetTerrain()->getWater();
     const float gravity = App::GetGameContext()->GetTerrain()->getGravity();
     m_water_contact = false;
@@ -1645,6 +1679,8 @@ void Actor::CalcEventBoxes()
     // * if a collision was already recorded, test the recorded node. If still colliding, do nothing.
     // * otherwise loop nodes until collision is found. If not, clear the collision record.
     // ----------------------------------------------------------------------------------------------
+
+    rmt_ScopedCPUSample(Actor_CalcEventBoxes, 0);
 
     m_potential_eventboxes.clear();
     App::GetGameContext()->GetTerrain()->GetCollisions()->findPotentialEventBoxes(this, m_potential_eventboxes);

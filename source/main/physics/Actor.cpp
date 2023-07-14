@@ -1191,6 +1191,8 @@ inline void PadBoundingBox(Ogre::AxisAlignedBox& box) // Internal helper
 
 void Actor::UpdateBoundingBoxes()
 {
+    rmt_ScopedCPUSample(Actor_UpdateBoundingBoxes, 0);
+
     // Reset
     ar_bounding_box = AxisAlignedBox::BOX_NULL;
     ar_predicted_bounding_box = AxisAlignedBox::BOX_NULL;
@@ -2549,6 +2551,8 @@ void Actor::CalcAnimators(hydrobeam_t const& hydrobeam, float &cstate, int &div)
 
 void Actor::CalcCabCollisions()
 {
+    rmt_ScopedCPUSample(Actor_CalcCabCollisions, 0);
+
     for (int i = 0; i < ar_num_nodes; i++)
     {
         ar_nodes[i].nd_has_mesh_contact = false;

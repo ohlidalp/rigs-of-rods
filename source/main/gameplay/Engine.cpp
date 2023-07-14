@@ -257,6 +257,8 @@ void Engine::SetEngineOptions(float einertia, char etype, float eclutch, float c
 
 void Engine::UpdateEngine(float dt, int doUpdate)
 {
+    rmt_ScopedCPUSample(EngineSim_UpdateEngineSim, 0);
+
     float acc = m_cur_acc;
 
     acc = std::max(getIdleMixture(), acc);

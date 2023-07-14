@@ -102,6 +102,8 @@ std::pair<RailGroup*, Ogre::Real> Actor::GetClosestRailOnActor(ActorPtr actor, c
 
 void Actor::updateSlideNodeForces(const Ogre::Real dt)
 {
+    rmt_ScopedCPUSample(Actor_updateSlideNodeForces, 0);
+
     for (std::vector<SlideNode>::iterator it = m_slidenodes.begin(); it != m_slidenodes.end(); ++it)
     {
         it->UpdatePosition();

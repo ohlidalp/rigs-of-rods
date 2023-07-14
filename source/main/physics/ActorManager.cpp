@@ -1130,6 +1130,7 @@ void ActorManager::UpdateActors(ActorPtr player_actor)
 
     auto func = std::function<void()>([this]()
         {
+            rmt_SetCurrentThreadName("Physics master thread");
             this->UpdatePhysicsSimulation();
         });
     m_sim_task = m_sim_thread_pool->RunTask(func);
@@ -1154,6 +1155,8 @@ const ActorPtr& ActorManager::GetActorById(ActorInstanceID_t actor_id)
 
 void ActorManager::UpdatePhysicsSimulation()
 {
+    rmt_ScopedCPUSample(ActorManager_UpdatePhysicsSimulation, 0);
+
     for (ActorPtr& actor: m_actors)
     {
         actor->UpdatePhysicsOrigin();
@@ -1466,6 +1469,8 @@ void ActorManager::UpdateInputEvents(float dt)
 
 void ActorManager::UpdateTruckFeatures(ActorPtr vehicle, float dt)
 {
+    rmt_ScopedCPUSample(Actor_UpdateTruckFeatures, 0);
+
     if (vehicle->isBeingReset() || vehicle->ar_physics_paused)
         return;
 #ifdef USE_ANGELSCRIPT

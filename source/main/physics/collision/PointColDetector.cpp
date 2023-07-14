@@ -50,6 +50,8 @@ void PointColDetector::UpdateIntraPoint(bool contactables)
 
 void PointColDetector::UpdateInterPoint(bool ignorestate)
 {
+    rmt_ScopedCPUSample(PointColDetector_UpdateInterPoint, 0);
+
     int contacters_size = 0;
     std::vector<ActorInstanceID_t> collision_partners;
     for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
