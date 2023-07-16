@@ -508,10 +508,6 @@ void TopMenubar::Update()
         ImGui::SetNextWindowPos(menu_pos);
         if (ImGui::Begin(_LC("TopMenubar", "Settings menu"), nullptr, static_cast<ImGuiWindowFlags_>(flags)))
         {
-            // UI SETTINGS
-            ImGui::TextColored(GRAY_HINT_TEXT, "%s", _LC("TopMenubar",  "User interface:"));
-            this->DrawUiPresetCombo();
-
             // AUDIO SETTINGS
             ImGui::Separator();
             ImGui::PushItemWidth(125.f); // Width includes [+/-] buttons
@@ -1866,71 +1862,4 @@ void TopMenubar::GetPresets()
     std::packaged_task<void()> task(GetJson);
     std::thread(std::move(task)).detach();
 #endif // defined(USE_CURL)
-}
-
-void TopMenubar::DrawUiPresetCombo()
-{
-    ImGui::PushID("uiPreset");
-    
-    if (m_cached_uipreset_combo_string == "")
-    {
-        ImAddItemToComboboxString(m_cached_uipreset_combo_string, ToLocalizedString(UiPreset::NOVICE));
-        ImAddItemToComboboxString(m_cached_uipreset_combo_string, ToLocalizedString(UiPreset::REGULAR));
-        ImAddItemToComboboxString(m_cached_uipreset_combo_string, ToLocalizedString(UiPreset::EXPERT));
-        ImAddItemToComboboxString(m_cached_uipreset_combo_string, ToLocalizedString(UiPreset::MINIMALLIST));
-        ImTerminateComboboxString(m_cached_uipreset_combo_string);
-    }
-    DrawGCombo(App::ui_preset, _LC("TopMenubar", "UI Preset"), m_cached_uipreset_combo_string.c_str());
-    if (ImGui::IsItemEdited())
-    {
-        App::GetGuiManager()->ApplyUiPreset();
-    }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        const float COLLUMNWIDTH_NAME = 175.f;
-        const float COLLUMNWIDTH_VALUE = 60.f;
-        // Hack to make space for the table (doesn't autoresize)
-        ImGui::Dummy(ImVec2(COLLUMNWIDTH_NAME + COLLUMNWIDTH_VALUE*((int)UiPreset::Count), 1.f));
-
-        // UiPresets table
-        ImGui::Columns((int)UiPreset::Count + 1);
-        ImGui::SetColumnWidth(0, COLLUMNWIDTH_NAME);
-        for (int i = 0; i < (int)UiPreset::Count; i++)
-        {
-            ImGui::SetColumnWidth(i+1, COLLUMNWIDTH_VALUE);
-        }
-
-        // table header
-        ImGui::TextDisabled("%s", "Setting");
-        ImGui::NextColumn();
-        for (int i = 0; i < (int)UiPreset::Count; i++)
-        {
-            ImGui::TextDisabled("%s", ToLocalizedString((UiPreset)i).c_str());
-            ImGui::NextColumn();
-        }
-
-        // table body
-        ImGui::Separator();
-
-        int presetId = 0;
-        while (UiPresets[presetId].uip_cvar != nullptr)
-        {
-            ImGui::Text("%s", UiPresets[presetId].uip_cvar);
-            ImGui::NextColumn();
-            for (int i = 0; i < (int)UiPreset::Count; i++)
-            {
-                ImGui::Text("%s", UiPresets[presetId].uip_values[i].c_str());
-                ImGui::NextColumn();
-            }
-
-            presetId++;
-        }
-
-        // end table
-        ImGui::Columns(1);
-        ImGui::EndTooltip();
-    }
-
-    ImGui::PopID(); //"uiPreset"
 }
