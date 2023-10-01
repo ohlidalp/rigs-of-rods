@@ -155,7 +155,7 @@ public:
     void DrawCommonGui();
 
     void SetGuiHidden(bool visible);
-    bool IsGuiHidden() const { return m_hide_gui; }
+    bool IsGuiHidden() const { return App::ui_hide_gui->getBool(); }
 
     void SetSceneManagerForGuiRendering(Ogre::SceneManager* scene_manager);
 
@@ -180,7 +180,6 @@ private:
 
     MyGUI::Gui*          m_mygui                    = nullptr;
     MyGUI::OgrePlatform* m_mygui_platform           = nullptr;
-    bool                 m_hide_gui                 = false;
     OgreImGui            m_imgui;
     GuiTheme             m_theme;
     bool                 m_gui_kb_capture_queued    = false; //!< Resets and accumulates every frame
