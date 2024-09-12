@@ -495,7 +495,7 @@ void EngineSim::UpdateEngineSim(float dt, int doUpdate)
         float force_threshold = 1.5f * std::max(m_engine_torque, getEnginePower()) * std::abs(m_gear_ratios[2]);
         float gearboxspinner = m_cur_engine_rpm / m_gear_ratios[m_cur_gear + 1];
         m_cur_clutch_torque = (gearboxspinner - m_cur_wheel_revolutions) * m_cur_clutch * m_clutch_force;
-        m_cur_clutch_torque = Math::Clamp(m_cur_clutch_torque, -force_threshold, +force_threshold);
+        m_cur_clutch_torque = Math::Clamp(m_cur_clutch_torque, -force_threshold, +force_threshold); 
         m_cur_clutch_torque *= 1.0f - approx_exp(-std::abs(gearboxspinner - m_cur_wheel_revolutions));
     }
     else
@@ -977,16 +977,6 @@ float EngineSim::getCrankFactor()
     float crankfactor = 5.0f * rpmRatio;
 
     return crankfactor;
-}
-
-void EngineSim::setClutch(float clutch)
-{
-    m_cur_clutch = clutch;
-}
-
-float EngineSim::getClutch()
-{
-    return m_cur_clutch;
 }
 
 void EngineSim::toggleContact()

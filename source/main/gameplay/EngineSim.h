@@ -88,7 +88,7 @@ public:
     /// @name General state getters
     /// @{
     float          getAcc();
-    float          getClutch();
+    float          getClutch() const { return m_cur_clutch; };
     float          getCrankFactor();
     float          getRPM() { return m_cur_engine_rpm; }
     float          getSmoke();
@@ -109,6 +109,7 @@ public:
     float          getPrimeMixture();
     int            getAutoShift();
     float          getAccToHoldRPM(); //!< estimate required throttle input to hold the current rpm
+    float          getWheelSpin() const { return m_cur_wheel_revolutions; } //!< Wheel RPM
     /// @}
 
     /// @name Shifting diagnostic
@@ -128,7 +129,7 @@ public:
     void           pushNetworkState(float engine_rpm, float acc, float clutch, int gear, bool running, bool contact, char auto_mode, char auto_select = -1);
     void           setAcc(float val);
     void           autoSetAcc(float val);
-    void           setClutch(float clutch);
+    void           setClutch(float clutch) { m_cur_clutch = clutch; }
     void           setRPM(float rpm);
     void           setWheelSpin(float rpm);
     void           setAutoMode(SimGearboxMode mode);

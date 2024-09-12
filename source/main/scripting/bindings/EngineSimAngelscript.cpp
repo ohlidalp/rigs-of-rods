@@ -99,6 +99,7 @@ void RoR::RegisterEngineSim(asIScriptEngine* engine)
     r = engine->RegisterObjectMethod("EngineSimClass", "float getPrimeMixture()", asMETHOD(EngineSim, getPrimeMixture), asCALL_THISCALL); ROR_ASSERT(r >= 0);
     r = engine->RegisterObjectMethod("EngineSimClass", "autoswitch getAutoShift()", asMETHOD(EngineSim, getAutoShift), asCALL_THISCALL); ROR_ASSERT(r >= 0);
     r = engine->RegisterObjectMethod("EngineSimClass", "float getAccToHoldRPM()", asMETHOD(EngineSim, getAccToHoldRPM), asCALL_THISCALL); ROR_ASSERT(r >= 0);
+    r = engine->RegisterObjectMethod("EngineSimClass", "float getWheelSpin()", asMETHOD(EngineSim, getWheelSpin), asCALL_THISCALL); ROR_ASSERT(r >= 0);
  
     //  > shifting diagnostic
     r = engine->RegisterObjectMethod("EngineSimClass", "float getPostShiftClock()", asMETHOD(EngineSim, getPostShiftClock), asCALL_THISCALL); ROR_ASSERT(r >= 0);
