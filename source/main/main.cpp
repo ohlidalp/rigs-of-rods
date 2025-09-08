@@ -655,7 +655,6 @@ int main(int argc, char *argv[])
                     {
                         App::GetGuiManager()->LoadingWindow.SetVisible(false);
                         App::mp_state->setVal((int)RoR::MpState::CONNECTED);
-                        RoR::ChatSystem::SendStreamSetup();
                         if (!App::GetMumble())
                         {
                             App::CreateMumble();
@@ -2007,7 +2006,6 @@ int main(int argc, char *argv[])
                 std::vector<RoR::NetRecvPacket> packets = App::GetNetwork()->GetIncomingStreamData();
                 if (!packets.empty())
                 {
-                    RoR::ChatSystem::HandleStreamData(packets);
                     if (App::app_state->getEnum<AppState>() == AppState::SIMULATION)
                     {
                         App::GetGameContext()->GetActorManager()->HandleActorStreamData(packets);

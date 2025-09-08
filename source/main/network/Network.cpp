@@ -348,7 +348,8 @@ void Network::OnPacketReceived(ENetPacket* packet)
     }
     else if (header.command == MSG2_UTF8_CHAT || header.command == MSG2_UTF8_PRIVCHAT)
     {
-        // Chat message
+        // Console is threadsafe
+        ChatSystem::ReceiveStreamData(header.command, header.source, buffer);
     }
     else if (header.command == MSG2_NETQUALITY && header.source == -1)
     {

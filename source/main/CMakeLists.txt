@@ -15,7 +15,6 @@ set(SOURCE_FILES
         gameplay/AutoPilot.{h,cpp}
         gameplay/Character.{h,cpp}
         gameplay/CharacterFactory.{h,cpp}
-        gameplay/ChatSystem.{h,cpp}
         gameplay/CruiseControl.cpp
         gameplay/Engine.{h,cpp}
         gameplay/Landusemap.{h,cpp}
@@ -137,6 +136,7 @@ set(SOURCE_FILES
         gui/panels/GUI_ScriptMonitor.{h,cpp}
         gui/panels/GUI_SimPerfStats.{h,cpp}
         gui/panels/GUI_SurveyMap.{h,cpp}
+        network/ChatSystem.{h,cpp}
         network/CurlHelpers.{h,cpp}
         network/DiscordRpc.{h,cpp}
         network/Network.{h,cpp}

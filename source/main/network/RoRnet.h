@@ -158,7 +158,7 @@ struct Header                      //!< Common header for every packet
 
 struct StreamRegister              //!< Sent from the client to server and vice versa, to broadcast a new stream
 {
-    int32_t type;                  //!< 0 = Actor, 1 = Character, 3 = ChatSystem
+    int32_t type;                  //!< 0 = Actor, 1 = Character
     int32_t status;                //!< initial stream status
     int32_t origin_sourceid;       //!< origin sourceid
     int32_t origin_streamid;       //!< origin streamid
@@ -214,8 +214,8 @@ struct VehicleState                  //!< Formerly `oob_t`
     float    hydrodirstate;        //!< the turning direction status
     float    brake;                //!< the brake value
     float    wheelspeed;           //!< the wheel speed value
-    BitMask_t flagmask;             //!< flagmask: NETMASK_*
-    BitMask_t lightmask;            //!< flagmask: LIGHTMASK_*
+    BitMask_t flagmask;            //!< flagmask: NETMASK_*
+    BitMask_t lightmask;           //!< flagmask: LIGHTMASK_*
 };
 
 struct ServerInfo
