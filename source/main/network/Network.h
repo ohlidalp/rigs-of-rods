@@ -92,12 +92,6 @@ struct NetCharacterMsgAttach
     int32_t position;
 };
 
-struct NetRecvPacket
-{
-    RoRnet::Header header;
-    char buffer[RORNET_MAX_MESSAGE_LENGTH];
-};
-
 #pragma pack(pop)
 
 // ------------------------ End of network messages --------------------------
@@ -127,8 +121,6 @@ public:
 
     void                 AddPacket(int streamid, int type, int len, const char *content);
     void                 AddLocalStream(RoRnet::StreamRegister *reg, int size);
-
-    std::vector<NetRecvPacket> GetIncomingStreamData();
 
     int                  GetUID();
     int                  GetNetQuality();
@@ -161,7 +153,6 @@ private:
     bool                 SendMessageRaw(char *buffer, int msgsize);
     bool                 SendMessageTcp(int type, unsigned int streamid, int len, char* content);
     void                 DisconnectENet();
-    void                 QueueStreamData(RoRnet::Header &header, char *buffer, size_t buffer_len);
     int                  ReceiveMessageTcp(RoRnet::Header *head, char* content, int bufferlen);
     void                 CouldNotConnect(std::string const & msg, bool close_socket = true);
 
@@ -201,11 +192,8 @@ private:
 
     std::mutex           m_users_mutex;
     std::mutex           m_userdata_mutex;
-    std::mutex           m_recv_packetqueue_mutex;
     std::mutex           m_send_packetqueue_mutex;
 
-
-    std::vector<NetRecvPacket> m_recv_packet_buffer;
     std::deque <NetSendPacket> m_send_packet_buffer;
 };
 

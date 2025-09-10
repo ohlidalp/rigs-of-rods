@@ -2024,17 +2024,11 @@ int main(int argc, char *argv[])
 
 #ifdef USE_SOCKETW
             // Process incoming network traffic
-            if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED)
+            if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED
+                && App::app_state->getEnum<AppState>() == AppState::SIMULATION)
             {
-                std::vector<RoR::NetRecvPacket> packets = App::GetNetwork()->GetIncomingStreamData();
-                if (!packets.empty())
-                {
-                    if (App::app_state->getEnum<AppState>() == AppState::SIMULATION)
-                    {
-                        App::GetGameContext()->GetActorManager()->HandleActorStreamData(packets);
-                        App::GetGameContext()->GetCharacterFactory()->HandleStreamData(packets); // Update characters last (or else beam coupling might fail)
-                    }
-                }
+                App::GetGameContext()->GetActorManager()->HandleActorStreamData();
+                App::GetGameContext()->GetCharacterFactory()->HandleCharacterStreamData(); // Update characters last (or else beam coupling might fail)
             }
 #endif // USE_SOCKETW
 

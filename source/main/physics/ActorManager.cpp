@@ -436,30 +436,23 @@ void ActorManager::RetryFailedStreamRegistrations(ScriptEventArgs* args)
 }
 
 #ifdef USE_SOCKETW
-void ActorManager::HandleActorStreamData(std::vector<RoR::NetRecvPacket> packet_buffer)
+void ActorManager::HandleActorStreamData()
 {
-    // Sort by stream source
-    std::stable_sort(packet_buffer.begin(), packet_buffer.end(),
-            [](const RoR::NetRecvPacket& a, const RoR::NetRecvPacket& b)
-            { return a.header.source > b.header.source; });
-    // Compress data stream by eliminating all but the last update from every consecutive group of stream data updates
-    auto it = std::unique(packet_buffer.rbegin(), packet_buffer.rend(),
-            [](const RoR::NetRecvPacket& a, const RoR::NetRecvPacket& b)
-            { return !memcmp(&a.header, &b.header, sizeof(RoRnet::Header)) &&
-            a.header.command == RoRnet::MSG2_STREAM_DATA; });
-    packet_buffer.erase(packet_buffer.begin(), it.base());
-    for (auto& packet : packet_buffer)
+    while (ENetPacket* packet = recv_actor_packets.Pop())
     {
         for (ActorPtr& actor : m_actors)
         {
             if (actor->ar_state != ActorState::NETWORKED_OK)
                 continue;
-            if (packet.header.source == actor->ar_net_source_id && packet.header.streamid == actor->ar_net_stream_id)
+
+            RoRnet::Header* packet_header = GetRoRnetHeader(packet);
+            if (packet_header->source == actor->ar_net_source_id && packet_header->streamid == actor->ar_net_stream_id)
             {
-                actor->pushNetwork(packet.buffer, packet.header.size);
+                actor->pushNetwork(GetRoRnetBuffer(packet), packet_header->size);
                 break;
             }
         }
+        enet_packet_destroy(packet);
     }
 }
 

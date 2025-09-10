@@ -106,14 +106,16 @@ void CharacterFactory::DeleteAllCharacters()
 }
 
 #ifdef USE_SOCKETW
-void CharacterFactory::HandleStreamData(std::vector<RoR::NetRecvPacket> packet_buffer)
+void CharacterFactory::HandleCharacterStreamData()
 {
-    for (auto packet : packet_buffer)
+    while (ENetPacket* packet = recv_character_packets.Pop())
     {
+        RoRnet::Header* packet_header = GetRoRnetHeader(packet);
         for (auto& c : m_remote_characters)
         {
-            c->receiveStreamData(packet.header.command, packet.header.source, packet.header.streamid, packet.buffer);
+            c->receiveStreamData(packet_header->command, packet_header->source, packet_header->streamid, GetRoRnetBuffer(packet));
         }
+        enet_packet_destroy(packet);
     }
 }
 

@@ -26,6 +26,10 @@
 #include "ForwardDeclarations.h"
 #include "RoRnet.h"
 
+#include <enet/enet.h>
+#include <mutex>
+#include <queue>
+
 namespace RoR {
 
     /// @addtogroup Network
@@ -45,6 +49,37 @@ namespace RoR {
         ROR_ASSERT(packet->dataLength > sizeof(RoRnet::Header));
         return (char*)packet->data + sizeof(RoRnet::Header);
     }
+
+    inline bool IsRoRnetDiscardable(int type)
+    {
+        return type == RoRnet::MSG2_STREAM_DATA_ACTOR || type == RoRnet::MSG2_STREAM_DATA_CHARACTER;
+    }
+
+    class ConcurrentPacketQueue
+    {
+        std::queue<ENetPacket*> m_queue;
+        std::mutex m_mutex;
+    public:
+        void Push(ENetPacket* packet)
+        {
+            ROR_ASSERT(packet);
+            ROR_ASSERT(GetRoRnetHeader(packet));
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_queue.push(packet);
+        }
+
+        ENetPacket* Pop()
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            if (m_queue.empty())
+            {
+                return nullptr;
+            }
+            ENetPacket* packet = m_queue.front();
+            m_queue.pop();
+            return packet;
+        }
+    };
 
     /// @}   //addtogroup Network
 

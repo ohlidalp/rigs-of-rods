@@ -27,6 +27,7 @@
 #include "Application.h"
 #include "CmdKeyInertia.h"
 #include "Network.h"
+#include "NetUtils.h"
 #include "RigDef_Prerequisites.h"
 #include "ScriptEvents.h"
 #include "SimData.h"
@@ -106,7 +107,7 @@ public:
     /// @name Networking
     /// @{
 #ifdef USE_SOCKETW
-    void           HandleActorStreamData(std::vector<RoR::NetRecvPacket> packet);
+    void           HandleActorStreamData();
     void           HandleBroadcastPacketDispatched(ENetPacket* packet); //!< Handles everything but `MSG2_STREAM_DATA`
 #endif
     unsigned long  GetNetTime() { return m_net_timer.getMilliseconds(); };
@@ -132,6 +133,8 @@ public:
 
     std::map<beam_t*, std::pair<ActorPtr, ActorPtr>> inter_actor_links;
     bool AreActorsDirectlyLinked(const ActorPtr& a1, const ActorPtr& a2);
+
+    ConcurrentPacketQueue recv_actor_packets;
 
     static const ActorPtr ACTORPTR_NULL; // Dummy value to be returned as const reference.
 

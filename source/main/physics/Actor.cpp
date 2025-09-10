@@ -2157,7 +2157,7 @@ void Actor::sendStreamData()
         }
     }
 
-    App::GetNetwork()->AddPacket(ar_net_stream_id, MSG2_STREAM_DATA_DISCARDABLE, packet_len, send_buffer);
+    App::GetNetwork()->AddPacket(ar_net_stream_id, MSG2_STREAM_DATA_ACTOR, packet_len, send_buffer);
 #endif //SOCKETW
 }
 

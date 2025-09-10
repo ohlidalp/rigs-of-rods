@@ -160,16 +160,6 @@ bool Network::SendMessageTcp(int type, unsigned int streamid, int len, char* con
     return SendMessageRaw(buffer, msgsize);
 }
 
-void Network::QueueStreamData(RoRnet::Header &header, char *buffer, size_t buffer_len)
-{
-    NetRecvPacket packet;
-    packet.header = header;
-    memcpy(packet.buffer, buffer, std::min(buffer_len, size_t(RORNET_MAX_MESSAGE_LENGTH)));
-
-    std::lock_guard<std::mutex> lock(m_recv_packetqueue_mutex);
-    m_recv_packet_buffer.push_back(packet);
-}
-
 int Network::ReceiveMessageTcp(RoRnet::Header *head, char* content, int bufferlen)
 {
     SWBaseSocket::SWBaseError error;
@@ -453,9 +443,13 @@ void Network::OnPacketReceived(ENetPacket* packet)
 #endif // USE_ANGELSCRIPT
         return;
     }
-    else // MSG2_STREAM_DATA
+    else if (header.command == MSG2_STREAM_DATA_CHARACTER)
     {
-        QueueStreamData(header, buffer, RORNET_MAX_MESSAGE_LENGTH);
+        App::GetGameContext()->GetCharacterFactory()->recv_character_packets.Push(packet);
+    }
+    else if (header.command == MSG2_STREAM_DATA_ACTOR)
+    {
+        App::GetGameContext()->GetActorManager()->recv_actor_packets.Push(packet);
     }
 }
 
@@ -600,7 +594,7 @@ bool Network::ConnectThread()
                 
                 { // enet lock scope
                     std::lock_guard<std::mutex> enet_lock(m_enet_mutex);
-                    enet_uint32 packet_flags = (q_packet.type == RoRnet::MSG2_STREAM_DATA_DISCARDABLE) ? 0 : ENET_PACKET_FLAG_RELIABLE;
+                    enet_uint32 packet_flags = (IsRoRnetDiscardable(q_packet.type)) ? 0 : ENET_PACKET_FLAG_RELIABLE;
                     ENetPacket* packet = enet_packet_create(q_packet.buffer, q_packet.size, packet_flags);
                     if (packet == nullptr)
                     {
@@ -689,7 +683,6 @@ bool Network::ConnectThread()
     this->SetNetQuality(0);
     m_users.clear();
     m_disconnected_users.clear();
-    m_recv_packet_buffer.clear();
     App::GetConsole()->doCommand("clear net");
     m_shutdown = false;    
 
@@ -754,7 +747,7 @@ void Network::AddPacket(int streamid, int type, int len, const char *content)
     packet.type = type;
 
     std::lock_guard<std::mutex> lock(m_send_packetqueue_mutex);
-    if (type == MSG2_STREAM_DATA_DISCARDABLE)
+    if (IsRoRnetDiscardable(type))
     {
         if (m_send_packet_buffer.size() > m_packet_buffer_size)
         {
@@ -784,14 +777,6 @@ void Network::AddLocalStream(RoRnet::StreamRegister *reg, int size)
     LOG("adding local stream: " + TOSTRING(m_uid) + ":"+ TOSTRING(m_stream_id) + ", type: " + TOSTRING(reg->type));
 
     m_stream_id++;
-}
-
-std::vector<NetRecvPacket> Network::GetIncomingStreamData()
-{
-    std::lock_guard<std::mutex> lock(m_recv_packetqueue_mutex);
-    std::vector<NetRecvPacket> buf_copy = m_recv_packet_buffer;
-    m_recv_packet_buffer.clear();
-    return buf_copy;
 }
 
 Ogre::String Network::GetTerrainName()

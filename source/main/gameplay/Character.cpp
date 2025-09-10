@@ -466,14 +466,14 @@ void Character::SendStreamData()
 
     m_net_last_anim_time = m_anim_time;
 
-    App::GetNetwork()->AddPacket(m_stream_id, RoRnet::MSG2_STREAM_DATA_DISCARDABLE, sizeof(NetCharacterMsgPos), (char*)&msg);
+    App::GetNetwork()->AddPacket(m_stream_id, RoRnet::MSG2_STREAM_DATA_CHARACTER, sizeof(NetCharacterMsgPos), (char*)&msg);
 #endif // USE_SOCKETW
 }
 
 void Character::receiveStreamData(unsigned int& type, int& source, unsigned int& streamid, char* buffer)
 {
 #ifdef USE_SOCKETW
-    if (type == RoRnet::MSG2_STREAM_DATA && m_source_id == source && m_stream_id == streamid)
+    if (type == RoRnet::MSG2_STREAM_DATA_CHARACTER && m_source_id == source && m_stream_id == streamid)
     {
         auto* msg = reinterpret_cast<NetCharacterMsgGeneric*>(buffer);
         if (msg->command == CHARACTER_CMD_POSITION)
@@ -532,13 +532,13 @@ void Character::SetActorCoupling(bool enabled, ActorPtr actor)
             msg.command = CHARACTER_CMD_ATTACH;
             msg.source_id = m_actor_coupling->ar_net_source_id;
             msg.stream_id = m_actor_coupling->ar_net_stream_id;
-            App::GetNetwork()->AddPacket(m_stream_id, RoRnet::MSG2_STREAM_DATA, sizeof(NetCharacterMsgAttach), (char*)&msg);
+            App::GetNetwork()->AddPacket(m_stream_id, RoRnet::MSG2_STREAM_DATA_CHARACTER, sizeof(NetCharacterMsgAttach), (char*)&msg);
         }
         else
         {
             NetCharacterMsgGeneric msg;
             msg.command = CHARACTER_CMD_DETACH;
-            App::GetNetwork()->AddPacket(m_stream_id, RoRnet::MSG2_STREAM_DATA, sizeof(NetCharacterMsgGeneric), (char*)&msg);
+            App::GetNetwork()->AddPacket(m_stream_id, RoRnet::MSG2_STREAM_DATA_CHARACTER, sizeof(NetCharacterMsgGeneric), (char*)&msg);
         }
     }
 #endif // USE_SOCKETW
