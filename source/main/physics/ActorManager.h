@@ -41,6 +41,18 @@ namespace RoR {
 /// @addtogroup Physics
 /// @{
 
+    struct SimulationSteppingContext //!< Param to `UpdatePhysicsSimulation()` - copy variables for thread safety.
+    {
+        // cvars
+        RoR::MpState ssc_mp_state = RoR::MpState::DISABLED;
+        int ssc_mp_actor_send_interval = 0;
+        int ssc_mp_actor_recv_interval = 0;
+        int ssc_mp_actor_calc_interval = 0;
+
+        // state
+        long long ssc_elapsed_physics_steps = 0;
+    };
+
 /// Builds and manages softbody actors (physics on background thread, networking)
 class ActorManager
 {
@@ -80,7 +92,7 @@ public:
 
     void           UpdateActors(ActorPtr player_actor);
     void           SyncWithSimThread();
-    void           UpdatePhysicsSimulation();
+    void           UpdatePhysicsSimulation(SimulationSteppingContext ctx);
     void           WakeUpAllActors();
     void           SendAllActorsSleeping();
     void           SetTrucksForcedAwake(bool forced)       { m_forced_awake = forced; };
@@ -89,7 +101,7 @@ public:
     float          GetSimulationSpeed() const              { return m_simulation_speed; };
     bool           IsSimulationPaused() const              { return m_simulation_paused; }
     void           SetSimulationPaused(bool v)             { m_simulation_paused = v; }
-    float          GetTotalTime() const                    { return m_total_sim_time; }
+    float          GetTotalTime() const                    { return m_total_physics_steps * PHYSICS_DT; }
     RoR::CmdKeyInertiaConfig& GetInertiaConfig()           { return m_inertia_config; }
     
 
@@ -165,7 +177,7 @@ private:
     float               m_last_simulation_speed  = 0.1f;  //!< previously used time ratio between real time (evt.timeSinceLastFrame) and physics time ('dt' used in calcPhysics)
     float               m_simulation_time        = 0.f;   //!< Amount of time the physics simulation is going to be advanced
     bool                m_simulation_paused      = false;
-    float               m_total_sim_time         = 0.f;
+    long long           m_total_physics_steps        = 0;
     FreeForceVec_t      m_free_forces;                    //!< Global forces added ad-hoc by scripts
     FreeForceID_t       m_free_force_next_id     = 0;     //!< Unique ID for each FreeForce
 

@@ -521,8 +521,6 @@ public:
     int               ar_net_source_id = 0;               //!< Unique ID of remote player who spawned this actor
     int               ar_net_stream_id = 0;
     std::map<int,int> ar_net_stream_results;
-    Ogre::Timer       ar_net_timer;
-    unsigned long     ar_net_last_update_time = 0;
     float             ar_collision_range = DEFAULT_COLLISION_RANGE;             //!< Physics attr
     float             ar_top_speed = 0.f;                   //!< Sim state
     ground_model_t*   ar_last_fuzzy_ground_model = nullptr;     //!< GUI state

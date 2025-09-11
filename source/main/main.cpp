@@ -2027,7 +2027,7 @@ int main(int argc, char *argv[])
             if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED
                 && App::app_state->getEnum<AppState>() == AppState::SIMULATION)
             {
-                App::GetGameContext()->GetActorManager()->HandleActorStreamData();
+                // NOTE: remote actors are updated directly in physics loop
                 App::GetGameContext()->GetCharacterFactory()->HandleCharacterStreamData(); // Update characters last (or else beam coupling might fail)
             }
 #endif // USE_SOCKETW

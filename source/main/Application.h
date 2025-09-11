@@ -672,6 +672,9 @@ extern CVar* mp_player_name;
 extern CVar* mp_player_token;
 extern CVar* mp_api_url;
 extern CVar* mp_cyclethru_net_actors; //!< Include remote actors when cycling through with CTRL + [ and CTRL + ]
+extern CVar* mp_actor_send_interval;
+extern CVar* mp_actor_recv_interval;
+extern CVar* mp_actor_calc_interval;
 
 // New remote API
 extern CVar* remote_query_url;

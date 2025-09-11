@@ -74,6 +74,9 @@ void Console::cVarSetupBuiltins()
     App::mp_player_token         = this->cVarCreate("mp_player_token",         "User Token",                 CVAR_ARCHIVE | CVAR_NO_LOG);
     App::mp_api_url              = this->cVarCreate("mp_api_url",              "Online API URL",             CVAR_ARCHIVE,                     "http://api.rigsofrods.org");
     App::mp_cyclethru_net_actors = this->cVarCreate("mp_cyclethru_net_actors", "",                           CVAR_ARCHIVE | CVAR_TYPE_BOOL,    "false");
+    App::mp_actor_send_interval  = this->cVarCreate("mp_actor_send_interval",  "Packet send interval (ms)",                 CVAR_TYPE_INT,     "100");
+    App::mp_actor_recv_interval  = this->cVarCreate("mp_actor_recv_interval",  "Packet recv interval (ms)",                 CVAR_TYPE_INT,     "100");
+    App::mp_actor_calc_interval  = this->cVarCreate("mp_actor_calc_interval",  "Actor update interval (ms)",                CVAR_TYPE_INT,     "10");
 
     App::remote_query_url        = this->cVarCreate("remote_query_url",        "",                           CVAR_ARCHIVE,                     "https://v2.api.rigsofrods.org");
 

@@ -948,7 +948,7 @@ void ActorManager::CleanUpSimulation() // Called after simulation finishes
         this->DeleteActorInternal(m_actors.back()); // OK to invoke here - CleanUpSimulation() - processing `MSG_SIM_UNLOAD_TERRAIN_REQUESTED`
     }
 
-    m_total_sim_time = 0.f;
+    m_total_physics_steps = 0;
     m_last_simulation_speed = 0.1f;
     m_simulation_paused = false;
     m_simulation_speed = 1.f;
@@ -1159,14 +1159,6 @@ void ActorManager::UpdateActors(ActorPtr player_actor)
                 actor->updateSkidmarks();
             }
         }
-        if (App::mp_state->getEnum<MpState>() == RoR::MpState::CONNECTED)
-        {
-            // FIXME: Hidden actors must also be updated to workaround a glitch, see https://github.com/RigsOfRods/rigs-of-rods/issues/2911
-            if (actor->ar_state == ActorState::NETWORKED_OK || actor->ar_state == ActorState::NETWORKED_HIDDEN)
-                actor->calcNetwork();
-            else
-                actor->sendStreamData();
-        }
     }
 
     if (player_actor != nullptr)
@@ -1203,13 +1195,20 @@ void ActorManager::UpdateActors(ActorPtr player_actor)
         }
     }
 
-    auto func = std::function<void()>([this]()
+    SimulationSteppingContext ctx;
+    ctx.ssc_mp_state = App::mp_state->getEnum<MpState>();
+    ctx.ssc_mp_actor_send_interval = App::mp_actor_send_interval->getInt();
+    ctx.ssc_mp_actor_recv_interval = App::mp_actor_recv_interval->getInt();
+    ctx.ssc_mp_actor_calc_interval = App::mp_actor_calc_interval->getInt();
+    ctx.ssc_elapsed_physics_steps = m_total_physics_steps;
+
+    auto func = std::function<void()>([this, ctx]()
         {
-            this->UpdatePhysicsSimulation();
+            this->UpdatePhysicsSimulation(ctx);
         });
     m_sim_task = m_sim_thread_pool->RunTask(func);
 
-    m_total_sim_time += dt;
+    m_total_physics_steps += m_physics_steps;
 
     if (!App::app_async_physics->getBool())
         m_sim_task->join();
@@ -1227,7 +1226,7 @@ const ActorPtr& ActorManager::GetActorById(ActorInstanceID_t actor_id)
     return ACTORPTR_NULL;
 }
 
-void ActorManager::UpdatePhysicsSimulation()
+void ActorManager::UpdatePhysicsSimulation(SimulationSteppingContext ctx)
 {
     for (ActorPtr& actor: m_actors)
     {
@@ -1235,6 +1234,16 @@ void ActorManager::UpdatePhysicsSimulation()
     }
     for (int i = 0; i < m_physics_steps; i++)
     {
+        const long long now_microsec = (ctx.ssc_elapsed_physics_steps + i) * static_cast<double>(PHYSICS_DT) * 10000.0;
+
+        // Fetch received network packets in regular intervals
+        // TBD: controller inputs should be polled like this also ~ ohlidalp, 2025
+        if (ctx.ssc_mp_state == MpState::CONNECTED
+            && now_microsec % (ctx.ssc_mp_actor_recv_interval*10) == 0)
+        {
+            this->HandleActorStreamData();
+        }
+
         {
             std::vector<std::function<void()>> tasks;
             for (ActorPtr& actor: m_actors)
@@ -1244,6 +1253,18 @@ void ActorManager::UpdatePhysicsSimulation()
                     auto func = std::function<void()>([this, i, &actor]()
                         {
                             actor->CalcForcesEulerCompute(i == 0, m_physics_steps);
+                        });
+                    tasks.push_back(func);
+                }
+                // Update networked actors at regular interval
+                // FIXME: Hidden actors must also be updated to workaround a glitch, see https://github.com/RigsOfRods/rigs-of-rods/issues/2911
+                else if (ctx.ssc_mp_state == MpState::CONNECTED
+                    && (actor->ar_state == ActorState::NETWORKED_OK || actor->ar_state == ActorState::NETWORKED_HIDDEN)
+                    && now_microsec % (ctx.ssc_mp_actor_calc_interval*10) == 0)
+                {
+                    auto func = std::function<void()>([&actor]()
+                        {
+                            actor->calcNetwork();
                         });
                     tasks.push_back(func);
                 }
@@ -1284,6 +1305,19 @@ void ActorManager::UpdatePhysicsSimulation()
                 }
             }
             App::GetThreadPool()->Parallelize(tasks);
+        }
+
+        // Send network updates in regular intervals
+        if (ctx.ssc_mp_state == MpState::CONNECTED
+            && now_microsec % (ctx.ssc_mp_actor_send_interval*10) == 0)
+        {
+            for (ActorPtr& actor : m_actors)
+            {
+                if (actor->ar_state != ActorState::NETWORKED_OK && actor->ar_state != ActorState::NETWORKED_HIDDEN)
+                {
+                    actor->sendStreamData();
+                }
+            }
         }
 
         // Apply FreeForces - intentionally as a separate pass over all actors
