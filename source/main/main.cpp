@@ -1070,6 +1070,11 @@ int main(int argc, char *argv[])
                 {
                     try
                     {
+                        if (!App::GetGameContext()->GetTerrain())
+                        {
+                            break;
+                        }
+
                         if (App::sim_state->getEnum<SimState>() == SimState::EDITOR_MODE)
                         {
                             App::GetGameContext()->GetTerrain()->GetTerrainEditor()->WriteSeparateOutputFile();
