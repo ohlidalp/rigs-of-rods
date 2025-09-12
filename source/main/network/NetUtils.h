@@ -50,6 +50,14 @@ namespace RoR {
         return (char*)packet->data + sizeof(RoRnet::Header);
     }
 
+    inline RoRnet::CharacterState* GetRoRnetCharacterState(ENetPacket* packet)
+    {
+        RoRnet::Header* header = GetRoRnetHeader(packet);
+        ROR_ASSERT(header->size == sizeof(RoRnet::CharacterState));
+        ROR_ASSERT(packet->dataLength == sizeof(RoRnet::Header) + sizeof(RoRnet::CharacterState));
+        return (RoRnet::CharacterState*)(packet->data + sizeof(RoRnet::Header));
+    }
+
     inline bool IsRoRnetDiscardable(int type)
     {
         return type == RoRnet::MSG2_STREAM_DATA_ACTOR || type == RoRnet::MSG2_STREAM_DATA_CHARACTER;

@@ -69,7 +69,7 @@ void CharacterFactory::removeStreamSource(int sourceid)
 {
     for (auto it = m_remote_characters.begin(); it != m_remote_characters.end(); it++)
     {
-        if ((*it)->getSourceID() == sourceid)
+        if ((*it)->cr_net_source_id == sourceid)
         {
             (*it).reset();
             m_remote_characters.erase(it);
@@ -88,17 +88,6 @@ void CharacterFactory::Update(float dt)
     }
 }
 
-void CharacterFactory::UndoRemoteActorCoupling(ActorPtr actor)
-{
-    for (auto& c : m_remote_characters)
-    {
-        if (c->GetActorCoupling() == actor)
-        {
-            c->SetActorCoupling(nullptr);
-        }
-    }
-}
-
 void CharacterFactory::DeleteAllCharacters()
 {
     m_remote_characters.clear(); // std::unique_ptr<> will do the cleanup...
@@ -113,7 +102,10 @@ void CharacterFactory::HandleCharacterStreamData()
         RoRnet::Header* packet_header = GetRoRnetHeader(packet);
         for (auto& c : m_remote_characters)
         {
-            c->receiveStreamData(packet_header->command, packet_header->source, packet_header->streamid, GetRoRnetBuffer(packet));
+            if (c->cr_net_source_id == packet_header->source && c->cr_net_stream_id == packet_header->streamid)
+            {
+                c->receiveStreamData(packet);
+            }
         }
         enet_packet_destroy(packet);
     }

@@ -35,14 +35,13 @@
 #include "Utils.h"
 #include "GfxWater.h"
 
+#include <enet/enet.h>
+
 using namespace Ogre;
 using namespace RoR;
 
-#define LOGSTREAM Ogre::LogManager::getSingleton().stream()
-
 Character::Character(int source, unsigned int streamid, std::string player_name, int color_number, bool is_remote) :
-      m_actor_coupling(nullptr)
-    , m_can_jump(false)
+    m_can_jump(false)
     , m_character_rotation(0.0f)
     , m_character_h_speed(2.0f)
     , m_character_v_speed(0.0f)
@@ -52,8 +51,8 @@ Character::Character(int source, unsigned int streamid, std::string player_name,
     , m_net_last_update_time(0.f)
     , m_net_username(player_name)
     , m_is_remote(is_remote)
-    , m_source_id(source)
-    , m_stream_id(streamid)
+    , cr_net_source_id(source)
+    , cr_net_stream_id(streamid)
     , m_gfx_character(nullptr)
     , m_driving_anim_length(0.f)
     , m_anim_name("Idle_sway")
@@ -126,7 +125,7 @@ float calculate_collision_depth(Vector3 pos)
 
 void Character::update(float dt)
 {
-    if (!m_is_remote && (m_actor_coupling == nullptr) && (App::sim_state->getEnum<SimState>() != SimState::PAUSED))
+    if (!m_is_remote && (m_occupied_actor == nullptr) && (App::sim_state->getEnum<SimState>() != SimState::PAUSED))
     {
         // disable character movement when using the free camera mode or when the menu is opened
         // TODO: check for menu being opened
@@ -182,7 +181,7 @@ void Character::update(float dt)
                                 m_last_vehicle_position = cab_position;
                                 m_last_vehicle_rotation = Ogre::Radian(actor->getRotation());
                                 m_last_contacting_cab = i;
-                                this->SetContactingActor(actor);
+                                m_contacting_actor = actor;
                             }
                             m_contacting_cab = i;
                         }
@@ -231,7 +230,7 @@ void Character::update(float dt)
                 }
                 else if (m_contacting_actor != nullptr && !m_contacting_actor->ar_bounding_box.contains(position)) // we lost contact, reset contacting actor
                 {
-                    this->SetContactingActor(nullptr);
+                    m_contacting_actor = nullptr;
                 }
             }
 
@@ -435,7 +434,7 @@ void Character::update(float dt)
 
         m_character_position = position;
     }
-    else if (m_actor_coupling) // The character occupies a vehicle or machine
+    else if (m_occupied_actor) // The character occupies a vehicle or machine
     {
         // Submesh collision - Prevent knockbacks on vehicle exit
         if (m_contacting_actor != nullptr)
@@ -444,7 +443,7 @@ void Character::update(float dt)
         }
 
         // Animation
-        float angle = m_actor_coupling->ar_hydro_dir_wheel_display * -1.0f; // not getSteeringAngle(), but this, as its smoothed
+        float angle = m_occupied_actor->ar_hydro_dir_wheel_display * -1.0f; // not getSteeringAngle(), but this, as its smoothed
         float anim_time_pos = ((angle + 1.0f) * 0.5f) * m_driving_anim_length;
         // prevent animation flickering on the borders:
         if (anim_time_pos < 0.01f)
@@ -494,26 +493,6 @@ void Character::move(Vector3 offset)
     m_character_position += offset;  //ASYNCSCENE OLD m_character_scenenode->translate(offset);
 }
 
-// Helper function
-void Character::ReportError(const char* detail)
-{
-#ifdef USE_SOCKETW
-    std::string username;
-    RoRnet::UserInfo info;
-    if (!App::GetNetwork()->GetUserInfo(m_source_id, info))
-        username = "~~ERROR getting username~~";
-    else
-        username = info.username;
-
-    char msg_buf[300];
-    snprintf(msg_buf, 300,
-        "[RoR|Networking] ERROR on m_is_remote character (User: '%s', SourceID: %d, StreamID: %d): ",
-        username.c_str(), m_source_id, m_stream_id);
-
-    LOGSTREAM << msg_buf << detail;
-#endif
-}
-
 void Character::SendStreamSetup()
 {
 #ifdef USE_SOCKETW
@@ -529,8 +508,8 @@ void Character::SendStreamSetup()
 
     App::GetNetwork()->AddLocalStream(&reg, sizeof(RoRnet::StreamRegister));
 
-    m_source_id = reg.origin_sourceid;
-    m_stream_id = reg.origin_streamid;
+    cr_net_source_id = reg.origin_sourceid;
+    cr_net_stream_id = reg.origin_streamid;
 #endif // USE_SOCKETW
 }
 
@@ -540,25 +519,27 @@ void Character::SendStreamData()
     if (m_net_timer.getMilliseconds() - m_net_last_update_time < 100)
         return;
 
-    // do not send position data if coupled (seated) with an actor already
-    if (m_actor_coupling)
-        return;
-
     m_net_last_update_time = m_net_timer.getMilliseconds();
 
-    NetCharacterMsgPos msg;
+    RoRnet::CharacterState msg;
     if (m_contacting_actor)
     {
         const Ogre::Vector3 cab_coords = CalcCabAveragePos(m_contacting_actor, m_contacting_cab);
-        msg.command = CHARACTER_CMD_POSITION_CAB;
+        msg.coupling_source_id = m_contacting_actor->ar_net_source_id;
+        msg.coupling_stream_id = m_contacting_actor->ar_net_stream_id;
         msg.pos_x = m_character_position.x - cab_coords.x;
         msg.pos_y = m_character_position.y - cab_coords.y;
         msg.pos_z = m_character_position.z - cab_coords.z;
-        msg.cab_index = m_contacting_cab;
+        msg.coupling_cab_num = m_contacting_cab;
+    }
+    else if (m_occupied_actor)
+    {
+        msg.coupling_source_id = m_occupied_actor->ar_net_source_id;
+        msg.coupling_stream_id = m_occupied_actor->ar_net_stream_id;
+        msg.coupling_seat_num = m_occupied_seat;
     }
     else
     {
-        msg.command = CHARACTER_CMD_POSITION_GROUND;
         msg.pos_x = m_character_position.x;
         msg.pos_y = m_character_position.y;
         msg.pos_z = m_character_position.z;
@@ -569,126 +550,72 @@ void Character::SendStreamData()
 
     m_net_last_anim_time = m_anim_time;
 
-    App::GetNetwork()->AddPacket(m_stream_id, RoRnet::MSG2_STREAM_DATA_CHARACTER, sizeof(NetCharacterMsgPos), (char*)&msg);
+    App::GetNetwork()->AddPacket(cr_net_stream_id, RoRnet::MSG2_STREAM_DATA_CHARACTER, sizeof(RoRnet::CharacterState), (char*)&msg);
 #endif // USE_SOCKETW
 }
 
-void Character::receiveStreamData(unsigned int& type, int& source, unsigned int& streamid, char* buffer)
+void Character::receiveStreamData(ENetPacket* packet)
 {
 #ifdef USE_SOCKETW
-    if (type == RoRnet::MSG2_STREAM_DATA_CHARACTER && m_source_id == source && m_stream_id == streamid)
+    ROR_ASSERT(GetRoRnetHeader(packet)->command == RoRnet::MSG2_STREAM_DATA_CHARACTER);
+    ROR_ASSERT(GetRoRnetHeader(packet)->source == cr_net_source_id);
+    ROR_ASSERT(GetRoRnetHeader(packet)->streamid == cr_net_stream_id);
+
+    RoRnet::CharacterState* msg = GetRoRnetCharacterState(packet);
+
+    if (msg->coupling_source_id != -1 && msg->coupling_stream_id != -1)
     {
-        auto* msg = reinterpret_cast<NetCharacterMsgGeneric*>(buffer);
-        if (msg->command == CHARACTER_CMD_POSITION_GROUND || msg->command == CHARACTER_CMD_POSITION_CAB)
+        if (msg->coupling_cab_num != -1)
         {
-            auto* pos_msg = reinterpret_cast<NetCharacterMsgPos*>(buffer);
-            if (msg->command == CHARACTER_CMD_POSITION_GROUND)
+            if (!m_contacting_actor
+                || m_contacting_actor->ar_state == ActorState::DISPOSED
+                || m_contacting_actor->ar_net_source_id != msg->coupling_source_id
+                || m_contacting_actor->ar_net_stream_id != msg->coupling_stream_id)
             {
-                this->setPosition(Ogre::Vector3(pos_msg->pos_x, pos_msg->pos_y, pos_msg->pos_z));
+                m_contacting_actor = App::GetGameContext()->GetActorManager()->GetActorByNetworkLinks(msg->coupling_source_id, msg->coupling_stream_id);
             }
-            else if (msg->command == CHARACTER_CMD_POSITION_CAB)
+            if (m_contacting_actor)
             {
-                m_net_cab_offset = Ogre::Vector3(pos_msg->pos_x, pos_msg->pos_y, pos_msg->pos_z);
-                m_contacting_cab = pos_msg->cab_index;
-            }
-            this->setRotation(Ogre::Radian(pos_msg->rot_angle));
-            if (strnlen(pos_msg->anim_name, CHARACTER_ANIM_NAME_LEN) < CHARACTER_ANIM_NAME_LEN)
-            {
-                this->SetAnimState(pos_msg->anim_name, pos_msg->anim_time);
+                m_net_cab_offset = Ogre::Vector3(msg->pos_x, msg->pos_y, msg->pos_z);
+                m_contacting_cab = msg->coupling_cab_num;
             }
         }
-        else if (msg->command == CHARACTER_CMD_DETACH)
+        else if (msg->coupling_seat_num != -1)
         {
-            if (m_actor_coupling != nullptr)
-                this->SetActorCoupling(nullptr);
-            else if (m_contacting_actor != nullptr)
-                this->SetContactingActor(nullptr);
-            else
-                this->ReportError("Received command `DETACH`, but not currently attached to a vehicle. Ignoring command.");
-        }
-        else if (msg->command == CHARACTER_CMD_ATTACH_SEAT || msg->command == CHARACTER_CMD_ATTACH_CAB)
-        {
-            auto* attach_msg = reinterpret_cast<NetCharacterMsgAttach*>(buffer);
-            ActorPtr actor = App::GetGameContext()->GetActorManager()->GetActorByNetworkLinks(attach_msg->source_id, attach_msg->stream_id);
-            if (actor != nullptr)
+            if (!m_occupied_actor
+                || m_occupied_actor->ar_state == ActorState::DISPOSED
+                || m_occupied_actor->ar_net_source_id != msg->coupling_source_id
+                || m_occupied_actor->ar_net_stream_id != msg->coupling_stream_id)
             {
-                if (msg->command == CHARACTER_CMD_ATTACH_SEAT)
-                {
-                    this->SetActorCoupling(actor);
-                }
-                else if (msg->command == CHARACTER_CMD_ATTACH_CAB)
-                {
-                    this->SetContactingActor(actor);
-                    m_contacting_cab = -1; // Indicate we have no network updates yet.
-                }
-            }
-            else
-            {
-                char err_buf[200];
-                snprintf(err_buf, 200, "Received command `ATTACH` with target{SourceID: %d, StreamID: %d}, "
-                    "but corresponding vehicle doesn't exist. Ignoring command.",
-                    attach_msg->source_id, attach_msg->stream_id);
-                this->ReportError(err_buf);
+                m_occupied_actor = App::GetGameContext()->GetActorManager()->GetActorByNetworkLinks(msg->coupling_source_id, msg->coupling_stream_id);
+                m_occupied_seat = msg->coupling_seat_num;
             }
         }
-        else
-        {
-            char err_buf[100];
-            snprintf(err_buf, 100, "Received invalid command: %d. Cannot process.", msg->command);
-            this->ReportError(err_buf);
-        }
+    }
+    else
+    {
+        this->setPosition(Ogre::Vector3(msg->pos_x, msg->pos_y, msg->pos_z));
+        this->setRotation(Ogre::Radian(msg->rot_angle));
+    }
+
+    // check the anim name is properly 0-terminated.
+    if (strnlen(msg->anim_name, CHARACTER_ANIM_NAME_LEN) < CHARACTER_ANIM_NAME_LEN)
+    {
+        this->SetAnimState(msg->anim_name, msg->anim_time);
     }
 #endif
 }
 
-void Character::SetActorCoupling(ActorPtr actor)
+ActorPtr Character::GetOccupiedActor()
 {
-    m_actor_coupling = actor;
-#ifdef USE_SOCKETW
-    if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED && !m_is_remote)
-    {
-        if (m_actor_coupling)
-        {
-            NetCharacterMsgAttach msg;
-            msg.command = CHARACTER_CMD_ATTACH_SEAT;
-            msg.source_id = m_actor_coupling->ar_net_source_id;
-            msg.stream_id = m_actor_coupling->ar_net_stream_id;
-            App::GetNetwork()->AddPacket(m_stream_id, RoRnet::MSG2_STREAM_DATA_CHARACTER, sizeof(NetCharacterMsgAttach), (char*)&msg);
-        }
-        else
-        {
-            NetCharacterMsgGeneric msg;
-            msg.command = CHARACTER_CMD_DETACH;
-            App::GetNetwork()->AddPacket(m_stream_id, RoRnet::MSG2_STREAM_DATA_CHARACTER, sizeof(NetCharacterMsgGeneric), (char*)&msg);
-        }
-    }
-#endif // USE_SOCKETW
+    return m_occupied_actor;
 }
 
-void Character::SetContactingActor(ActorPtr actor)
+void Character::SetOccupiedActor(const ActorPtr& actor, int seat_num)
 {
-    m_contacting_actor = actor;
-#ifdef USE_SOCKETW
-    if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED && !m_is_remote)
-    {
-        if (m_contacting_actor)
-        {
-            NetCharacterMsgAttach msg;
-            msg.command = CHARACTER_CMD_ATTACH_CAB;
-            msg.source_id = m_contacting_actor->ar_net_source_id;
-            msg.stream_id = m_contacting_actor->ar_net_stream_id;
-        }
-        else
-        {
-            NetCharacterMsgGeneric msg;
-            msg.command = CHARACTER_CMD_DETACH;
-            App::GetNetwork()->AddPacket(m_stream_id, RoRnet::MSG2_STREAM_DATA_CHARACTER, sizeof(NetCharacterMsgGeneric), (char*)&msg);
-        }
-    }
-#endif // USE_SOCKETW
+    m_occupied_actor = actor;
+    m_occupied_seat = seat_num;
 }
-
-ActorPtr Character::GetActorCoupling() { return m_actor_coupling; }
 
 // --------------------------------
 // GfxCharacter
@@ -740,7 +667,7 @@ void RoR::GfxCharacter::BufferSimulationData()
     xc_simbuf.simbuf_color_number           = xc_character->GetColorNum();
     xc_simbuf.simbuf_net_username           = xc_character->GetNetUsername();
     xc_simbuf.simbuf_is_remote              = xc_character->GetIsRemote();
-    xc_simbuf.simbuf_actor_coupling         = xc_character->GetActorCoupling();
+    xc_simbuf.simbuf_actor_coupling         = xc_character->GetOccupiedActor();
     xc_simbuf.simbuf_anim_name              = xc_character->GetAnimName();
     xc_simbuf.simbuf_anim_time              = xc_character->GetAnimTime();
 }

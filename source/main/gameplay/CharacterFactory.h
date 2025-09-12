@@ -44,7 +44,6 @@ public:
     Character* CreateLocalCharacter();
     Character* GetLocalCharacter() { return m_local_character.get(); }
     void DeleteAllCharacters();
-    void UndoRemoteActorCoupling(ActorPtr actor);
     void Update(float dt);
 #ifdef USE_SOCKETW
     void HandleCharacterStreamData();

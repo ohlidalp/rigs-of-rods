@@ -153,7 +153,7 @@ struct Header                      //!< Common header for every packet
     uint32_t command;              //!< the command of this packet: MSG2_*
     int32_t  source;               //!< source of this command: 0 = server
     uint32_t streamid;             //!< streamid for this command
-    uint32_t size;                 //!< size of the attached data block
+    uint32_t size;                 //!< payload length in bytes
 };
 
 struct StreamRegister              //!< Sent from the client to server and vice versa, to broadcast a new stream
@@ -216,6 +216,20 @@ struct VehicleState                  //!< Formerly `oob_t`
     float    wheelspeed;           //!< the wheel speed value
     BitMask_t flagmask;            //!< flagmask: NETMASK_*
     BitMask_t lightmask;           //!< flagmask: LIGHTMASK_*
+};
+
+struct CharacterState
+{
+    // Both on ground and cab:
+    float   pos_x = 0.f, pos_y = 0.f, pos_z = 0.f; //!< Global when on ground, local when on cab.
+    float   rot_angle = 0.f;                       //!< Always global.
+    float   anim_time = 0.f;
+    char    anim_name[CHARACTER_ANIM_NAME_LEN] = {};
+    // Coupling - both seat and cab:
+    int32_t coupling_source_id = -1;
+    int32_t coupling_stream_id = -1;
+    int16_t coupling_cab_num = -1; //!< -1 when not walking on cabs
+    int16_t coupling_seat_num = -1; //!< -1 when not seated
 };
 
 struct ServerInfo

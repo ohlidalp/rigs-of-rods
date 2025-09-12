@@ -62,41 +62,6 @@ struct NetSendPacket
     int type;
 };
 
-enum NetCharacterCmd
-{
-    CHARACTER_CMD_INVALID,
-    CHARACTER_CMD_POSITION_GROUND,
-    CHARACTER_CMD_POSITION_CAB,
-    CHARACTER_CMD_ATTACH_SEAT,  //!< Sets 'actor coupling' for seated (+driving) animation.
-    CHARACTER_CMD_ATTACH_CAB,   //!< Sets 'contacting actor' for walking on cab triangles.
-    CHARACTER_CMD_DETACH        //!< Detaches from actor
-};
-
-struct NetCharacterMsgGeneric
-{
-    int32_t command;
-};
-
-struct NetCharacterMsgPos
-{
-    int32_t command;
-    // Both on ground and cab:
-    float   pos_x, pos_y, pos_z; //!< Global when on ground, local when on cab.
-    float   rot_angle;           //!< Always global.
-    float   anim_time;
-    char    anim_name[CHARACTER_ANIM_NAME_LEN];
-    // Only on cab:
-    int32_t cab_index;
-};
-
-struct NetCharacterMsgAttach
-{
-    int32_t command;
-    int32_t source_id;
-    int32_t stream_id;
-    int32_t position;
-};
-
 #pragma pack(pop)
 
 // ------------------------ End of network messages --------------------------
@@ -133,7 +98,7 @@ public:
     Ogre::String         GetTerrainName();
 
     int                  GetUserColor();
-    std::string      GetUsername();
+    std::string          GetUsername();
     RoRnet::UserInfo     GetLocalUserData();
     std::vector<RoRnet::UserInfo> GetUserInfos();
     std::vector<BitMask_t> GetAllUsersPeerOpts();

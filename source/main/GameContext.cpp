@@ -472,13 +472,6 @@ void GameContext::DeleteActor(ActorPtr actor)
 
     App::GetGfxScene()->RemoveGfxActor(actor->GetGfxActor());
 
-#ifdef USE_SOCKETW
-    if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED)
-    {
-        m_character_factory.UndoRemoteActorCoupling(actor);
-    }
-#endif //SOCKETW
-
     TRIGGER_EVENT_ASYNC(SE_GENERIC_DELETED_TRUCK, actor->ar_instance_id);
 
     m_actor_manager.DeleteActorInternal(actor);
@@ -539,7 +532,7 @@ void GameContext::ChangePlayerActor(ActorPtr actor)
             Character* player_character = this->GetPlayerCharacter();
             if (player_character)
             {
-                player_character->SetActorCoupling(nullptr);
+                player_character->SetOccupiedActor(nullptr, /* seat_num: */-1);
                 player_character->setRotation(Ogre::Radian(rotation));
                 player_character->setPosition(position);
             }
@@ -567,7 +560,7 @@ void GameContext::ChangePlayerActor(ActorPtr actor)
         Character* player_character = this->GetPlayerCharacter();
         if (player_character)
         {
-            player_character->SetActorCoupling(m_player_actor);
+            player_character->SetOccupiedActor(m_player_actor, /* seat_num: */0);
         }
 
         App::GetGuiManager()->FlexbodyDebug.AnalyzeFlexbodies();
