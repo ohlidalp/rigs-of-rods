@@ -69,7 +69,6 @@ const ActorPtr ActorManager::ACTORPTR_NULL; // Dummy value to be returned as con
 ActorManager::ActorManager()
     : m_dt_remainder(0.0f)
     , m_forced_awake(false)
-    , m_physics_steps(2000)
     , m_simulation_speed(1.0f)
 {
     // Create worker thread (used for physics calculations)
@@ -1109,14 +1108,14 @@ void ActorManager::UpdateActors(ActorPtr player_actor)
     dt *= m_simulation_speed;
 
     dt += m_dt_remainder;
-    m_physics_steps = dt / PHYSICS_DT;
-    if (m_physics_steps == 0)
+    const int pending_physics_steps = dt / PHYSICS_DT;
+    if (pending_physics_steps == 0)
     {
         return;
     }
 
-    m_dt_remainder = dt - (m_physics_steps * PHYSICS_DT);
-    dt = PHYSICS_DT * m_physics_steps;
+    m_dt_remainder = dt - (pending_physics_steps * PHYSICS_DT);
+    dt = PHYSICS_DT * pending_physics_steps;
 
     this->SyncWithSimThread();
 
@@ -1187,7 +1186,7 @@ void ActorManager::UpdateActors(ActorPtr player_actor)
             player_actor->ar_toggle_ropes = false;
         }
 
-        player_actor->ForceFeedbackStep(m_physics_steps);
+        player_actor->ForceFeedbackStep(pending_physics_steps);
 
         if (player_actor->ar_state == ActorState::LOCAL_REPLAY)
         {
@@ -1201,6 +1200,7 @@ void ActorManager::UpdateActors(ActorPtr player_actor)
     ctx.ssc_mp_actor_recv_interval = App::mp_actor_recv_interval->getInt();
     ctx.ssc_mp_actor_calc_interval = App::mp_actor_calc_interval->getInt();
     ctx.ssc_elapsed_physics_steps = m_total_physics_steps;
+    ctx.ssc_pending_physics_steps = pending_physics_steps;
 
     auto func = std::function<void()>([this, ctx]()
         {
@@ -1208,7 +1208,7 @@ void ActorManager::UpdateActors(ActorPtr player_actor)
         });
     m_sim_task = m_sim_thread_pool->RunTask(func);
 
-    m_total_physics_steps += m_physics_steps;
+    m_total_physics_steps += pending_physics_steps;
 
     if (!App::app_async_physics->getBool())
         m_sim_task->join();
@@ -1232,7 +1232,7 @@ void ActorManager::UpdatePhysicsSimulation(SimulationSteppingContext ctx)
     {
         actor->UpdatePhysicsOrigin();
     }
-    for (int i = 0; i < m_physics_steps; i++)
+    for (int i = 0; i < ctx.ssc_pending_physics_steps; i++)
     {
         const long long now_microsec = (ctx.ssc_elapsed_physics_steps + i) * static_cast<double>(PHYSICS_DT) * 10000.0;
 
@@ -1250,9 +1250,9 @@ void ActorManager::UpdatePhysicsSimulation(SimulationSteppingContext ctx)
             {
                 if (actor->ar_update_physics = actor->CalcForcesEulerPrepare(i == 0))
                 {
-                    auto func = std::function<void()>([this, i, &actor]()
+                    auto func = std::function<void()>([this, i, ctx, &actor]()
                         {
-                            actor->CalcForcesEulerCompute(i == 0, m_physics_steps);
+                            actor->CalcForcesEulerCompute(i == 0, ctx.ssc_pending_physics_steps);
                         });
                     tasks.push_back(func);
                 }
@@ -1326,15 +1326,15 @@ void ActorManager::UpdatePhysicsSimulation(SimulationSteppingContext ctx)
     for (ActorPtr& actor: m_actors)
     {
         actor->m_ongoing_reset = false;
-        if (actor->ar_update_physics && m_physics_steps > 0)
+        if (actor->ar_update_physics && ctx.ssc_pending_physics_steps > 0)
         {
-            Vector3  camera_gforces = actor->m_camera_gforces_accu / m_physics_steps;
+            Vector3  camera_gforces = actor->m_camera_gforces_accu / ctx.ssc_pending_physics_steps;
             actor->m_camera_gforces_accu = Vector3::ZERO;
             actor->m_camera_gforces = actor->m_camera_gforces * 0.5f + camera_gforces * 0.5f;
             actor->calculateLocalGForces();
             actor->calculateAveragePosition();
             actor->m_avg_node_velocity  = actor->m_avg_node_position - actor->m_avg_node_position_prev;
-            actor->m_avg_node_velocity /= (m_physics_steps * PHYSICS_DT);
+            actor->m_avg_node_velocity /= (ctx.ssc_pending_physics_steps * PHYSICS_DT);
             actor->m_avg_node_position_prev = actor->m_avg_node_position;
             actor->ar_top_speed = std::max(actor->ar_top_speed, actor->ar_nodes[0].Velocity.length());
         }
