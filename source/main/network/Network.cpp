@@ -451,6 +451,13 @@ void Network::OnPacketReceived(ENetPacket* packet)
     {
         App::GetGameContext()->GetActorManager()->recv_actor_packets.Push(packet);
     }
+
+    // Update stats
+    { // Begin lock scope
+        std::lock_guard<std::mutex> lock(m_recv_client_stats_mutex);
+        NetClientStats& stats = m_recv_client_stats[header.source];
+        stats.combined_ping.AddSample(header.server2source_ping + m_peer->roundTripTime);
+    } // End lock scope
 }
 
 
@@ -925,6 +932,18 @@ void Network::RemovePeerOptions(PeerOptionsRequest* rq)
             BITMASK_SET_0(m_users_peeropts[i], rq->por_peeropts);
         }
     }
+}
+
+bool Network::GetUserStats(int uid, NetClientStats& result)
+{
+    std::lock_guard<std::mutex> lock(m_recv_client_stats_mutex);
+    const auto it = m_recv_client_stats.find(uid);
+    const bool found = it != m_recv_client_stats.end();
+    if (found)
+    {
+        result = it->second;
+    }
+    return found;
 }
 
 void Network::BroadcastChatMsg(const char* msg)

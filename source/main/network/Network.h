@@ -24,6 +24,7 @@
 #ifdef USE_SOCKETW
 
 #include "Application.h"
+#include "NetStats.h"
 #include "RoRnet.h"
 
 #include <SocketW.h>
@@ -107,6 +108,7 @@ public:
     bool                 GetDisconnectedUserInfo(int uid, RoRnet::UserInfo &result);
     bool                 GetAnyUserInfo(int uid, RoRnet::UserInfo &result); //!< Also considers local client
     bool                 FindUserInfo(std::string const& username, RoRnet::UserInfo &result);
+    bool                 GetUserStats(int uid, NetClientStats& result);
     Ogre::ColourValue    GetPlayerColor(int color_num);
     void                 AddPeerOptions(PeerOptionsRequest* rq);
     void                 RemovePeerOptions(PeerOptionsRequest* rq);
@@ -165,6 +167,10 @@ private:
     std::mutex           m_send_packetqueue_mutex;
 
     std::deque <NetSendPacket> m_send_packet_buffer;
+
+    // Stats
+    std::unordered_map<int, NetClientStats> m_recv_client_stats;
+    std::mutex                              m_recv_client_stats_mutex;
 };
 
 /// @}   //addtogroup Network

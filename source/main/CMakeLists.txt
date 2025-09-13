@@ -139,6 +139,7 @@ set(SOURCE_FILES
         network/ChatSystem.{h,cpp}
         network/CurlHelpers.{h,cpp}
         network/DiscordRpc.{h,cpp}
+        network/NetStats.{h,cpp}
         network/NetUtils.h
         network/Network.{h,cpp}
         network/OutGauge.{h,cpp}

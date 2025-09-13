@@ -2034,6 +2034,7 @@ int main(int argc, char *argv[])
             {
                 // NOTE: remote actors are updated directly in physics loop
                 App::GetGameContext()->GetCharacterFactory()->HandleCharacterStreamData(); // Update characters last (or else beam coupling might fail)
+                App::GetGuiManager()->MpClientList.UpdateClientTimeoffsetStats();
             }
 #endif // USE_SOCKETW
 
