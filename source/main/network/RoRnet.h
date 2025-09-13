@@ -63,7 +63,8 @@ enum MessageType
     MSG2_STREAM_REGISTER,              //!< create new stream
     MSG2_STREAM_REGISTER_RESULT,       //!< result of a stream creation
     MSG2_STREAM_UNREGISTER,            //!< remove stream
-    MSG2_STREAM_DATA_ACTOR,            //!< stream data (actor)
+    MSG2_STREAM_DATA_ACTOR,            //!< stream data (actor state and positions, aka Type 0)
+    MSG2_STREAM_DATA_FORCES,           //!< stream data (actor collision forces, aka Type 4)
     MSG2_STREAM_DATA_CHARACTER,        //!< stream data (character)
 
     MSG2_NO_RANK,                      //!< client has no ranked status
@@ -182,6 +183,22 @@ struct ActorStreamRegister         //!< Must preserve mem. layout of RoRnet::Str
     char    sectionconfig[60];     //!< section configuration
 };
 
+struct ForcesStreamRegister         //!< Must preserve mem. layout of RoRnet::StreamRegister
+{
+    // RoRnet::StreamRegister: Common
+    int32_t type;                  //!< 4
+    int32_t status;                //!< initial stream status
+    int32_t origin_sourceid;       //!< origin sourceid
+    int32_t origin_streamid;       //!< origin streamid
+    char    name[128];             //!< truck file name
+    // RoRnet::StreamRegister: Data buffer (128B)
+    int32_t bufferSize;            //!< initial stream status
+    int32_t time;                  //!< initial time stamp
+    int32_t player_sourceid;       //!< origin sourceid of the actor stream (type 0)
+    int32_t player_streamid;       //!< origin streamid of the actor stream (type 0)
+    char    unused[112];
+};
+
 struct StreamUnRegister            //< sent to remove a stream
 {
     uint32_t streamid;
@@ -217,6 +234,11 @@ struct VehicleState                  //!< Formerly `oob_t`
     float    wheelspeed;           //!< the wheel speed value
     BitMask_t flagmask;            //!< flagmask: NETMASK_*
     BitMask_t lightmask;           //!< flagmask: LIGHTMASK_*
+};
+
+struct ForcesState                 //!< MSG2_STREAM_DATA_FORCES
+{
+    int32_t  time;                 //!< time data
 };
 
 struct CharacterState

@@ -693,7 +693,7 @@ void RoR::GfxCharacter::UpdateCharacterInScene()
 
     // Position + Orientation
     Ogre::Entity* entity = static_cast<Ogre::Entity*>(xc_scenenode->getAttachedObject(0));
-    if (xc_simbuf.simbuf_actor_coupling != nullptr)
+    if (xc_simbuf.simbuf_actor_coupling != nullptr && xc_simbuf.simbuf_actor_coupling->ar_state != ActorState::DISPOSED)
     {
         // We're in vehicle
         GfxActor* gfx_actor = xc_simbuf.simbuf_actor_coupling->GetGfxActor();

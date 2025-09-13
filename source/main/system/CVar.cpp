@@ -2,7 +2,7 @@
     This source file is part of Rigs of Rods
     Copyright 2005-2012 Pierre-Michel Ricordel
     Copyright 2007-2012 Thomas Fischer
-    Copyright 2013-2020 Petr Ohlidal
+    Copyright 2013-2025 Petr Ohlidal
 
     For more information, see http://www.rigsofrods.org/
 
@@ -78,6 +78,8 @@ void Console::cVarSetupBuiltins()
     App::mp_actor_send_interval  = this->cVarCreate("mp_actor_send_interval",  "Packet send interval (ms)",                 CVAR_TYPE_INT,     "100");
     App::mp_actor_recv_interval  = this->cVarCreate("mp_actor_recv_interval",  "Packet recv interval (ms)",                 CVAR_TYPE_INT,     "100");
     App::mp_actor_calc_interval  = this->cVarCreate("mp_actor_calc_interval",  "Actor update interval (ms)",                CVAR_TYPE_INT,     "10");
+    App::mp_forces_send_interval = this->cVarCreate("mp_forces_send_interval", "Forces send interval (ms)",                 CVAR_TYPE_INT,     "50");
+    App::mp_forces_recv_interval = this->cVarCreate("mp_forces_recv_interval", "Forces recv interval (ms)",                 CVAR_TYPE_INT,     "50");
 
     App::remote_query_url        = this->cVarCreate("remote_query_url",        "",                           CVAR_ARCHIVE,                     "https://v2.api.rigsofrods.org");
 

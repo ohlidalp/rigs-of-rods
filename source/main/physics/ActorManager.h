@@ -45,9 +45,12 @@ namespace RoR {
     {
         // cvars
         RoR::MpState ssc_mp_state = RoR::MpState::DISABLED;
+        bool ssc_mp_pseudo_collisions = false;
         int ssc_mp_actor_send_interval = 0;
         int ssc_mp_actor_recv_interval = 0;
         int ssc_mp_actor_calc_interval = 0;
+        int ssc_mp_forces_send_interval = 0;
+        int ssc_mp_forces_recv_interval = 0;
 
         // state
         long long ssc_elapsed_physics_steps = 0;
@@ -96,6 +99,8 @@ public:
     void           UpdatePhysicsSimulation(SimulationSteppingContext ctx);
     void           WakeUpAllActors();
     void           SendAllActorsSleeping();
+    int            GetNetForcesTimeOffset(int sourceid);
+    void           UpdateNetForcesTimeOffset(int sourceid, int offset);
     void           SetTrucksForcedAwake(bool forced)       { m_forced_awake = forced; };
     bool           AreTrucksForcedAwake() const            { return m_forced_awake; }
     void           SetSimulationSpeed(float speed)         { m_simulation_speed = std::max(0.0f, speed); };
@@ -122,6 +127,8 @@ public:
 #ifdef USE_SOCKETW
     void           HandleActorStreamData();
     void           HandleBroadcastPacketDispatched(ENetPacket* packet); //!< Handles everything but `MSG2_STREAM_DATA`
+    void           HandleForcesStreamRegister(RoRnet::ForcesStreamRegister* reg);
+    void           HandleForcesStreamData();
 #endif
     unsigned long  GetNetTime() { return m_net_timer.getMilliseconds(); };
     int            GetNetTimeOffset(int sourceid);
@@ -148,6 +155,7 @@ public:
     bool AreActorsDirectlyLinked(const ActorPtr& a1, const ActorPtr& a2);
 
     ConcurrentPacketQueue recv_actor_packets;
+    ConcurrentPacketQueue recv_forces_packets;
 
     static const ActorPtr ACTORPTR_NULL; // Dummy value to be returned as const reference.
 
@@ -165,7 +173,8 @@ private:
     // Networking
     std::map<int, std::set<int>> m_stream_mismatches; //!< Networking: A set of streams without a corresponding actor in the actor-array for each stream source
     std::vector<RoRnet::ActorStreamRegister> m_stream_mismatched_regs; //!< Networking: Remember mismatched stream regs to re-process after downloading the missing mods.
-    std::map<int, int>  m_stream_time_offsets;       //!< Networking: A network time offset for each stream source
+    std::map<int, int>  m_stream_time_offsets;       //!< Networking: A MSG2_STREAM_DATA_ACTOR time offset for each stream source
+    std::map<int, int>  m_forces_time_offsets;       //!< Networking: A MSG2_STREAM_DATA_FORCES time offset for each stream source
     Ogre::Timer         m_net_timer;
 
     // Physics

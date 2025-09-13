@@ -676,6 +676,8 @@ extern CVar* mp_cyclethru_net_actors; //!< Include remote actors when cycling th
 extern CVar* mp_actor_send_interval;
 extern CVar* mp_actor_recv_interval;
 extern CVar* mp_actor_calc_interval;
+extern CVar* mp_forces_send_interval;
+extern CVar* mp_forces_recv_interval;
 
 // New remote API
 extern CVar* remote_query_url;

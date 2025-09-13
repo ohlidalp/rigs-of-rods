@@ -99,12 +99,11 @@ void ResolveCollisionForces(const float penetration_depth,
         const float alpha, const float beta, const float gamma,
         const Vector3 &normal,
         const float dt,
-        const bool remote,
         ground_model_t &submesh_ground_model)
 {
     const auto velocity = hitnode.Velocity - (na.Velocity * alpha + nb.Velocity * beta + no.Velocity * gamma);
     const float tr_mass = na.mass * alpha + nb.mass * beta + no.mass * gamma;
-    const float    mass = remote ? hitnode.mass : (hitnode.mass * tr_mass) / (hitnode.mass + tr_mass);
+    const float    mass = (hitnode.mass * tr_mass) / (hitnode.mass + tr_mass);
 
     auto forcevec = primitiveCollision(&hitnode, velocity, mass, normal, dt, &submesh_ground_model, penetration_depth);
 
@@ -185,10 +184,8 @@ void RoR::ResolveInterActorCollisions(const float dt, PointColDetector &interPoi
 
                         const auto penetration_depth = collrange - distance;
 
-                        const bool remote = (hit_actor->ar_state == ActorState::NETWORKED_OK);
-
                         ResolveCollisionForces(penetration_depth, hitnode, *na, *nb, *no, coord.alpha,
-                                coord.beta, coord.gamma, normal, dt, remote, submesh_ground_model);
+                            coord.beta, coord.gamma, normal, dt, submesh_ground_model);
 
                         hitnode.nd_last_collision_gm = &submesh_ground_model;
                         hitnode.nd_has_mesh_contact = true;
@@ -277,7 +274,7 @@ void RoR::ResolveIntraActorCollisions(const float dt, PointColDetector &intraPoi
                     const auto penetration_depth = collrange - distance;
 
                     ResolveCollisionForces(penetration_depth, hitnode, *na, *nb, *no, coord.alpha,
-                            coord.beta, coord.gamma, normal, dt, false, submesh_ground_model);
+                            coord.beta, coord.gamma, normal, dt, submesh_ground_model);
                 }
             }
         }

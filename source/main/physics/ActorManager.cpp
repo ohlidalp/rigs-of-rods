@@ -88,8 +88,14 @@ ActorPtr ActorManager::CreateNewActor(ActorSpawnRequest rq, RigDef::DocumentPtr 
     }
     ActorPtr actor = new Actor(rq.asr_instance_id, static_cast<int>(m_actors.size()), def, rq);
 
-    if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED && rq.asr_origin != ActorSpawnRequest::Origin::NETWORK)
+    if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED)
     {
+        if (rq.asr_origin == ActorSpawnRequest::Origin::NETWORK)
+        {
+            actor->ar_state = ActorState::NETWORKED_OK;
+            actor->ar_net_source_id = rq.net_source_id;
+            actor->ar_net_stream_id = rq.net_stream_id;
+        }
         actor->sendStreamSetup();
     }
 
@@ -287,7 +293,6 @@ ActorPtr ActorManager::CreateNewActor(ActorSpawnRequest rq, RigDef::DocumentPtr 
     }
 
     actor->ar_state = ActorState::LOCAL_SLEEPING;
-
     if (App::mp_state->getEnum<MpState>() == RoR::MpState::CONNECTED)
     {
         // network buffer layout (without RoRnet::VehicleState):
@@ -312,6 +317,17 @@ ActorPtr ActorManager::CreateNewActor(ActorSpawnRequest rq, RigDef::DocumentPtr 
             if (actor->ar_engine)
             {
                 actor->ar_engine->startEngine();
+            }
+
+            if (App::mp_pseudo_collisions->getBool())
+            {
+                actor->ar_net_coll_forces = new Ogre::Vector3[actor->ar_num_nodes];
+
+                actor->m_net_forces_buffer_size = sizeof(Ogre::Vector3) * actor->ar_num_nodes;
+
+                actor->m_net_forces_payload_buf.resize(actor->m_net_forces_buffer_size + sizeof(RoRnet::ForcesState));
+
+                memset(actor->ar_net_coll_forces, 0, actor->m_net_forces_buffer_size);
             }
         }
 
@@ -455,13 +471,32 @@ void ActorManager::HandleActorStreamData()
     }
 }
 
+void ActorManager::HandleForcesStreamData()
+{
+    while (ENetPacket* packet = recv_forces_packets.Pop())
+    {
+        for (ActorPtr& actor : m_actors)
+        {
+            if (actor->ar_state == ActorState::NETWORKED_OK || actor->ar_state == ActorState::NETWORKED_HIDDEN)
+                continue;
+
+            RoRnet::Header* head = GetRoRnetHeader(packet);
+            if (head->source == actor->ar_net_source_id && head->streamid == actor->ar_net_stream_id)
+            {
+                actor->PushNetForces(packet);
+                break;
+            }
+        }
+    }
+}
+
 void ActorManager::HandleBroadcastPacketDispatched(ENetPacket * packet)
 {
     RoRnet::Header* packet_header = GetRoRnetHeader(packet);
     if (packet_header->command == RoRnet::MSG2_STREAM_REGISTER)
     {
         RoRnet::StreamRegister* reg = (RoRnet::StreamRegister*)GetRoRnetBuffer(packet);
-        if (reg->type == 0)
+        if (reg->type == 0) // Actor state and positions
         {
             reg->name[127] = 0;
             // NOTE: The filename is by default in "Bundle-qualified" format, i.e. "mybundle.zip:myactor.truck"
@@ -515,6 +550,10 @@ void ActorManager::HandleBroadcastPacketDispatched(ENetPacket * packet)
             }
 
             App::GetNetwork()->AddPacket(reg->origin_streamid, RoRnet::MSG2_STREAM_REGISTER_RESULT, sizeof(RoRnet::StreamRegister), (char *)reg);
+        }
+        else if (reg->type == 4) // Collision forces
+        {
+            this->HandleForcesStreamRegister((RoRnet::ForcesStreamRegister *)GetRoRnetBuffer(packet));
         }
     }
     else if (packet_header->command == RoRnet::MSG2_STREAM_REGISTER_RESULT)
@@ -585,6 +624,46 @@ void ActorManager::AddStreamMismatch(RoRnet::ActorStreamRegister* reg)
     m_stream_mismatched_regs.push_back(*reg);
 }
 
+void ActorManager::HandleForcesStreamRegister(RoRnet::ForcesStreamRegister* reg)
+{
+    if (!App::mp_pseudo_collisions->getBool())
+    {
+        App::GetConsole()->putNetMessage(reg->origin_sourceid,
+            Console::MessageType::CONSOLE_SYSTEM_NOTICE,
+            fmt::format(_LC("Network",
+                "Created collision forces stream (ID {})"
+                " - ignored because net. collisions are disabled"), reg->origin_sourceid).c_str());
+        return;
+    }
+
+    // Find the source actor
+    for (ActorPtr& actor: m_actors)
+    {
+        if ((actor->ar_state == ActorState::LOCAL_SIMULATED ||
+             actor->ar_state == ActorState::LOCAL_SLEEPING) &&
+            actor->ar_net_stream_id == reg->player_streamid &&
+            actor->ar_net_source_id == reg->player_sourceid)
+        {
+            // Register the incoming stream.
+            actor->ar_net_forces_source_id = reg->origin_sourceid;
+            actor->ar_net_forces_stream_id = reg->origin_streamid;
+
+            App::GetConsole()->putNetMessage(reg->origin_sourceid,
+                Console::MessageType::CONSOLE_SYSTEM_NOTICE,
+                fmt::format(_LC("Network", "Created collision forces stream (ID {}) - accepted"), reg->origin_sourceid).c_str());
+
+            return; // Done.
+        }
+    }
+
+    App::GetConsole()->putNetMessage(reg->origin_sourceid,
+        Console::MessageType::CONSOLE_SYSTEM_WARNING,
+        fmt::format(_LC("Network",
+            "Created collision forces stream (ID {})"
+            " - actor (stream: {}, source: {}) not found."),
+            reg->origin_sourceid, reg->player_streamid, reg->player_sourceid).c_str());
+}
+
 int ActorManager::GetNetTimeOffset(int sourceid)
 {
     auto search = m_stream_time_offsets.find(sourceid);
@@ -600,6 +679,24 @@ void ActorManager::UpdateNetTimeOffset(int sourceid, int offset)
     if (m_stream_time_offsets.find(sourceid) != m_stream_time_offsets.end())
     {
         m_stream_time_offsets[sourceid] += offset;
+    }
+}
+
+int ActorManager::GetNetForcesTimeOffset(int sourceid)
+{
+    auto search = m_forces_time_offsets.find(sourceid);
+    if (search != m_forces_time_offsets.end())
+    {
+        return search->second;
+    }
+    return 0;
+}
+
+void ActorManager::UpdateNetForcesTimeOffset(int sourceid, int offset)
+{
+    if (m_forces_time_offsets.find(sourceid) != m_forces_time_offsets.end())
+    {
+        m_forces_time_offsets[sourceid] += offset;
     }
 }
 
@@ -1196,9 +1293,12 @@ void ActorManager::UpdateActors(ActorPtr player_actor)
 
     SimulationSteppingContext ctx;
     ctx.ssc_mp_state = App::mp_state->getEnum<MpState>();
+    ctx.ssc_mp_pseudo_collisions = App::mp_pseudo_collisions->getBool();
     ctx.ssc_mp_actor_send_interval = App::mp_actor_send_interval->getInt();
     ctx.ssc_mp_actor_recv_interval = App::mp_actor_recv_interval->getInt();
     ctx.ssc_mp_actor_calc_interval = App::mp_actor_calc_interval->getInt();
+    ctx.ssc_mp_forces_send_interval = App::mp_forces_send_interval->getInt();
+    ctx.ssc_mp_forces_recv_interval = App::mp_forces_recv_interval->getInt();
     ctx.ssc_elapsed_physics_steps = m_total_physics_steps;
     ctx.ssc_pending_physics_steps = pending_physics_steps;
 
@@ -1232,16 +1332,23 @@ void ActorManager::UpdatePhysicsSimulation(SimulationSteppingContext ctx)
     {
         actor->UpdatePhysicsOrigin();
     }
+
     for (int i = 0; i < ctx.ssc_pending_physics_steps; i++)
     {
         const long long now_microsec = (ctx.ssc_elapsed_physics_steps + i) * static_cast<double>(PHYSICS_DT) * 10000.0;
 
-        // Fetch received network packets in regular intervals
-        // TBD: controller inputs should be polled like this also ~ ohlidalp, 2025
+        // Fetch received network packets (STREAM_DATA_ACTOR) in regular intervals
         if (ctx.ssc_mp_state == MpState::CONNECTED
             && now_microsec % (ctx.ssc_mp_actor_recv_interval*10) == 0)
         {
             this->HandleActorStreamData();
+        }
+
+        // Fetch received network packets (STREAM_DATA_FORCES) in regular intervals
+        if (ctx.ssc_mp_state == MpState::CONNECTED
+            && now_microsec % (ctx.ssc_mp_forces_recv_interval * 10) == 0)
+        {
+            this->HandleForcesStreamData();
         }
 
         {
@@ -1252,6 +1359,11 @@ void ActorManager::UpdatePhysicsSimulation(SimulationSteppingContext ctx)
                 {
                     auto func = std::function<void()>([this, i, ctx, &actor]()
                         {
+                            // Networked collision forces must be incorporated on each physics tick
+                            if (ctx.ssc_mp_pseudo_collisions)
+                            {
+                                actor->CalcNetForces();
+                            }
                             actor->CalcForcesEulerCompute(i == 0, ctx.ssc_pending_physics_steps);
                         });
                     tasks.push_back(func);
@@ -1282,14 +1394,24 @@ void ActorManager::UpdatePhysicsSimulation(SimulationSteppingContext ctx)
             std::vector<std::function<void()>> tasks;
             for (ActorPtr& actor: m_actors)
             {
-                if (actor->m_inter_point_col_detector != nullptr && (actor->ar_update_physics ||
-                        (App::mp_pseudo_collisions->getBool() && actor->ar_state == ActorState::NETWORKED_OK)))
+                if (actor->m_inter_point_col_detector != nullptr
+                    && (actor->ar_update_physics
+                        || (ctx.ssc_mp_pseudo_collisions && actor->ar_state == ActorState::NETWORKED_OK)))
                 {
-                    auto func = std::function<void()>([this, &actor]()
+                    auto func = std::function<void()>([this, ctx, &actor]()
                         {
                             actor->m_inter_point_col_detector->UpdateInterPoint();
                             if (actor->ar_collision_relevant)
                             {
+                                // Networked collisions: reset node forces to 0, results of collisions will be recorded below.
+                                if (actor->ar_state == ActorState::NETWORKED_OK && ctx.ssc_mp_pseudo_collisions)
+                                {
+                                    for (int i = 0; i < actor->ar_num_nodes; ++i)
+                                    {
+                                        actor->ar_nodes[i].Forces = Ogre::Vector3::ZERO;
+                                    }
+                                }
+
                                 ResolveInterActorCollisions(PHYSICS_DT,
                                    *actor->m_inter_point_col_detector,
                                     actor->ar_num_collcabs,
@@ -1299,6 +1421,17 @@ void ActorManager::UpdatePhysicsSimulation(SimulationSteppingContext ctx)
                                     actor->ar_nodes,
                                     actor->ar_collision_range,
                                    *actor->ar_submesh_ground_model);
+
+                                // Networked collisions: accumulate recorded collision forces ~ keep highest value.
+                                if (actor->ar_state == ActorState::NETWORKED_OK && ctx.ssc_mp_pseudo_collisions)
+                                {
+                                    for (int i = 0; i < actor->ar_num_nodes; ++i)
+                                    {
+                                        actor->ar_net_coll_forces[i].x = std::max(actor->ar_net_coll_forces[i].x, actor->ar_nodes[i].Forces.x);
+                                        actor->ar_net_coll_forces[i].y = std::max(actor->ar_net_coll_forces[i].y, actor->ar_nodes[i].Forces.y);
+                                        actor->ar_net_coll_forces[i].z = std::max(actor->ar_net_coll_forces[i].z, actor->ar_nodes[i].Forces.z);
+                                    }
+                                }
                             }
                         });
                     tasks.push_back(func);
@@ -1307,7 +1440,7 @@ void ActorManager::UpdatePhysicsSimulation(SimulationSteppingContext ctx)
             App::GetThreadPool()->Parallelize(tasks);
         }
 
-        // Send network updates in regular intervals
+        // Send network updates (actor positions) in regular intervals
         if (ctx.ssc_mp_state == MpState::CONNECTED
             && now_microsec % (ctx.ssc_mp_actor_send_interval*10) == 0)
         {
@@ -1315,7 +1448,20 @@ void ActorManager::UpdatePhysicsSimulation(SimulationSteppingContext ctx)
             {
                 if (actor->ar_state != ActorState::NETWORKED_OK && actor->ar_state != ActorState::NETWORKED_HIDDEN)
                 {
-                    actor->sendStreamData();
+                    actor->sendActorStreamData();
+                }
+            }
+        }
+
+        // Send network updates (forces) in regular intervals
+        if (ctx.ssc_mp_state == MpState::CONNECTED
+            && now_microsec % (ctx.ssc_mp_forces_send_interval * 10) == 0)
+        {
+            for (ActorPtr& actor : m_actors)
+            {
+                if (actor->ar_state == ActorState::NETWORKED_OK && ctx.ssc_mp_pseudo_collisions)
+                {
+                    actor->SendForcesStreamData();
                 }
             }
         }

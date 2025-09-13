@@ -129,6 +129,8 @@ CVar* mp_cyclethru_net_actors;
 CVar* mp_actor_send_interval;
 CVar* mp_actor_recv_interval;
 CVar* mp_actor_calc_interval;
+CVar* mp_forces_send_interval;
+CVar* mp_forces_recv_interval;
 
 // New remote API
 CVar* remote_query_url;

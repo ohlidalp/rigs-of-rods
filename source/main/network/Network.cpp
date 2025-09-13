@@ -451,6 +451,10 @@ void Network::OnPacketReceived(ENetPacket* packet)
     {
         App::GetGameContext()->GetActorManager()->recv_actor_packets.Push(packet);
     }
+    else if (header.command == MSG2_STREAM_DATA_FORCES)
+    {
+        App::GetGameContext()->GetActorManager()->recv_forces_packets.Push(packet);
+    }
 
     // Update stats
     { // Begin lock scope
