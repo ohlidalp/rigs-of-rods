@@ -244,7 +244,7 @@ struct ForcesState                 //!< MSG2_STREAM_DATA_FORCES
 struct CharacterState
 {
     // Both on ground and cab:
-    float   pos_x = 0.f, pos_y = 0.f, pos_z = 0.f; //!< Global when on ground, local when on cab.
+    float   pos_x = 0.f, pos_y = 0.f, pos_z = 0.f; //!< Global when on ground, local (barycentric) when on cab.
     float   rot_angle = 0.f;                       //!< Always global.
     float   anim_time = 0.f;
     char    anim_name[CHARACTER_ANIM_NAME_LEN] = {};

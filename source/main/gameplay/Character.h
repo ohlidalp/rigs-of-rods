@@ -23,6 +23,7 @@
 
 #include "ForwardDeclarations.h"
 #include "SurveyMapEntity.h"
+#include "CartesianToTriangleTransform.h"
 
 #include <enet/enet.h>
 #include <OgreMeshManager.h>
@@ -36,6 +37,16 @@ namespace RoR {
 
 /// @addtogroup Character
 /// @{
+
+struct CharacterCabContactInfo
+{
+    ActorInstanceID_t contacting_actor = ACTORINSTANCEID_INVALID;
+    CollisionCabID_t  contacting_cab = COLLISIONCABID_INVALID;
+    Triangle          cab_cached_worldpos;
+    TriangleCoord     chara_localpos;
+    Ogre::Radian      vehicle_rotation = Ogre::Radian(0.f);
+    float             depth = 0.f;
+};
 
 class Character
 {
@@ -96,18 +107,14 @@ private:
     float            m_driving_anim_length;
 
     // Collision with actor (standing):
-    Ogre::Vector3    m_vehicle_position;
-    Ogre::Radian     m_vehicle_rotation;
-    Ogre::Vector3    m_last_vehicle_position;
-    Ogre::Radian     m_last_vehicle_rotation;
     bool             m_inertia = false;
-    Ogre::Vector3    m_inertia_position;
+    Ogre::Vector3    m_inertia_translation;
     Ogre::Radian     m_inertia_rotation;
-    ActorPtr         m_contacting_actor;
-    int              m_contacting_cab = 0;
-    int              m_last_contacting_cab = 0;
-    Ogre::Vector3    m_net_cab_offset = Ogre::Vector3::ZERO;
+    void             DrawDebugUI();
     Ogre::Vector3    CalcCabAveragePos(ActorPtr actor, int cab_index);
+    CharacterCabContactInfo FindContactingCab(const Ogre::Vector3& position);
+    CharacterCabContactInfo m_last_contact_info;
+    CharacterCabContactInfo m_contact_info;
 };
 
 /// @} // addtogroup Character

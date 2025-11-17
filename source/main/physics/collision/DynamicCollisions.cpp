@@ -85,7 +85,7 @@ static bool BackfaceCollisionTest(const float distance,
  * @param local Point in triangle local coordinates.
  * @param margin Range within which a point is considered to be close enough to the triangle plane.
  */
-static bool InsideTriangleTest(const CartesianToTriangleTransform::TriangleCoord &local, const float margin)
+static bool InsideTriangleTest(const TriangleCoord &local, const float margin)
 {
     const auto coord    = local.barycentric;
     const auto distance = local.distance;
@@ -160,7 +160,7 @@ void RoR::ResolveInterActorCollisions(const float dt, PointColDetector &interPoi
                     node_t& hitnode = hit_actor->ar_nodes[hitnode_num];
 
                     // transform point to triangle local coordinates
-                    const auto local_point = transform(hitnode.AbsPosition);
+                    const auto local_point = transform.WorldToTriangle(hitnode.AbsPosition);
 
                     // collision test
                     const bool is_colliding = InsideTriangleTest(local_point, collrange);
@@ -251,7 +251,7 @@ void RoR::ResolveIntraActorCollisions(const float dt, PointColDetector &intraPoi
                 if (no == &hitnode || na == &hitnode || nb == &hitnode) continue;
 
                 // transform point to triangle local coordinates
-                const auto local_point = transform(hitnode.AbsPosition);
+                const auto local_point = transform.WorldToTriangle(hitnode.AbsPosition);
 
                 // collision test
                 const bool is_colliding = InsideTriangleTest(local_point, collrange);

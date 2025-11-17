@@ -2038,6 +2038,9 @@ int main(int argc, char *argv[])
             }
 #endif // USE_SOCKETW
 
+            // Start imgui early
+            App::GetGuiManager()->NewImGuiFrame(dt);
+
             // Set arcade controls and hydro coupling settings for player actors
             // Default to false for other actors.
             if (App::app_state->getEnum<AppState>() == AppState::SIMULATION)
@@ -2134,7 +2137,7 @@ int main(int argc, char *argv[])
             }
 
             // Early GUI updates which require halted physics
-            App::GetGuiManager()->NewImGuiFrame(dt);
+            
             if (App::app_state->getEnum<AppState>() == AppState::SIMULATION)
             {
                 OgreProfile("Scene and GUI");

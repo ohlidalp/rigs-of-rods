@@ -123,6 +123,57 @@ float calculate_collision_depth(Vector3 pos)
     return query.y - pos.y;
 }
 
+Triangle FetchCabTriangle(const ActorPtr& actor, CollisionCabID_t i)
+{
+    int tmpv = actor->ar_collcabs[i] * 3;
+    Vector3 a = actor->ar_nodes[actor->ar_cabs[tmpv + 0]].AbsPosition;
+    Vector3 b = actor->ar_nodes[actor->ar_cabs[tmpv + 1]].AbsPosition;
+    Vector3 c = actor->ar_nodes[actor->ar_cabs[tmpv + 2]].AbsPosition;
+    return Triangle(a,b,c);
+}
+
+Triangle FetchCabTriangle(ActorInstanceID_t actor_id, CollisionCabID_t i)
+{
+    ROR_ASSERT(actor_id != ACTORINSTANCEID_INVALID);
+    const ActorPtr& actor = App::GetGameContext()->GetActorManager()->GetActorById(actor_id);
+    ROR_ASSERT(actor);
+    ROR_ASSERT(actor->ar_state != ActorState::DISPOSED);
+    if (!actor || actor->ar_state == ActorState::DISPOSED)
+    {
+        LOG(fmt::format("[RoR] FetchCabTriangle(): actor instance ID '{}' not valid", actor_id));
+        return Triangle();
+    }
+    return FetchCabTriangle(actor, i);
+}
+
+CharacterCabContactInfo Character::FindContactingCab(const Ogre::Vector3& position)
+{
+    CharacterCabContactInfo contact_info;
+    for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
+    {
+        if (actor->ar_state == ActorState::DISPOSED || !actor->ar_bounding_box.contains(position))
+        {
+            continue;
+        }
+
+        for (int i = 0; i < actor->ar_num_collcabs; i++)
+        {
+            Triangle triangle = FetchCabTriangle(actor, i);
+            auto result = Math::intersects(Ray(position, Vector3::UNIT_Y), triangle.a, triangle.b, triangle.c);
+            if (result.first && result.second < 1.8f && result.second > contact_info.depth)
+            {
+                contact_info.contacting_actor = actor->ar_instance_id;
+                contact_info.contacting_cab = i;
+                contact_info.cab_cached_worldpos = triangle;
+                contact_info.chara_localpos = CartesianToTriangleTransform(triangle).WorldToTriangle(position);
+                contact_info.vehicle_rotation = Ogre::Radian(actor->getRotation());
+                contact_info.depth = result.second;
+            }
+        }
+    }
+    return contact_info;
+}
+
 void Character::update(float dt)
 {
     if (!m_is_remote && (m_occupied_actor == nullptr) && (App::sim_state->getEnum<SimState>() != SimState::PAUSED))
@@ -158,94 +209,30 @@ void Character::update(float dt)
         }
 
         // Submesh "collision"
+        // The collision detection algorithm
+        m_contact_info = this->FindContactingCab(position);
+        if (m_contact_info.depth > 0)
         {
-            float depth = 0.0f;
-            for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
-            {
-                if (actor->ar_bounding_box.contains(position))
-                {
-                    for (int i = 0; i < actor->ar_num_collcabs; i++)
-                    {
-                        int tmpv = actor->ar_collcabs[i] * 3;
-                        Vector3 a = actor->ar_nodes[actor->ar_cabs[tmpv + 0]].AbsPosition;
-                        Vector3 b = actor->ar_nodes[actor->ar_cabs[tmpv + 1]].AbsPosition;
-                        Vector3 c = actor->ar_nodes[actor->ar_cabs[tmpv + 2]].AbsPosition;
-                        auto result = Math::intersects(Ray(position, Vector3::UNIT_Y), a, b, c);
-                        if (result.first && result.second < 1.8f)
-                        {
-                            depth = std::max(depth, result.second);
-                            if (depth > 0 && m_contacting_actor == nullptr) // check fresh contacting actor also, prevents knockbacks with multiple actors that have node position overlapping
-                            {
-                                // first contact - initialize 'last' values to avoid big knockbacks
-                                Vector3 cab_position = CalcCabAveragePos(actor, i);
-                                m_last_vehicle_position = cab_position;
-                                m_last_vehicle_rotation = Ogre::Radian(actor->getRotation());
-                                m_last_contacting_cab = i;
-                                m_contacting_actor = actor;
-                            }
-                            m_contacting_cab = i;
-                        }
-                    }
-
-                    if (depth > 0)
-                    {
-                        m_can_jump = true;
-                        m_character_v_speed = std::max(0.0f, m_character_v_speed);
-                        position.y += std::min(depth, 0.05f);
-                    }
-
-                    if (m_contacting_actor != nullptr)
-                    {
-                        int motion_cab = -1;
-                        if (m_contacting_cab == m_last_contacting_cab) // we're on the same cab - just get it's current pos.
-                        {
-                            motion_cab = m_contacting_cab;
-                        }
-                        else // we're on different cab - use current position of the previous cab.
-                        {
-                            motion_cab = m_last_contacting_cab;
-                        }
-                        Vector3 cab_position = CalcCabAveragePos(m_contacting_actor, motion_cab);
-                        m_vehicle_position = cab_position;
-                        m_vehicle_rotation = Ogre::Radian(m_contacting_actor->getRotation());
-
-                        //if (App::sim_character_collisions->getBool())
-                        {
-                            position += (m_vehicle_position - m_last_vehicle_position);
-                            this->setRotation(m_character_rotation + (m_vehicle_rotation - m_last_vehicle_rotation));
-                        }
-
-                        m_inertia = true;
-                        m_inertia_position = (m_vehicle_position - m_last_vehicle_position);
-                        m_inertia_rotation = (m_vehicle_rotation - m_last_vehicle_rotation);
-                    }
-                    else if (m_inertia)
-                    {
-                        //if (App::sim_character_collisions->getBool())
-                        {
-                            position += m_inertia_position;
-                            this->setRotation(m_character_rotation + m_inertia_rotation);
-                        }
-                    }
-                }
-                else if (m_contacting_actor != nullptr && !m_contacting_actor->ar_bounding_box.contains(position)) // we lost contact, reset contacting actor
-                {
-                    m_contacting_actor = nullptr;
-                }
-            }
-
-            if (m_contacting_cab == m_last_contacting_cab)
-            {
-                m_last_vehicle_position = m_vehicle_position;
-            }
-            else if (m_contacting_actor != nullptr) // we used last_contacting_cab's position for the motion, but we'll need contacting_cab's position next frame.
-            {
-                Vector3 cab_position = CalcCabAveragePos(m_contacting_actor, m_contacting_cab);
-                m_last_vehicle_position = cab_position;
-            }
-            m_last_contacting_cab = m_contacting_cab;
-            m_last_vehicle_rotation = m_vehicle_rotation;
+            m_can_jump = true;
+            m_character_v_speed = std::max(0.0f, m_character_v_speed);
+            position.y += std::min(m_contact_info.depth, 0.05f);
         }
+
+        if (m_last_contact_info.contacting_actor != ACTORINSTANCEID_INVALID)
+        {
+            // Last contact is known --> pretend contact was maintained for 2 frames and so update position
+            Triangle cab_worldpos = FetchCabTriangle(m_last_contact_info.contacting_actor, m_last_contact_info.contacting_cab);
+            const Ogre::Vector3 projected_worldoffset = CartesianToTriangleTransform(cab_worldpos).TriangleToWorld(m_last_contact_info.chara_localpos);
+            const Ogre::Vector3 last_worldoffset = CartesianToTriangleTransform(m_last_contact_info.cab_cached_worldpos).TriangleToWorld(m_last_contact_info.chara_localpos);
+            const Ogre::Vector3 cab_translation = (cab_worldpos.a - m_last_contact_info.cab_cached_worldpos.a) + (projected_worldoffset - last_worldoffset);
+
+            position += cab_translation;
+
+            m_inertia = true;
+            m_inertia_translation = cab_translation;
+            m_inertia_rotation = (m_contact_info.vehicle_rotation - m_last_contact_info.vehicle_rotation);
+        }
+        m_last_contact_info = m_contact_info;
 
         // Obstacle detection
         if (position != m_prev_position)
@@ -436,11 +423,8 @@ void Character::update(float dt)
     }
     else if (m_occupied_actor) // The character occupies a vehicle or machine
     {
-        // Submesh collision - Prevent knockbacks on vehicle exit
-        if (m_contacting_actor != nullptr)
-        {
-            m_contacting_actor = nullptr;
-        }
+        // Reset cab collision - Prevent knockbacks on vehicle exit
+        m_contact_info.contacting_actor = ACTORINSTANCEID_INVALID;
 
         // Animation
         float angle = m_occupied_actor->ar_hydro_dir_wheel_display * -1.0f; // not getSteeringAngle(), but this, as its smoothed
@@ -458,12 +442,17 @@ void Character::update(float dt)
         m_anim_time = anim_time_pos;
         m_net_last_anim_time = 0.0f;
     }
-    else if (m_is_remote && m_contacting_actor)
+    else if (m_is_remote && m_contact_info.contacting_actor != ACTORINSTANCEID_INVALID)
     {
-        // Make sure cab index from network is valid (-1 means no update arrived yet)
-        if (m_contacting_cab >= 0 && m_contacting_cab < m_contacting_actor->ar_num_cabs)
+        // Make sure cab index from network is valid (COLLISIONCABID_INVALID means no update arrived yet)
+        const ActorPtr& actor = App::GetGameContext()->GetActorManager()->GetActorById(m_contact_info.contacting_actor);
+        if (actor != nullptr
+            && m_contact_info.contacting_cab != COLLISIONCABID_INVALID
+            && m_contact_info.contacting_cab < actor->ar_num_cabs)
         {
-            this->setPosition(m_net_cab_offset + CalcCabAveragePos(m_contacting_actor, m_contacting_cab));
+            Triangle t = FetchCabTriangle(actor, m_contact_info.contacting_cab);
+            CartesianToTriangleTransform transform(t);
+            this->setPosition(transform.TriangleToWorld(m_contact_info.chara_localpos));
         }
     }
 
@@ -473,6 +462,8 @@ void Character::update(float dt)
         this->SendStreamData();
     }
 #endif // USE_SOCKETW
+
+    this->DrawDebugUI();
 }
 
 Ogre::Vector3 Character::CalcCabAveragePos(ActorPtr actor, int cab_index)
@@ -522,15 +513,20 @@ void Character::SendStreamData()
     m_net_last_update_time = m_net_timer.getMilliseconds();
 
     RoRnet::CharacterState msg;
-    if (m_contacting_actor)
+    if (m_contact_info.contacting_actor != ACTORINSTANCEID_INVALID)
     {
-        const Ogre::Vector3 cab_coords = CalcCabAveragePos(m_contacting_actor, m_contacting_cab);
-        msg.coupling_source_id = m_contacting_actor->ar_net_source_id;
-        msg.coupling_stream_id = m_contacting_actor->ar_net_stream_id;
-        msg.pos_x = m_character_position.x - cab_coords.x;
-        msg.pos_y = m_character_position.y - cab_coords.y;
-        msg.pos_z = m_character_position.z - cab_coords.z;
-        msg.coupling_cab_num = m_contacting_cab;
+        const ActorPtr& actor = App::GetGameContext()->GetActorManager()->GetActorById(m_contact_info.contacting_actor);
+
+        msg.coupling_source_id = actor->ar_net_source_id;
+        msg.coupling_stream_id = actor->ar_net_stream_id;
+
+        Triangle net_location = FetchCabTriangle(actor, m_contact_info.contacting_cab);
+        CartesianToTriangleTransform net_transform(net_location);
+        TriangleCoord cablocal_pos = net_transform.WorldToTriangle(m_character_position);
+        msg.pos_x = cablocal_pos.barycentric.alpha;
+        msg.pos_y = cablocal_pos.barycentric.beta;
+        msg.pos_z = cablocal_pos.barycentric.gamma;
+        msg.coupling_cab_num = m_contact_info.contacting_cab;
     }
     else if (m_occupied_actor)
     {
@@ -567,17 +563,26 @@ void Character::receiveStreamData(ENetPacket* packet)
     {
         if (msg->coupling_cab_num != -1)
         {
-            if (!m_contacting_actor
-                || m_contacting_actor->ar_state == ActorState::DISPOSED
-                || m_contacting_actor->ar_net_source_id != msg->coupling_source_id
-                || m_contacting_actor->ar_net_stream_id != msg->coupling_stream_id)
+            const ActorPtr& cur_actor = App::GetGameContext()->GetActorManager()->GetActorById(m_contact_info.contacting_actor);
+            if (!cur_actor
+                || cur_actor->ar_state == ActorState::DISPOSED
+                || cur_actor->ar_net_source_id != msg->coupling_source_id
+                || cur_actor->ar_net_stream_id != msg->coupling_stream_id)
             {
-                m_contacting_actor = App::GetGameContext()->GetActorManager()->GetActorByNetworkLinks(msg->coupling_source_id, msg->coupling_stream_id);
+                const ActorPtr& new_actor = App::GetGameContext()->GetActorManager()->GetActorByNetworkLinks(msg->coupling_source_id, msg->coupling_stream_id);
+                if (new_actor && new_actor->ar_state != ActorState::DISPOSED)
+                {
+                    m_contact_info.contacting_actor = new_actor->ar_instance_id;
+                }
             }
-            if (m_contacting_actor)
+
+            if (m_contact_info.contacting_actor != ACTORINSTANCEID_INVALID)
             {
-                m_net_cab_offset = Ogre::Vector3(msg->pos_x, msg->pos_y, msg->pos_z);
-                m_contacting_cab = msg->coupling_cab_num;
+                m_contact_info.chara_localpos.barycentric.alpha = msg->pos_x;
+                m_contact_info.chara_localpos.barycentric.beta = msg->pos_y;
+                m_contact_info.chara_localpos.barycentric.gamma = msg->pos_z;
+                m_contact_info.chara_localpos.distance = 0;
+                m_contact_info.contacting_cab = msg->coupling_cab_num;
             }
         }
         else if (msg->coupling_seat_num != -1)
@@ -615,6 +620,17 @@ void Character::SetOccupiedActor(const ActorPtr& actor, int seat_num)
 {
     m_occupied_actor = actor;
     m_occupied_seat = seat_num;
+}
+
+void Character::DrawDebugUI()
+{
+    if(ImGui::Begin("Character debug"))
+    {
+        ImGui::Text("Contacting actor: %d", m_last_contact_info.contacting_actor);
+        ImGui::Text("Contacting depth: %.3f", m_last_contact_info.depth);
+        ImGui::Text("Inertia (bool): %d", (int)m_inertia);
+        ImGui::End();
+    }
 }
 
 // --------------------------------
