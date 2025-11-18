@@ -115,6 +115,7 @@ private:
     CharacterCabContactInfo FindContactingCab(const Ogre::Vector3& position);
     CharacterCabContactInfo m_last_contact_info;
     CharacterCabContactInfo m_contact_info;
+    CharacterCabContactInfo m_debug_lastlast_contact_info;
 };
 
 /// @} // addtogroup Character

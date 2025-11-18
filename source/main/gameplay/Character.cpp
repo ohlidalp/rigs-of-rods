@@ -149,6 +149,7 @@ Triangle FetchCabTriangle(ActorInstanceID_t actor_id, CollisionCabID_t i)
 CharacterCabContactInfo Character::FindContactingCab(const Ogre::Vector3& position)
 {
     CharacterCabContactInfo contact_info;
+    contact_info.depth = -0.25f;
     for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
     {
         if (actor->ar_state == ActorState::DISPOSED || !actor->ar_bounding_box.contains(position))
@@ -216,6 +217,13 @@ void Character::update(float dt)
             m_can_jump = true;
             m_character_v_speed = std::max(0.0f, m_character_v_speed);
             position.y += std::min(m_contact_info.depth, 0.05f);
+
+            if (m_last_contact_info.contacting_actor == ACTORINSTANCEID_INVALID
+                && (m_contact_info.contacting_actor != ACTORINSTANCEID_INVALID))
+            {
+                // Contact established - reset 'last' values
+                m_last_contact_info = m_contact_info;
+            }
         }
 
         if (m_last_contact_info.contacting_actor != ACTORINSTANCEID_INVALID)
@@ -232,6 +240,7 @@ void Character::update(float dt)
             m_inertia_translation = cab_translation;
             m_inertia_rotation = (m_contact_info.vehicle_rotation - m_last_contact_info.vehicle_rotation);
         }
+        m_debug_lastlast_contact_info = m_last_contact_info;
         m_last_contact_info = m_contact_info;
 
         // Obstacle detection
@@ -626,6 +635,7 @@ void Character::DrawDebugUI()
 {
     if(ImGui::Begin("Character debug"))
     {
+        ImGui::Text("Last contacting actor: %d", m_debug_lastlast_contact_info.contacting_actor);
         ImGui::Text("Contacting actor: %d", m_last_contact_info.contacting_actor);
         ImGui::Text("Contacting depth: %.3f", m_last_contact_info.depth);
         ImGui::Text("Inertia (bool): %d", (int)m_inertia);
