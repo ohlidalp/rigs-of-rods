@@ -23,6 +23,7 @@ namespace Caelum
             BaseSkyLightTypeDescriptor(0),
             GroundFogTypeDescriptor(0),
             PrecipitationTypeDescriptor(0),
+            VCloudsTypeDescriptor(0),
             DepthComposerTypeDescriptor(0),
             SkyDomeTypeDescriptor(0)
     {
@@ -39,22 +40,16 @@ namespace Caelum
         unload ();
     }
 
-    template<class T>
-    inline void delete_zero(T*& member) {
-        // Remember: delete 0 is a legal no-op.
-        delete member;
-        member = 0;
-    }
-
     void CaelumDefaultTypeDescriptorData::unload ()
     {
-        delete_zero(CaelumSystemTypeDescriptor);
-        delete_zero(PointStarfieldTypeDescriptor);
-        delete_zero(BaseSkyLightTypeDescriptor);
-        delete_zero(GroundFogTypeDescriptor);
-        delete_zero(PrecipitationTypeDescriptor);
-        delete_zero(DepthComposerTypeDescriptor);
-        delete_zero(SkyDomeTypeDescriptor);
+        delete (CaelumSystemTypeDescriptor);
+        delete (PointStarfieldTypeDescriptor);
+        delete (BaseSkyLightTypeDescriptor);
+        delete (GroundFogTypeDescriptor);
+        delete (PrecipitationTypeDescriptor);
+        delete (VCloudsTypeDescriptor);
+        delete (DepthComposerTypeDescriptor);
+        delete (SkyDomeTypeDescriptor);
     }
 
     void CaelumDefaultTypeDescriptorData::load ()
@@ -345,6 +340,74 @@ namespace Caelum
                             &Caelum::SkyDome::setHazeEnabled));
 
             SkyDomeTypeDescriptor = td.release ();
+        }
+
+        if (!VCloudsTypeDescriptor)
+        {
+            std::unique_ptr<DefaultTypeDescriptor> td (new DefaultTypeDescriptor ());
+            // Properties ported from SkyX's config system
+
+            td->add("wind_speed",
+                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, Real, Real, Real>(
+                            &Caelum::VCloudsManager::getWindSpeed,
+                            &Caelum::VCloudsManager::setWindSpeed));
+
+            td->add("wind_direction",
+                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, Radian, Radian, Radian>(
+                            &Caelum::VCloudsManager::getWindDirection,
+                            &Caelum::VCloudsManager::setWindDirection));
+
+            td->add("auto_update",
+                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, bool, bool, bool>(
+                            &Caelum::VCloudsManager::getAutoupdate,
+                            &Caelum::VCloudsManager::setAutoupdate));
+
+            td->add("vertical_bounds",
+                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, Vector2>(
+                            &Caelum::VCloudsManager::getHeight,
+                            &Caelum::VCloudsManager::setHeight));
+
+            td->add("ambient_color",
+                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, Vector3>(
+                            &Caelum::VCloudsManager::getAmbientColor,
+                            &Caelum::VCloudsManager::setAmbientColor));
+
+            td->add("light_response",
+                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, Vector4>(
+                            &Caelum::VCloudsManager::getLightResponse,
+                            &Caelum::VCloudsManager::setLightResponse));
+
+            td->add("ambient_factors",
+                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, Vector4>(
+                            &Caelum::VCloudsManager::getAmbientFactors,
+                            &Caelum::VCloudsManager::setAmbientFactors));
+
+            td->add("cloudiness",
+                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, Vector2>(
+                            &Caelum::VCloudsManager::getCloudiness,
+                            &Caelum::VCloudsManager::setCloudiness));
+
+            td->add("enable_lightnings",
+                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, bool, bool, bool>(
+                            &Caelum::VCloudsManager::getEnableLightnings,
+                            &Caelum::VCloudsManager::setEnableLightnings));
+
+            td->add("average_lightning_appartition_time",
+                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, Real, Real, Real>(
+                            &Caelum::VCloudsManager::getAverageLightningAppartitionTime,
+                            &Caelum::VCloudsManager::setAverageLightningAppartitionTime));
+
+            td->add("lightning_color",
+                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, Vector3>(
+                            &Caelum::VCloudsManager::getLightningColor,
+                            &Caelum::VCloudsManager::setLightningColor));
+
+            td->add("lightning_time_multiplier",
+                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, Real, Real, Real>(
+                            &Caelum::VCloudsManager::getLightningTimeMultiplier,
+                            &Caelum::VCloudsManager::setLightningTimeMultiplier));
+
+            VCloudsTypeDescriptor = td.release();
         }
     }
 }

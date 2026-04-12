@@ -23,7 +23,7 @@ http://www.gnu.org/copyleft/lesser.txt.
 
 #include "Lightning.h"
 
-namespace SkyX { namespace VClouds
+namespace VClouds
 {
 	Lightning::Lightning(Ogre::SceneManager* sm, Ogre::SceneNode* sn, const Ogre::Vector3& orig, const Ogre::Vector3& dir, 
 		const Ogre::Real& l, const Ogre::uint32& d, const Ogre::uint32& rec, const Ogre::Real& tm, const Ogre::Real& wm, const Ogre::Vector2& b)
@@ -269,4 +269,4 @@ namespace SkyX { namespace VClouds
 			mChildren.at(k)->_updateData(alpha*0.75f, currentPos, parentTime);
 		}
 	}
-}}
+} // namespace VClouds

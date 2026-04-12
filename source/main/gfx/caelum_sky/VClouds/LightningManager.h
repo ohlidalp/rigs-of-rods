@@ -28,7 +28,7 @@ http://www.gnu.org/copyleft/lesser.txt.
 
 #include "Lightning.h"
 
-namespace SkyX { namespace VClouds{
+namespace VClouds{
 
 	class VClouds;
 
@@ -230,6 +230,6 @@ namespace SkyX { namespace VClouds{
 		VClouds *mVClouds;
 	};
 
-}}
+} // namespace VClouds
 
 #endif

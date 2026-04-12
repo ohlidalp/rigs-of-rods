@@ -22,13 +22,14 @@ http://www.gnu.org/copyleft/lesser.txt.
 */
 
 #include "VCloudsManager.h"
+#include "CaelumSystem.h"
 
 #include "SkyX.h"
 
-namespace SkyX
+namespace Caelum
 {
-	VCloudsManager::VCloudsManager(SkyX *s)
-		: mSkyX(s)
+	VCloudsManager::VCloudsManager(CaelumSystem* caelumSys)
+		: mCaelumSys(caelumSys)
 		, mVClouds(0)
 		, mHeight(Ogre::Vector2(-1, -1))
 		, mWindSpeed(800.0f)
@@ -36,9 +37,15 @@ namespace SkyX
 		, mCreated(false)
 		, mCurrentTimeSinceLastFrame(0)
 	{
-		mVClouds = new VClouds::VClouds(mSkyX->getSceneManager());
-		mVClouds->setRenderQueueGroups(
-			VClouds::VClouds::RenderQueueGroups(mSkyX->getRenderQueueGroups().vclouds, mSkyX->getRenderQueueGroups().vcloudsLightningsUnder, mSkyX->getRenderQueueGroups().vcloudsLightningsOver));
+		mVClouds = new VClouds::VClouds(mCaelumSys->getSceneMgr());
+        VClouds::VClouds::RenderQueueGroups rqGroups(
+            CAELUM_RENDER_QUEUE_VCLOUDS,
+            CAELUM_RENDER_QUEUE_LIGHTNING_FROM_ABOVE,
+            CAELUM_RENDER_QUEUE_LIGHTNING_FROM_BELOW
+        );
+		mVClouds->setRenderQueueGroups(rqGroups);
+
+        using namespace VClouds;
 
 		mAmbientGradient = ColorGradient();
 		mAmbientGradient.addCFrame(ColorGradient::ColorFrame(Ogre::Vector3(1,1,1)*0.9f, 1.0f));
@@ -59,6 +66,8 @@ namespace SkyX
 		mSunGradient.addCFrame(ColorGradient::ColorFrame(Ogre::Vector3(0.0,0.0,0.0), 0.4125f)); // Sun-Moon threshold
 		mSunGradient.addCFrame(ColorGradient::ColorFrame(Ogre::Vector3(0.25,0.25,0.25), 0.25f));
 		mSunGradient.addCFrame(ColorGradient::ColorFrame(Ogre::Vector3(0.4,0.4,0.4), 0.0f));
+
+        this->create();
 	}
 
 	VCloudsManager::~VCloudsManager()
@@ -127,17 +136,12 @@ namespace SkyX
 
 	void VCloudsManager::_setLightParameters()
 	{
-		Ogre::Vector3 SunDir = -mSkyX->getController()->getSunDirection();
+		Ogre::Vector3 sunDir = mCaelumSys->getSun()->getLightDirection();
+        sunDir.y *= -1.0f;
 
-		// Moon
-		if (SunDir.y > 0.175f)
-		{
-			SunDir = -mSkyX->getController()->getMoonDirection();
-		}
+		mVClouds->setSunDirection(sunDir);
 
-		mVClouds->setSunDirection(SunDir);
-
-		float point = (mSkyX->getController()->getSunDirection().y + 1.0f) / 2.0f;
+		float point = (sunDir.y + 1.0f) / 2.0f;
 
 		mVClouds->setAmbientColor(mAmbientGradient.getColor(point));
 		mVClouds->setSunColor(mSunGradient.getColor(point));
@@ -152,7 +156,7 @@ namespace SkyX
 
 		if (mAutoupdate)
 		{
-			mVClouds->setWindSpeed(mSkyX->getTimeMultiplier() * mWindSpeed);
+			mVClouds->setWindSpeed(mCaelumSys->getTimeScale() * mWindSpeed);
 		}
 		else
 		{

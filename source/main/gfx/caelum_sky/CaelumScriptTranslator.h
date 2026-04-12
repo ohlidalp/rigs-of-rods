@@ -162,7 +162,7 @@ namespace Caelum
 
     private:
         CaelumSystemScriptTranslator mCaelumSystemTranslator;
-        TypeDescriptorScriptTranslator mFlatCloudLayerTranslator;
+        TypeDescriptorScriptTranslator mVCloudsTranslator;
         TypeDescriptorScriptTranslator mSunTranslator;
         TypeDescriptorScriptTranslator mMoonTranslator;
         TypeDescriptorScriptTranslator mPointStarfieldTranslator;

@@ -21,41 +21,65 @@ http://www.gnu.org/copyleft/lesser.txt.
 --------------------------------------------------------------------------------
 */
 
-#ifndef _SkyX_VClouds_FastFakeRandom_H_
-#define _SkyX_VClouds_FastFakeRandom_H_
+#ifndef _VClouds_ColorGradient_H_
+#define _VClouds_ColorGradient_H_
 
 #include "Prerequisites.h"
 
-namespace SkyX { namespace VClouds{
-
-	class FastFakeRandom 
+namespace VClouds
+{
+    class ColorGradient 
 	{
 	public:
-		/** Constructor 
-		    @param n Capacity
-			@param min Min value
-			@param max Max value
+		/** Color frame type definition
+		    ColorFrame.first: Colour value
+			ColorFrame.second: Position in the gradient [0,1] range
 		 */
-		FastFakeRandom(const int& n, const Ogre::Real& min, const Ogre::Real& max);
+		typedef std::pair<Ogre::Vector3, Ogre::Real> ColorFrame;
 
-		/** Destructor
-	     */
-		~FastFakeRandom();
-
-		/** Get random number
+	    /** Constructor
 		 */
-		float& get();
+		ColorGradient();
+
+		/** Destructor 
+		 */
+		~ColorGradient();
+
+		/** Add color frame
+		    @param CFrame Color frame
+		 */
+		inline void addCFrame(const ColorFrame& CFrame)
+		{
+			CFrameVector.push_back(CFrame);
+
+			mMalFormed = !_checkBounds();
+		}
+
+		/** Clear color gradient
+		 */
+		inline void clear()
+		{
+			CFrameVector.clear();
+		}
+
+		/** Get color value
+		    @param p The gradient point in [0,1] range
+			@return Color at the given gradient position
+		 */
+		const Ogre::Vector3 getColor(const Ogre::Real& p) const;
 
 	private:
-		/// Data pointer
-		float *mData;
-		/// Capacity
-		int mCapacity;
-		/// Index
-		int mIndex;
+		/** Check bounds
+		    @return false if the Color gradient is mal-formed
+		 */
+		const bool _checkBounds() const;
 
+		/// Mal formed color gradient?
+		bool mMalFormed;
+
+		/// Color frame vector
+		std::vector<ColorFrame> CFrameVector;
 	};
-
-}}
+}
 
 #endif

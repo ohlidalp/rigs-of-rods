@@ -31,20 +31,4 @@ SkyXVersion=0.4.0
 <float>VolumetricDisplacement=0.01
 <vector2>WindDirection=1x1
 
-#Volumetric clouds
-<bool>volClouds=true 
-<vector2>vHeight=825x3500
-<float>WindSpeed=80.0
-<bool>AutoUpdate=false
-<degree>WindDirection=0
-<vector3>AmbientColor=0.63x0.63x0.7
-<vector4>LightResponse=0.25x0.2x1.0x0.1
-<vector4>AmbientFactors=0.45x0.3x0.6x1.0
-<vector2>Wheater=0.1x0.6
-<bool>DelayedResponse=false
 
-#Lightnings 
-<bool>lightnings=false
-<float>AverageLightningApparitionTime=1.5
-<vector3>LightningColor=1x0.925x0.85
-<float>LightningTimeMultiplier=2.0

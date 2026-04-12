@@ -30,7 +30,7 @@ http://www.gnu.org/copyleft/lesser.txt.
 #include "GeometryManager.h"
 #include "LightningManager.h"
 
-namespace SkyX { namespace VClouds{
+namespace VClouds{
 
 	class VClouds
 	{
@@ -577,6 +577,6 @@ namespace SkyX { namespace VClouds{
 		std::vector<CameraData> mCamerasData;
 	};
 
-}}
+} // namespace VClouds
 
 #endif

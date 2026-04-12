@@ -28,7 +28,7 @@ http://www.gnu.org/copyleft/lesser.txt.
 
 #include "DataManager.h"
 
-namespace SkyX { namespace VClouds{
+namespace VClouds{
 
 	/** Ellipsoid class
 	    x^2   y^2   z^2
@@ -140,6 +140,6 @@ namespace SkyX { namespace VClouds{
 		Ogre::Real mDensity;
 	};
 
-}}
+} // namespace VClouds
 
 #endif

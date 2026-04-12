@@ -472,6 +472,9 @@ namespace Caelum
                     } else if (className == "precipitation") {
                         sys->setPrecipitationController (new PrecipitationController (sys->getSceneMgr ()));
                         childObjNode->context = static_cast<void*>(sys->getPrecipitationController ());
+                    } else if (className == "vclouds"){
+                        sys->setVCloudsManager(new VCloudsManager(sys));
+                        childObjNode->context = static_cast<void*>(sys->getVCloudsManager ());
                     } else {
                         LogManager::getSingleton ().logMessage ("CaelumSystemScriptTranslator::translate "
                                 "unknown child object class '" + className + "'");
@@ -505,13 +508,14 @@ namespace Caelum
         mGroundFogTranslator(typeData->GroundFogTypeDescriptor),
         mDepthComposerTranslator(typeData->DepthComposerTypeDescriptor),
         mPrecipitationTranslator(typeData->PrecipitationTypeDescriptor),
+        mVCloudsTranslator(typeData->VCloudsTypeDescriptor),
         mSkyDomeTranslator(typeData->SkyDomeTypeDescriptor)
     {
         mCaelumSystemTranslator.setTypeDescriptor(typeData->CaelumSystemTypeDescriptor);
 
         // Build translator map to member translators.
         mTranslatorMap.insert (std::make_pair ("caelum_sky_system", &mCaelumSystemTranslator));
-        mTranslatorMap.insert (std::make_pair ("cloud_layer", &mFlatCloudLayerTranslator));
+        mTranslatorMap.insert (std::make_pair ("vclouds", &mVCloudsTranslator));
         mTranslatorMap.insert (std::make_pair ("sun", &mSunTranslator));
         mTranslatorMap.insert (std::make_pair ("moon", &mMoonTranslator));
         mTranslatorMap.insert (std::make_pair ("point_starfield", &mPointStarfieldTranslator));

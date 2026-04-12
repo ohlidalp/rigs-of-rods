@@ -24,22 +24,20 @@ http://www.gnu.org/copyleft/lesser.txt.
 #ifndef _SkyX_VCloudsManager_H_
 #define _SkyX_VCloudsManager_H_
 
-#include "Prerequisites.h"
+#include "CaelumPrerequisites.h"
 
 #include "VClouds/VClouds.h"
-#include "ColorGradient.h"
+#include "VClouds/VColorGradient.h"
 
-namespace SkyX
+namespace Caelum
 {
-	class SkyX;
-
     class VCloudsManager 
 	{
 	public:
 	    /** Constructor
 		    @param s Parent SkyX pointer
 		 */
-		VCloudsManager(SkyX *s);
+		VCloudsManager(CaelumSystem* caelumSys);
 
 		/** Destructor 
 		 */
@@ -66,37 +64,7 @@ namespace SkyX
 		 */
 		void remove();
 
-		/** Set ambient gradient
-		    @param AmbientGradient Ambient color gradient
-		 */
-		inline void setAmbientGradient(const ColorGradient& AmbientGradient)
-		{
-			mAmbientGradient = AmbientGradient;
-		}
 
-		/** Get ambient color gradient
-		    @return Ambient color gradient
-		 */
-		inline const ColorGradient& getAmbientGradient() const
-		{
-			return mAmbientGradient;
-		}
-
-		/** Set sun gradient
-		    @param SunGradient Sun color gradient
-		 */
-		inline void setSunGradient(const ColorGradient& SunGradient)
-		{
-			mSunGradient = SunGradient;
-		}
-
-		/** Get sun color gradient
-		    @return Sun color gradient
-		 */
-		inline const ColorGradient& getSunGradient() const
-		{
-			return mSunGradient;
-		}
 
 		/** Set height parameters
 		    @param Height x = Cloud field y-coord start, y: Field height (both in world coordinates)
@@ -111,7 +79,7 @@ namespace SkyX
 		/** Get height parameters
 		    @return Height: x = Cloud field y-coord start, y: Field height (both in world coordinates)
 		 */
-		inline const Ogre::Vector2& getHeight() const
+		inline const Ogre::Vector2 getHeight() const
 		{
 			return mHeight;
 		}
@@ -119,7 +87,7 @@ namespace SkyX
 		/** Autoupdate volumetric clouds wind depending of the SkyX time multiplier
 			@remarks You can use VClouds->setWindSpeed(..) for different winds speeds
 		 */
-		inline void setAutoupdate(const bool& Autoupdate) 
+		inline void setAutoupdate(bool Autoupdate) 
 		{
 			mAutoupdate = Autoupdate;
 			_updateWindSpeedConfig();
@@ -128,7 +96,7 @@ namespace SkyX
 		/** Get autoupdate
 		    @return true if you want to update volumetric clouds wind depending of the SkyX time multiplier
 		 */
-		inline const bool& getAutoupdate() const
+		inline bool getAutoupdate() const
 		{
 			return mAutoupdate;
 		}
@@ -136,7 +104,7 @@ namespace SkyX
 		/** Set wind speed
 		    @param WindSpeed Wind speed
 		 */
-		inline void setWindSpeed(const Ogre::Real& WindSpeed)
+		inline void setWindSpeed(Ogre::Real WindSpeed)
 		{
 			mWindSpeed = WindSpeed;
 			_updateWindSpeedConfig();
@@ -145,11 +113,94 @@ namespace SkyX
 		/** Get wind speed
 		    @return Wind speed
 		 */
-		inline const Ogre::Real& getWindSpeed() const
+		inline Ogre::Real getWindSpeed() const
 		{
 			return mWindSpeed;
 		}
-	
+
+		/** Set wind direction
+		    @param WindDirection Wind direction
+		 */
+		inline void setWindDirection(Ogre::Radian WindDirection)
+		{
+            mVClouds->setWindDirection(WindDirection);
+		}
+
+		/** Get wind direction
+		    @return Wind direction
+		 */
+		inline Ogre::Radian getWindDirection() const
+		{
+			return mVClouds->getWindDirection();
+		}
+
+        // config parser - vclouds
+        void setAmbientColor(const Ogre::Vector3& ambientColor)
+        {
+            mVClouds->setAmbientColor(ambientColor);
+        }
+        const Ogre::Vector3 getAmbientColor() const
+        {
+            return mVClouds->getAmbientColor();
+        }
+        void setLightResponse(const Ogre::Vector4& lightResponse)
+        {
+            mVClouds->setLightResponse(lightResponse);
+        }
+        const Ogre::Vector4 getLightResponse() const
+        {
+            return mVClouds->getLightResponse();
+        }
+        void setAmbientFactors(const Ogre::Vector4& ambientFactors)
+        {
+            mVClouds->setAmbientFactors(ambientFactors);
+        }
+        const Ogre::Vector4 getAmbientFactors() const
+        {
+            return mVClouds->getAmbientFactors();
+        }
+        void setCloudiness(const Ogre::Vector2& wheater)
+        {
+            mVClouds->setWheater(wheater.x, wheater.y, /*delayedResponse=*/false);
+        }
+        const Ogre::Vector2 getCloudiness() const
+        {
+            return mVClouds->getWheater();
+        }
+        // config parser - lightnings
+        void setEnableLightnings(bool val)
+        {
+            mVClouds->getLightningManager()->setEnabled(val);
+        }
+        bool getEnableLightnings() const
+        {
+            return mVClouds->getLightningManager()->isEnabled();
+        }
+        void setAverageLightningAppartitionTime(float val)
+        {
+            mVClouds->getLightningManager()->setAverageLightningApparitionTime(val);
+        }
+        float getAverageLightningAppartitionTime() const
+        {
+            return mVClouds->getLightningManager()->getAverageLightningApparitionTime();
+        }
+        void setLightningTimeMultiplier(float val)
+        {
+            mVClouds->getLightningManager()->setLightningTimeMultiplier(val);
+        }
+        float getLightningTimeMultiplier() const
+        {
+            return mVClouds->getLightningManager()->getLightningTimeMultiplier();
+        }
+        void setLightningColor(const Ogre::Vector3& val)
+        {
+            mVClouds->getLightningManager()->setLightningColor(val);
+        }
+        const Ogre::Vector3 getLightningColor() const
+        {
+            return mVClouds->getLightningManager()->getLightningColor();
+        }
+
 		/** Get VClouds
 		 */
 		inline VClouds::VClouds* getVClouds()
@@ -174,10 +225,10 @@ namespace SkyX
 		/** Set light parameters
 		 */
 		void _setLightParameters();
-
+        
 		/// Ambient and Sun color gradients
-		ColorGradient mAmbientGradient;
-		ColorGradient mSunGradient;
+		VClouds::ColorGradient mAmbientGradient;
+		VClouds::ColorGradient mSunGradient;
 
 		/// VClouds pointer
 		VClouds::VClouds* mVClouds;
@@ -195,9 +246,9 @@ namespace SkyX
 
 		/// Current time since last frame
 		Ogre::Real mCurrentTimeSinceLastFrame;
+        
+        CaelumSystem* mCaelumSys = nullptr;
 
-		/// SkyX parent pointer
-		SkyX *mSkyX;
 	};
 }
 

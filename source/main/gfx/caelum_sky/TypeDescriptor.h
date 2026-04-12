@@ -246,6 +246,7 @@ namespace Caelum
         DefaultTypeDescriptor* PrecipitationTypeDescriptor;
         DefaultTypeDescriptor* DepthComposerTypeDescriptor;
         DefaultTypeDescriptor* SkyDomeTypeDescriptor;
+        DefaultTypeDescriptor* VCloudsTypeDescriptor;
     };
 }
 

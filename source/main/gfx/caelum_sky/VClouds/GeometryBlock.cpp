@@ -25,7 +25,7 @@ http://www.gnu.org/copyleft/lesser.txt.
 
 #include "VClouds.h"
 
-namespace SkyX { namespace VClouds
+namespace VClouds
 {
 	GeometryBlock::GeometryBlock(VClouds* vc,
 		    const float& Height, const Ogre::Radian& Alpha, const Ogre::Radian& Beta, 
@@ -563,4 +563,4 @@ namespace SkyX { namespace VClouds
 		// when the falling factor is bigger than 1.
 		return c->isVisible(mEntity->getParentSceneNode()->_getWorldAABB());
 	}
-}}
+} // namespace VClouds

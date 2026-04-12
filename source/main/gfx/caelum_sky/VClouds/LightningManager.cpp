@@ -26,7 +26,7 @@ http://www.gnu.org/copyleft/lesser.txt.
 #include "VClouds.h"
 #include "skyx/Prerequisites.h"
 
-namespace SkyX { namespace VClouds
+namespace VClouds
 {
 
 	LightningManager::LightningManager(VClouds* vc)
@@ -311,4 +311,4 @@ namespace SkyX { namespace VClouds
 		}
 	}
 
-}}
+} // namespace VClouds
