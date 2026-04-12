@@ -166,13 +166,11 @@ void GfxScene::UpdateScene(float dt)
     }
 
     // Terrain - sky
-#ifdef USE_CAELUM
     SkyManager* sky = App::GetGameContext()->GetTerrain()->getSkyManager();
     if (sky != nullptr)
     {
         sky->DetectSkyUpdate();
     }
-#endif
 
     SkyXManager* skyx_man = App::GetGameContext()->GetTerrain()->getSkyXManager();
     if (skyx_man != nullptr)

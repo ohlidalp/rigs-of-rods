@@ -23,6 +23,7 @@
 
 #include "AdvancedScreen.h"
 #include "Actor.h"
+#include "CaelumPlugin.h"
 #include "CameraManager.h"
 #include "ChatSystem.h"
 #include "Console.h"
@@ -259,6 +260,11 @@ bool AppContext::SetUpRendering()
             fmt::format(_L("Could not load file '{}' - make sure the game is installed correctly.\n\nDetailed info: {}"), plugins_path, e.getDescription()));
         return false;
     }
+
+    // Register Caelum plugin since it's built-in now.
+    LOG(fmt::format("[RoR|Startup|Rendering] Initializing built-in Caelum plugin"));
+    new Caelum::CaelumPlugin(); // create singleton
+    Caelum::CaelumPlugin::getSingleton().install();
 
     // Load renderer configuration
     bool autodetect_resolution = false;

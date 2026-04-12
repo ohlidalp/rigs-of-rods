@@ -294,10 +294,9 @@ void TopMenubar::Draw(float dt)
     if ((m_open_menu != TopMenu::TOPMENU_SETTINGS) && ImGui::IsItemHovered())
     {
         m_open_menu = TopMenu::TOPMENU_SETTINGS;
-#ifdef USE_CAELUM
+
         if (App::gfx_sky_mode->getEnum<GfxSkyMode>() == GfxSkyMode::CAELUM)
             m_daytime = App::GetGameContext()->GetTerrain()->getSkyManager()->GetTime();
-#endif // USE_CAELUM
     }
 
     ImGui::SameLine();
@@ -641,7 +640,6 @@ void TopMenubar::Draw(float dt)
             }
 
             // SKY SETTINGS
-#ifdef USE_CAELUM
             if (App::gfx_sky_mode->getEnum<GfxSkyMode>() == GfxSkyMode::CAELUM)
             {
                 ImGui::Separator();
@@ -657,8 +655,7 @@ void TopMenubar::Draw(float dt)
                 {
                     DrawGIntSlider(App::gfx_sky_time_speed, _LC("TopMenubar", "Speed"), 10, 2000);
                 }
-            }       
-#endif // USE_CAELUM
+            }
 
             // WATER SETTINGS
             if (RoR::App::gfx_water_waves->getBool() && App::mp_state->getEnum<MpState>() != MpState::CONNECTED && App::GetGameContext()->GetTerrain()->getWater())

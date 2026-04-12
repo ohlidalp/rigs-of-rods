@@ -23,6 +23,7 @@
 #include "Application.h"
 #include "AppContext.h"
 #include "CacheSystem.h"
+#include "Caelum.h"
 #include "CameraManager.h"
 #include "ChatSystem.h"
 #include "Collisions.h"

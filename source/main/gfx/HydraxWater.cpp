@@ -26,11 +26,8 @@
 #include "GameContext.h"
 #include "GfxScene.h"
 #include "SkyManager.h"
+#include "Sun.h"
 #include "Terrain.h"
-
-#ifdef USE_CAELUM
-#include <Caelum.h>
-#endif // USE_CAELUM
 
 using namespace Ogre;
 using namespace RoR;
@@ -90,16 +87,15 @@ void HydraxWater::InitHydrax()
 
 void HydraxWater::UpdateWater()
 {
-#ifdef USE_CAELUM
-    if (RoR::App::GetGameContext()->GetTerrain()->getSkyManager() != nullptr)
+    SkyManager* sky = RoR::App::GetGameContext()->GetTerrain()->getSkyManager();
+    if (sky != nullptr)
     {
-        SkyManager* sky = RoR::App::GetGameContext()->GetTerrain()->getSkyManager();
+        Caelum::BaseSkyLight* sun = sky->GetCaelumSys()->getSun();
         Ogre::Vector3 sunPosition = App::GetCameraManager()->GetCameraNode()->_getDerivedPosition();
-        sunPosition -= sky->GetCaelumSys()->getSun()->getLightDirection() * 80000;
+        sunPosition -= sun->getLightDirection() * 80000;
         mHydrax->setSunPosition(sunPosition);
-        mHydrax->setSunColor(Ogre::Vector3(sky->GetCaelumSys()->getSun()->getBodyColour().r, sky->GetCaelumSys()->getSun()->getBodyColour().g, sky->GetCaelumSys()->getSun()->getBodyColour().b));
+        mHydrax->setSunColor(Ogre::Vector3(sun->getBodyColour().r, sun->getBodyColour().g, sun->getBodyColour().b));
     }
-#endif // USE_CAELUM
 }
 
 void HydraxWater::SetWaterVisible(bool value)

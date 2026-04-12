@@ -67,11 +67,6 @@
 #include <discord_rpc.h>
 #endif// USE_DISCORD_RPC
 
-#ifdef USE_CAELUM
-#include <CaelumPrerequisites.h>
-#include <Caelum.h>
-#endif// USE_CAELUM
-
 #ifdef USE_PAGED
 #include <PagedGeometry.h>
 #include <TreeLoader2D.h>

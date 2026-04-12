@@ -121,9 +121,7 @@ void GameAbout::Draw()
     ImGui::NewLine();
     ImGui::TextColored(theme.value_blue_text_color, "%s:", _LC("About", "Used Libs"));
     ImGui::Text("%s%s", "Ogre3D:",         " 3D rendering engine");
-#ifdef USE_CAELUM
-    ImGui::Text("%s%s", "Caelum:",         " Atmospheric effects");
-#endif
+    ImGui::Text("%s%s", "Caelum + SkyX:",  " Atmospheric effects");
     ImGui::Text("%s%s", "Hydrax:",         " Water rendering");
 #ifdef USE_ANGELSCRIPT
     ImGui::Text("%s%s", "AngelScript:",    " Scripting Backend");

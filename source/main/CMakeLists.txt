@@ -76,6 +76,29 @@ set(SOURCE_FILES
         gfx/particle/FireExtinguisherAffectorFactory.h
         gfx/particle/OgreParticleCustomParam.h
         gfx/particle/OgreShaderParticleRenderer.{h,cpp}
+        gfx/caelum_sky/Astronomy.{h,cpp}
+        gfx/caelum_sky/BrightStarCatalogue.cpp
+        gfx/caelum_sky/Caelum.h
+        gfx/caelum_sky/CaelumDefaultTypeDescriptorData.cpp
+        gfx/caelum_sky/CaelumExceptions.h
+        gfx/caelum_sky/CaelumPlugin.{h,cpp}
+        gfx/caelum_sky/CaelumPrerequisites.h
+        gfx/caelum_sky/CaelumScriptTranslator.{h,cpp}
+        gfx/caelum_sky/CaelumSystem.{h,cpp}
+        gfx/caelum_sky/CameraBoundElement.{h,cpp}
+        gfx/caelum_sky/DepthComposer.{h,cpp}
+        gfx/caelum_sky/FastGpuParamRef.{h,cpp}
+        gfx/caelum_sky/GroundFog.{h,cpp}
+        gfx/caelum_sky/InternalUtilities.{h,cpp}
+        gfx/caelum_sky/Moon.{h,cpp}
+        gfx/caelum_sky/PointStarfield.{h,cpp}
+        gfx/caelum_sky/PrecipitationController.{h,cpp}
+        gfx/caelum_sky/PrivatePtr.h
+        gfx/caelum_sky/SkyDome.{h,cpp}
+        gfx/caelum_sky/SkyLight.{h,cpp}
+        gfx/caelum_sky/Sun.{h,cpp}
+        gfx/caelum_sky/TypeDescriptor.{h,cpp}
+        gfx/caelum_sky/UniversalClock.{h,cpp}      
         gfx/skyx/AtmosphereManager.{h,cpp}
         gfx/skyx/BasicController.{h,cpp}
         gfx/skyx/CloudsManager.{h,cpp}
@@ -349,6 +372,7 @@ target_include_directories(${BINNAME} PRIVATE
         gfx/camera
         gfx/hydrax
         gfx/particle
+        gfx/caelum_sky
         gfx/skyx
         gui
         gui/imgui
@@ -461,11 +485,6 @@ if (ROR_USE_CURL)
     if (WIN32)
         target_compile_definitions(${BINNAME} PRIVATE WIN32_LEAN_AND_MEAN)
     endif ()
-endif ()
-
-if (ROR_USE_CAELUM)
-    target_link_libraries(${BINNAME} PRIVATE Caelum::Caelum)
-    target_compile_definitions(${BINNAME} PRIVATE USE_CAELUM)
 endif ()
 
 if (ROR_USE_PAGED)
