@@ -25,7 +25,7 @@ http://www.gnu.org/copyleft/lesser.txt.
 
 #include "gfx/skyx/SkyX.h"
 
-namespace SkyX { namespace VClouds
+namespace VClouds
 {
 	VClouds::VClouds(Ogre::SceneManager *sm)
 		: mSceneManager(sm)
@@ -327,4 +327,4 @@ namespace SkyX { namespace VClouds
 		mDataManager->setWheater(mWheater.x, mWheater.y, mDelayedResponse);
 	}
 
-}}
+} // namespace VClouds

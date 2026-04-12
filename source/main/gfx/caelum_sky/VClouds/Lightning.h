@@ -26,7 +26,7 @@ http://www.gnu.org/copyleft/lesser.txt.
 
 #include "Prerequisites.h"
 
-namespace SkyX { namespace VClouds{
+namespace VClouds{
 
 	class Lightning
 	{
@@ -202,6 +202,6 @@ namespace SkyX { namespace VClouds{
 		bool mFinished;
 	};
 
-}}
+} // namespace VClouds
 
 #endif

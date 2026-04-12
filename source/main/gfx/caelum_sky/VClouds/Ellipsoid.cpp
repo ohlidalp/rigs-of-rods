@@ -23,7 +23,7 @@ http://www.gnu.org/copyleft/lesser.txt.
 
 #include "Ellipsoid.h"
 
-namespace SkyX { namespace VClouds
+namespace VClouds
 {
 
      Ellipsoid::Ellipsoid(
@@ -141,4 +141,4 @@ namespace SkyX { namespace VClouds
 		mC2 = Ogre::Math::Pow(mC, 2);
 	}
 
-}}
+} // namespace VClouds

@@ -157,37 +157,7 @@ namespace SkyX
 			return mOptions;
 		}
 
-		/** Set ambient gradient
-		    @param AmbientGradient Ambient color gradient
-		 */
-		inline void setAmbientGradient(const ColorGradient& AmbientGradient)
-		{
-			mAmbientGradient = AmbientGradient;
-		}
 
-		/** Get ambient color gradient
-		    @return Ambient color gradient
-		 */
-		inline const ColorGradient& getAmbientGradient() const
-		{
-			return mAmbientGradient;
-		}
-
-		/** Set sun gradient
-		    @param SunGradient Sun color gradient
-		 */
-		inline void setSunGradient(const ColorGradient& SunGradient)
-		{
-			mSunGradient = SunGradient;
-		}
-
-		/** Get sun color gradient
-		    @return Sun color gradient
-		 */
-		inline const ColorGradient& getSunGradient() const
-		{
-			return mSunGradient;
-		}
 
 		/** Register layer
 		    @param CloudLayerPass Pass where register the cloud layer

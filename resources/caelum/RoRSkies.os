@@ -54,13 +54,23 @@ caelum_sky_system ror_default_sky
         atmosphere_depth_image AtmosphereDepth.png
     }
 
-    cloud_system
+    vclouds
     {
-        cloud_layer
-        {
-            height 3000
-            coverage 0.3
-        }
+        //Volumetric clouds
+        wind_speed 80.0
+        wind_direction 0
+        auto_update no
+        vertical_bounds 825 3500
+        ambient_color 0.63 0.63 0.7
+        light_response 0.25 0.2 1.0 0.1
+        ambient_factors 0.45 0.3 0.6 1.0
+        cloudiness 0.1 0.6
+
+        //Lightnings
+        enable_lightnings no
+        average_lightning_appartition_time 1.5
+        lightning_color 1 0.925 0.85
+        lightning_time_multiplier 2.0
     }
 	
 }

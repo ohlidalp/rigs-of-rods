@@ -14,6 +14,7 @@
 #include "SkyDome.h"
 #include "PrecipitationController.h"
 #include "PrivatePtr.h"
+#include "VCloudsManager.h"
 
 namespace Caelum
 {
@@ -172,6 +173,7 @@ namespace Caelum
         std::unique_ptr<GroundFog> mGroundFog;
 		std::unique_ptr<PrecipitationController> mPrecipitationController;
         std::unique_ptr<DepthComposer> mDepthComposer;
+        std::unique_ptr<VCloudsManager> mVCloudsManager;
 
     public:
         typedef std::set<Ogre::Viewport*> AttachedViewportSet;
@@ -200,7 +202,7 @@ namespace Caelum
             CAELUM_COMPONENT_SUN                = 1 << 4,
             CAELUM_COMPONENT_IMAGE_STARFIELD    = 1 << 5,
             CAELUM_COMPONENT_POINT_STARFIELD    = 1 << 6,
-            CAELUM_COMPONENT_CLOUDS             = 1 << 7,
+            CAELUM_COMPONENT_VCLOUDS            = 1 << 7, // Volumetric clouds ported from SkyX
             CAELUM_COMPONENT_PRECIPITATION      = 1 << 8,
             CAELUM_COMPONENT_SCREEN_SPACE_FOG   = 1 << 9,
 
@@ -214,7 +216,7 @@ namespace Caelum
                     | CAELUM_COMPONENT_MOON
                     | CAELUM_COMPONENT_SUN
                     | CAELUM_COMPONENT_POINT_STARFIELD
-                    | CAELUM_COMPONENT_CLOUDS,
+                    | CAELUM_COMPONENT_VCLOUDS,
             CAELUM_COMPONENTS_ALL               = 0
                     | CAELUM_COMPONENTS_DEFAULT
                     | CAELUM_COMPONENT_PRECIPITATION 
@@ -429,6 +431,9 @@ namespace Caelum
 		inline DepthComposer* getDepthComposer () { return mDepthComposer.get (); }
         /// Set depth composer; or null to disable.
 		void setDepthComposer (DepthComposer *obj);
+
+        inline VCloudsManager* getVCloudsManager() { return mVCloudsManager.get(); }
+        void setVCloudsManager(VCloudsManager* obj);
  
 		/** Enables/disables Caelum managing standard Ogre::Scene fog.
             This makes CaelumSystem control standard Ogre::Scene fogging. It

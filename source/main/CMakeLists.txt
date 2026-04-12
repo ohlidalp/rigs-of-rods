@@ -96,7 +96,17 @@ set(SOURCE_FILES
         gfx/caelum_sky/SkyLight.{h,cpp}
         gfx/caelum_sky/Sun.{h,cpp}
         gfx/caelum_sky/TypeDescriptor.{h,cpp}
-        gfx/caelum_sky/UniversalClock.{h,cpp}      
+        gfx/caelum_sky/UniversalClock.{h,cpp}
+        gfx/caelum_sky/VCloudsManager.{h,cpp}
+        gfx/caelum_sky/VClouds/VColorGradient.{h,cpp}
+        gfx/caelum_sky/VClouds/DataManager.{h,cpp}
+        gfx/caelum_sky/VClouds/Ellipsoid.{h,cpp}
+        gfx/caelum_sky/VClouds/FastFakeRandom.{h,cpp}
+        gfx/caelum_sky/VClouds/GeometryBlock.{h,cpp}
+        gfx/caelum_sky/VClouds/GeometryManager.{h,cpp}
+        gfx/caelum_sky/VClouds/Lightning.{h,cpp}
+        gfx/caelum_sky/VClouds/LightningManager.{h,cpp}
+        gfx/caelum_sky/VClouds/VClouds.{h,cpp} 
         gfx/skyx/AtmosphereManager.{h,cpp}
         gfx/skyx/BasicController.{h,cpp}
         gfx/skyx/CloudsManager.{h,cpp}
@@ -108,15 +118,6 @@ set(SOURCE_FILES
         gfx/skyx/Prerequisites.{h,cpp}
         gfx/skyx/SCfgFileManager.{h,cpp}
         gfx/skyx/SkyX.{h,cpp}
-        gfx/skyx/VCloudsManager.{h,cpp}
-        gfx/skyx/VClouds/DataManager.{h,cpp}
-        gfx/skyx/VClouds/Ellipsoid.{h,cpp}
-        gfx/skyx/VClouds/FastFakeRandom.{h,cpp}
-        gfx/skyx/VClouds/GeometryBlock.{h,cpp}
-        gfx/skyx/VClouds/GeometryManager.{h,cpp}
-        gfx/skyx/VClouds/Lightning.{h,cpp}
-        gfx/skyx/VClouds/LightningManager.{h,cpp}
-        gfx/skyx/VClouds/VClouds.{h,cpp}
         gui/DashBoardManager.{h,cpp}
         gui/GUIManager.{h,cpp}
         gui/GUIUtils.{h,cpp}

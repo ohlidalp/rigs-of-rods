@@ -66,6 +66,7 @@ namespace Caelum
         setPointStarfield (0);
         setPrecipitationController (0);
         setMoon (0);
+        setVCloudsManager (0);
         mSkyGradientsImage.reset ();
         mSunColoursImage.reset ();
 
@@ -188,6 +189,15 @@ namespace Caelum
             } catch (Caelum::UnsupportedException& ex) {
                 LogManager::getSingleton ().logMessage (
                         "Caelum: Failed to initialize precipitation: " + ex.getFullDescription());
+            }
+        }
+
+        if (componentsToCreate & CAELUM_COMPONENT_VCLOUDS) {
+            try {
+                this->setVCloudsManager (new VCloudsManager(this));
+            } catch (Caelum::UnsupportedException& ex) {
+                LogManager::getSingleton ().logMessage (
+                        "Caelum: Failed to initialize vclouds: " + ex.getFullDescription());
             }
         }
 
@@ -321,6 +331,10 @@ namespace Caelum
         }
     }
 
+    void CaelumSystem::setVCloudsManager (VCloudsManager* ptr) {
+        mVCloudsManager.reset(ptr);
+    }
+
     void CaelumSystem::preViewportUpdate (const Ogre::RenderTargetViewportEvent &e) {
         Ogre::Viewport *viewport = e.source;
         Ogre::Camera *camera = viewport->getCamera ();
@@ -359,6 +373,10 @@ namespace Caelum
 
         if (getGroundFog ()) {
             getGroundFog ()->notifyCameraChanged (cam);
+        }
+
+        if (getVCloudsManager()) {
+            getVCloudsManager()->notifyCameraRender (cam);
         }
     }
 
@@ -501,6 +519,11 @@ namespace Caelum
                         );
              */
             mSceneMgr->setAmbientLight (ambient);
+        }
+
+        // Update vClouds.
+        if (getVCloudsManager()) {
+            getVCloudsManager()->update(timeSinceLastFrame);
         }
     }
 

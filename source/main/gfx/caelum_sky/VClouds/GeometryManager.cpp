@@ -25,7 +25,7 @@ http://www.gnu.org/copyleft/lesser.txt.
 
 #include "VClouds.h"
 
-namespace SkyX { namespace VClouds
+namespace VClouds
 {
 
 	GeometryManager::GeometryManager(VClouds* vc)
@@ -41,6 +41,7 @@ namespace SkyX { namespace VClouds
 		, mA(0), mB(0), mC(0)
 		, mWorldOffset(Ogre::Vector2(0,0))
 		, mCurrentDistance(Ogre::Vector3(0,0,0))
+        , mSceneNode(nullptr)
 	{
 	}
 
@@ -201,4 +202,4 @@ namespace SkyX { namespace VClouds
 			mGeometryBlocks.at(k)->updateGeometry(c, currentCameraData.geometryDisplacement, mCurrentDistance);
 		}
 	}
-}}
+} // namespace VClouds

@@ -28,7 +28,7 @@ http://www.gnu.org/copyleft/lesser.txt.
 
 #include "GeometryBlock.h"
 
-namespace SkyX { namespace VClouds{
+namespace VClouds{
 
 	class VClouds;
 
@@ -164,6 +164,6 @@ namespace SkyX { namespace VClouds{
 	};
 
 
-}}
+} // namespace VClouds
 
 #endif

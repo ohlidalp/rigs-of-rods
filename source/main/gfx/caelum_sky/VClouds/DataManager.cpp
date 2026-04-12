@@ -26,7 +26,7 @@ http://www.gnu.org/copyleft/lesser.txt.
 #include "VClouds.h"
 #include "Ellipsoid.h"
 
-namespace SkyX { namespace VClouds
+namespace VClouds
 {
 	DataManager::DataManager(VClouds *vc)
 		: mVClouds(vc)
@@ -617,4 +617,4 @@ namespace SkyX { namespace VClouds
 
 		buffer->unlock();
 	}
-}}
+} // namespace VClouds

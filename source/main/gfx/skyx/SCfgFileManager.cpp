@@ -90,37 +90,7 @@ namespace SkyX
 					));
 			}
 		}
-		else
-		{
-			mSkyX->getVCloudsManager()->setWindSpeed(_getFloatValue(CfgFile, "WindSpeed"));
-			mSkyX->getVCloudsManager()->setAutoupdate(_getBoolValue(CfgFile, "AutoUpdate"));
-			mSkyX->getVCloudsManager()->setHeight(_getVector2Value(CfgFile, "vHeight"));
 
-			VClouds::VClouds* vclouds = mSkyX->getVCloudsManager()->getVClouds();
-
-			vclouds->setWindDirection(_getDegreeValue(CfgFile, "WindDirection"));
-
-			vclouds->setAmbientColor(_getVector3Value(CfgFile, "AmbientColor"));
-			vclouds->setLightResponse(_getVector4Value(CfgFile, "LightResponse"));
-			vclouds->setAmbientFactors(_getVector4Value(CfgFile, "AmbientFactors"));
-			vclouds->setWheater(_getVector2Value(CfgFile, "Wheater").x, _getVector2Value(CfgFile, "Wheater").y, _getBoolValue(CfgFile, "DelayedResponse"));
-
-			// Create VClouds
-			if (!mSkyX->getVCloudsManager()->isCreated())
-			{
-				// SkyX::MeshManager::getSkydomeRadius(...) works for both finite and infinite(=0) camera far clip distances
-				mSkyX->getVCloudsManager()->create(mSkyX->getMeshManager()->getSkydomeRadius(mCamera));
-			}
-
-			vclouds->getLightningManager()->setEnabled(_getBoolValue(CfgFile, "lightnings"));
-
-			if (vclouds->getLightningManager()->isEnabled())
-			{
-				vclouds->getLightningManager()->setAverageLightningApparitionTime(_getFloatValue(CfgFile, "AverageLightningApparitionTime"));
-				vclouds->getLightningManager()->setLightningColor(_getVector3Value(CfgFile, "LightningColor"));
-				vclouds->getLightningManager()->setLightningTimeMultiplier(_getFloatValue(CfgFile, "LightningTimeMultiplier"));
-			}
-		}
 		return true;
 	}
 

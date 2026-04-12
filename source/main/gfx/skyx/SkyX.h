@@ -34,13 +34,6 @@ http://www.gnu.org/copyleft/lesser.txt.
 #include "ColorGradient.h"
 #include "Controller.h"
 #include "BasicController.h"
-#include "VCloudsManager.h"
-#include "VClouds/VClouds.h"
-#include "VClouds/GeometryManager.h"
-#include "VClouds/GeometryBlock.h"
-#include "VClouds/FastFakeRandom.h"
-#include "VClouds/Ellipsoid.h"
-#include "VClouds/DataManager.h"
 #include "SCfgFileManager.h"
 
 namespace SkyX
@@ -166,7 +159,6 @@ namespace SkyX
 		inline void setTimeMultiplier(const Ogre::Real& TimeMultiplier)
 		{
 			mTimeMultiplier = TimeMultiplier;
-			mVCloudsManager->_updateWindSpeedConfig();
 		}
 
 		/** Get time multiplier
@@ -217,13 +209,7 @@ namespace SkyX
 			return mCloudsManager;
 		}
 
-		/** Get volumetric clouds manager
-		    @return Volumetric clouds manager
-		 */
-		inline VCloudsManager* getVCloudsManager()
-		{
-			return mVCloudsManager;
-		}
+
 
 		/** Set controller
 		    @param c Controller
@@ -368,8 +354,7 @@ namespace SkyX
 		MoonManager* mMoonManager;
 		/// Clouds manager
 		CloudsManager* mCloudsManager;
-		/// Volumetric clouds manager
-		VCloudsManager* mVCloudsManager;
+
 
 		/// Controller
 		Controller* mController;

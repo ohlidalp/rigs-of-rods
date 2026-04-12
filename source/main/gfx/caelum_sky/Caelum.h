@@ -22,4 +22,11 @@
 #include "GroundFog.h"
 #include "DepthComposer.h"
 
+#include "VClouds/VClouds.h"
+#include "VClouds/GeometryManager.h"
+#include "VClouds/GeometryBlock.h"
+#include "VClouds/FastFakeRandom.h"
+#include "VClouds/Ellipsoid.h"
+#include "VClouds/DataManager.h"
+
 #endif // CAELUM_H

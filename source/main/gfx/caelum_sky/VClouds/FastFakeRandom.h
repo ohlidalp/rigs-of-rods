@@ -21,32 +21,41 @@ http://www.gnu.org/copyleft/lesser.txt.
 --------------------------------------------------------------------------------
 */
 
-#include "FastFakeRandom.h"
+#ifndef _SkyX_VClouds_FastFakeRandom_H_
+#define _SkyX_VClouds_FastFakeRandom_H_
 
-namespace SkyX { namespace VClouds
-{
-	FastFakeRandom::FastFakeRandom(const int &n, const Ogre::Real &min, const Ogre::Real &max)
-		: mCapacity(n)
-		, mIndex(-1)
+#include "Prerequisites.h"
+
+namespace VClouds{
+
+	class FastFakeRandom 
 	{
-		mData = new float[n];
+	public:
+		/** Constructor 
+		    @param n Capacity
+			@param min Min value
+			@param max Max value
+		 */
+		FastFakeRandom(const int& n, const Ogre::Real& min, const Ogre::Real& max);
 
-		for (int k = 0; k < n; k++)
-		{
-			mData[k] = Ogre::Math::RangeRandom(min, max);
-		}
-	}
+		/** Destructor
+	     */
+		~FastFakeRandom();
 
-	FastFakeRandom::~FastFakeRandom()
-	{
-		delete [] mData;
-	}
+		/** Get random number
+		 */
+		float& get();
 
-	float& FastFakeRandom::get() 
-	{
-		mIndex ++; if (mIndex >= mCapacity) {mIndex = 0;}
+	private:
+		/// Data pointer
+		float *mData;
+		/// Capacity
+		int mCapacity;
+		/// Index
+		int mIndex;
 
-		return mData[mIndex];
-	}
+	};
 
-}}
+} // namespace VClouds
+
+#endif

@@ -49,8 +49,7 @@ namespace SkyX
 		, mTimeMultiplier(0.1f)
 		, mTimeOffset(0.0f)
 	{
-		// Need to be instanced here, when SkyX::mSceneManager is valid
-		mVCloudsManager = new VCloudsManager(this);
+
 	}
 
 	SkyX::~SkyX()
@@ -62,7 +61,6 @@ namespace SkyX
 		delete mGPUManager;
 		delete mMoonManager;
 		delete mCloudsManager;
-		delete mVCloudsManager;
 
 		if (mCfgFileManager)
 			delete mCfgFileManager;
@@ -115,7 +113,6 @@ namespace SkyX
 		mCloudsManager->removeAll();
 		mMeshManager->remove();
 		mMoonManager->remove();
-		mVCloudsManager->remove();
 
 		mCamera = 0;
 
@@ -148,7 +145,6 @@ namespace SkyX
 
 		mMoonManager->updateMoonPhase(mController->getMoonPhase());
 		mCloudsManager->update();
-		mVCloudsManager->update(timeSinceLastFrame);
 	}
 
 	void SkyX::notifyCameraRender(Ogre::Camera* c)
@@ -176,7 +172,6 @@ namespace SkyX
 
 		mMoonManager->updateGeometry(c);
 
-		mVCloudsManager->notifyCameraRender(c);
 	}
 
 	void SkyX::setVisible(const bool& visible)
@@ -191,18 +186,12 @@ namespace SkyX
 		mMeshManager->getSceneNode()->setVisible(mVisible);
 		mMoonManager->getMoonSceneNode()->setVisible(mVisible);
 
-		if (mVCloudsManager->isCreated())
-		{
-			mVCloudsManager->getVClouds()->setVisible(mVisible);
-		}
 	}
 
 	void SkyX::setRenderQueueGroups(const RenderQueueGroups& rqg)
 	{
 		mRenderQueueGroups = rqg;
 
-		mVCloudsManager->getVClouds()->setRenderQueueGroups(
-			VClouds::VClouds::RenderQueueGroups(mRenderQueueGroups.vclouds, mRenderQueueGroups.vcloudsLightningsUnder, mRenderQueueGroups.vcloudsLightningsOver));
 
 		if (!mCreated)
 		{
