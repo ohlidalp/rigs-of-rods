@@ -84,13 +84,11 @@ void RoR::Terrain::dispose()
 
     //I think that the order is important
 
-#ifdef USE_CAELUM
     if (m_sky_manager != nullptr)
     {
         delete(m_sky_manager);
         m_sky_manager = nullptr;
     }
-#endif // USE_CAELUM
 
     if (SkyX_manager != nullptr)
     {
@@ -237,7 +235,6 @@ void RoR::Terrain::initCamera()
 
 void RoR::Terrain::initSkySubSystem()
 {
-#ifdef USE_CAELUM
     // Caelum skies
     if (App::gfx_sky_mode->getEnum<GfxSkyMode>() == GfxSkyMode::CAELUM)
     {
@@ -255,10 +252,8 @@ void RoR::Terrain::initSkySubSystem()
             m_sky_manager->LoadCaelumScript("ror_default_sky");
         }
     }
-    else
-#endif //USE_CAELUM
     // SkyX skies
-    if (App::gfx_sky_mode->getEnum<GfxSkyMode>() == GfxSkyMode::SKYX)
+    else if (App::gfx_sky_mode->getEnum<GfxSkyMode>() == GfxSkyMode::SKYX)
     {
          // try to load SkyX config
          if (!m_def->skyx_config.empty() && ResourceGroupManager::getSingleton().resourceExistsInAnyGroup(m_def->skyx_config))
@@ -285,9 +280,7 @@ void RoR::Terrain::initLight()
 {
     if (App::gfx_sky_mode->getEnum<GfxSkyMode>() == GfxSkyMode::CAELUM)
     {
-#ifdef USE_CAELUM
         m_main_light = m_sky_manager->GetSkyMainLight();
-#endif
     }
     else if (App::gfx_sky_mode->getEnum<GfxSkyMode>() == GfxSkyMode::SKYX)
     {

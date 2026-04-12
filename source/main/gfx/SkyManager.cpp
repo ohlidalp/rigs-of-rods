@@ -19,8 +19,6 @@
     along with Rigs of Rods. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef USE_CAELUM
-
 #include "SkyManager.h"
 
 #include "Actor.h"
@@ -30,6 +28,7 @@
 #include "GfxScene.h"
 #include "Terrain.h"
 #include "TerrainGeometryManager.h"
+#include "CaelumPlugin.h"
 
 #include <Caelum.h>
 
@@ -88,7 +87,8 @@ void SkyManager::LoadCaelumScript(std::string script, int fogStart, int fogEnd)
     // load the caelum config
     try
     {
-        Caelum::CaelumPlugin::getSingleton().loadCaelumSystemFromScript(m_caelum_system, script);
+        Caelum::CaelumPlugin::getSingleton().loadCaelumSystemFromScript(m_caelum_system, script,
+            "CaelumRG");
 
         // overwrite some settings
 #ifdef CAELUM_VERSION_SEC
@@ -183,4 +183,3 @@ std::string SkyManager::GetPrettyTime()
     return buf;
 }
 
-#endif //USE_CAELUM

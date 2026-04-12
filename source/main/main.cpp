@@ -23,6 +23,7 @@
 #include "Application.h"
 #include "AppContext.h"
 #include "CacheSystem.h"
+#include "Caelum.h"
 #include "CameraManager.h"
 #include "ChatSystem.h"
 #include "Collisions.h"
@@ -145,12 +146,6 @@ int main(int argc, char *argv[])
         {
             return -1; // Error already displayed
         }
-
-#ifdef USE_CAELUM
-        // Initialize CaelumPlugin, must happen before initialising resource groups
-        new Caelum::CaelumPlugin();
-        Caelum::CaelumPlugin::getSingleton().initialise();
-#endif //USE_CAELUM
 
         Ogre::TextureManager::getSingleton().setDefaultNumMipmaps(5);
 

@@ -6,7 +6,6 @@ Rigs of Rods uses 3rd party libraries licensed under the following licenses:
 | OGRE                            | 3D rendering engine                                  | MIT                        |
 | OIS                             | input system                                         | zlib/libpng                |
 | MyGUI                           | GUI system                                           | MIT                        |
-| Caelum                          | OGRE plugin for realistic skies                      | LGPLv3                     |
 | PagedGeometry                   | OGRE plugin for dense vegetation                     | zlib/libpng                |
 | OpenAL Soft                     | 3D audio                                             | LGPLv2                     |
 | mofilereader                    | internationalization                                 | MIT                        |

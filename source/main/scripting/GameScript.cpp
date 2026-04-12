@@ -160,32 +160,27 @@ Radian GameScript::getPersonRotation()
 String GameScript::getCaelumTime()
 {
     String result = "";
-#ifdef USE_CAELUM
     if (App::GetGameContext()->GetTerrain())
     {
         result = App::GetGameContext()->GetTerrain()->getSkyManager()->GetPrettyTime();
     }
-#endif // USE_CAELUM
     return result;
 }
 
 void GameScript::setCaelumTime(float value)
 {
-#ifdef USE_CAELUM
     if (!this->HaveSimTerrain(__FUNCTION__))
         return;
 
     App::GetGameContext()->GetTerrain()->getSkyManager()->SetSkyTimeFactor(value);
-#endif // USE_CAELUM
 }
 
 bool GameScript::getCaelumAvailable()
 {
+    // NOTE caelum used to be an optional library until 2026
     bool result = false;
-#ifdef USE_CAELUM
     if (App::GetGameContext()->GetTerrain())
         result = App::GetGameContext()->GetTerrain()->getSkyManager() != 0;
-#endif // USE_CAELUM
     return result;
 }
 

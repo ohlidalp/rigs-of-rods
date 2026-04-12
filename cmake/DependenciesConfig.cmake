@@ -43,10 +43,6 @@ cmake_dependent_option(ROR_USE_ANGELSCRIPT "use angelscript" ON "TARGET Angelscr
 find_package(CURL)
 cmake_dependent_option(ROR_USE_CURL "use curl" ON "CURL_FOUND" OFF)
 
-# --- Caelum -- Ogre addon for realistic sky rendering ---
-find_package(Caelum)
-cmake_dependent_option(ROR_USE_CAELUM "use caelum" ON "TARGET Caelum::Caelum" OFF)
-
 # --- PagedGeometry -- Ogre addon ---
 find_package(PagedGeometry)
 cmake_dependent_option(ROR_USE_PAGED "use pagedgeometry" ON "TARGET PagedGeometry::PagedGeometry" OFF)

@@ -55,9 +55,6 @@ void RoR::GfxEnvmap::SetupEnvMap()
         m_cameras[face]->setFarClipDistance(App::GetCameraManager()->GetCamera()->getFarClipDistance());
 
         Ogre::Viewport* v = m_render_targets[face]->addViewport(m_cameras[face]);
-        // RTSS only generates shaders for its own scheme, and D3D9 (having a fixed
-        // pipeline) defaults viewports to the Default one, where those techniques do not
-        // exist - the render target then comes out empty.
         v->setMaterialScheme(Ogre::MSN_SHADERGEN);
         v->setOverlaysEnabled(false);
         v->setClearEveryFrame(true);
@@ -234,13 +231,12 @@ void RoR::GfxEnvmap::UpdateEnvMap(Ogre::Vector3 center, GfxActor* gfx_actor, boo
 
     for (int i = 0; i < update_rate; i++)
     {
-#ifdef USE_CAELUM
         // caelum needs to know that we changed the cameras
         if (App::GetGameContext()->GetTerrain()->getSkyManager())
         {
             App::GetGameContext()->GetTerrain()->getSkyManager()->NotifySkyCameraChanged(m_cameras[m_update_round]);
         }
-#endif // USE_CAELUM
+
         try
         {
             m_render_targets[m_update_round]->update();
@@ -252,12 +248,11 @@ void RoR::GfxEnvmap::UpdateEnvMap(Ogre::Vector3 center, GfxActor* gfx_actor, boo
         }
         m_update_round = (m_update_round + 1) % NUM_FACES;
     }
-#ifdef USE_CAELUM
+
     if (App::GetGameContext()->GetTerrain()->getSkyManager())
     {
         App::GetGameContext()->GetTerrain()->getSkyManager()->NotifySkyCameraChanged(App::GetCameraManager()->GetCamera());
     }
-#endif // USE_CAELUM
 
     if (gfx_actor != nullptr)
     {

@@ -1266,7 +1266,6 @@ void GameContext::UpdateSimInputEvents(float dt)
 
 void GameContext::UpdateSkyInputEvents(float dt)
 {
-#ifdef USE_CAELUM
     if (App::gfx_sky_mode->getEnum<GfxSkyMode>() == GfxSkyMode::CAELUM &&
         m_terrain->getSkyManager())
     {
@@ -1301,7 +1300,6 @@ void GameContext::UpdateSkyInputEvents(float dt)
         }
     }
 
-#endif // USE_CAELUM
     if (App::gfx_sky_mode->getEnum<GfxSkyMode>() == GfxSkyMode::SKYX &&
         m_terrain->getSkyXManager())
     {
