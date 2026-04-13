@@ -318,6 +318,30 @@ public:
     void setCaelumTime(float value);
 
     /**
+    * Sets a Caelum sky parameter dynamically.
+    * @param section Component name: "caelum_system", "point_starfield", "sun", "moon", "ground_fog", "precipitation", "depth_composer", "sky_dome", "vclouds"
+    * @param name Property name - see Caelum documentation and TypeDescriptor system
+    * @param arg1 First value (used for scalar values, first component of vectors/colors)
+    * @param arg2 Second value (used for Vector2+, colors)
+    * @param arg3 Third value (used for Vector3+, colors)
+    * @param arg4 Fourth value (used for Vector4, colors with alpha)
+    * @return true on success, false on error
+    */
+    bool setCaelumParameter(const Ogre::String& section, const Ogre::String& name, float arg1, float arg2, float arg3, float arg4);
+
+    /**
+    * Gets a Caelum sky parameter.
+    * @param section Component name: "caelum_system", "point_starfield", "sun", "moon", "ground_fog", "precipitation", "depth_composer", "sky_dome", "vclouds"
+    * @param name Property name - see Caelum documentation and TypeDescriptor system
+    * @param arg1 Output: First value (scalar values, first component of vectors/colors)
+    * @param arg2 Output: Second value (Vector2+, colors)
+    * @param arg3 Output: Third value (Vector3+, colors)
+    * @param arg4 Output: Fourth value (Vector4, colors with alpha)
+    * @return true on success, false on error
+    */
+    bool getCaelumParameter(const Ogre::String& section, const Ogre::String& name, float& arg1, float& arg2, float& arg3, float& arg4);
+
+    /**
      * returns the currently set upo gravity
      * @return float number describing gravity terrain wide.
      */
