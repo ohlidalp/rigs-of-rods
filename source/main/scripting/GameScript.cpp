@@ -1551,7 +1551,7 @@ bool GameScript::pushMessage(MsgType type, AngelScript::CScriptDictionary* dict)
 
     case MSG_APP_UNLOAD_SCRIPT_REQUESTED:       //!< Payload = RoR::ScriptUnitId_t* (owner)
     {
-        int64_t id; // AngelScript's `Dictionary` converts all ints int `int64`
+        int64_t id; // AngelScript's `Dictionary` converts all ints to `int64`
         if (!GetValueFromScriptDict(log_msg, dict, /*required:*/true, "id", "int64", id))
         {
             return false;
@@ -2184,4 +2184,38 @@ std::string GameScript::CheckFileAccess(const char* func_name, const std::string
     {
         return basename + "." + extension;
     }
+}
+
+bool GameScript::setCaelumParameter(const Ogre::String& section, const Ogre::String& name, float arg1, float arg2, float arg3, float arg4)
+{
+    if (!this->HaveSimTerrain(__FUNCTION__))
+        return false;
+
+    SkyManager* sky_mgr = App::GetGameContext()->GetTerrain()->getSkyManager();
+    if (!sky_mgr)
+    {
+        App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_SCRIPT, Console::CONSOLE_SYSTEM_ERROR,
+            fmt::format("setCaelumParameter(): cannot set '{}' (section '{}'), Caelum not running",
+            name, section));
+        return false;
+    }
+
+    return sky_mgr->SetCaelumParameter(section, name, arg1, arg2, arg3, arg4);
+}
+
+bool GameScript::getCaelumParameter(const Ogre::String& section, const Ogre::String& name, float& arg1, float& arg2, float& arg3, float& arg4)
+{
+    if (!this->HaveSimTerrain(__FUNCTION__))
+        return false;
+
+    SkyManager* sky_mgr = App::GetGameContext()->GetTerrain()->getSkyManager();
+    if (!sky_mgr)
+    {
+        App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_SCRIPT, Console::CONSOLE_SYSTEM_ERROR,
+            fmt::format("getCaelumParameter(): cannot get '{}' (section '{}'), Caelum not running",
+            name, section));
+        return false;
+    }
+
+    return sky_mgr->GetCaelumParameter(section, name, arg1, arg2, arg3, arg4);
 }

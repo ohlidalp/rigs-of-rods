@@ -51,7 +51,20 @@ public:
     void           DetectSkyUpdate();
     Caelum::CaelumSystem* GetCaelumSys()        { return m_caelum_system; }
 
+    /// Set a Caelum parameter by section and property name;<br> See file '/resources/caelum_sky/RoRSkies.os' for list of available sections and parameters.
+    bool           SetCaelumParameter(const std::string& section, const std::string& name, 
+                                      float arg1 = 0.f, float arg2 = 0.f, float arg3 = 0.f, float arg4 = 0.f);
+
+    /// Get a Caelum parameter by section and property name;<br> See file '/resources/caelum_sky/RoRSkies.os' for list of available sections and parameters.
+    bool           GetCaelumParameter(const std::string& section, const std::string& name,
+                                      float& arg1, float& arg2, float& arg3, float& arg4);
+
 private:
+    /// Helper to get the target object and type descriptor for a given section name
+    bool           GetDescriptorAndTarget(const std::string& section, 
+                                          const Caelum::TypeDescriptor*& outDescriptor, 
+                                          void*& outTarget);
+
     Caelum::LongReal      m_last_clock;
     Caelum::CaelumSystem* m_caelum_system;
 };

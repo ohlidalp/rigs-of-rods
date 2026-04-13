@@ -404,6 +404,19 @@ public:
 	 */
 	void setCaelumTime(float value);
     
+    /**
+    * Set a Caelum parameter by section and property name;<br> See file '/resources/caelum_sky/RoRSkies.os' for list of available sections and parameters.
+    */
+    bool setCaelumParameter(const string &in section, const string &in name, 
+                                      float arg1 = 0.f, float arg2 = 0.f, float arg3 = 0.f, float arg4 = 0.f);
+
+    
+    /**
+    * Set a Caelum parameter by section and property name;<br> See file '/resources/caelum_sky/RoRSkies.os' for list of available sections and parameters.
+    */
+    bool getCaelumParameter(const string &in section, const string &in name,
+                                      float &out arg1, float &out arg2, float &out arg3, float &out arg4);    
+    
 	/**
 	 * returns the currently set upo gravity
 	 * @return float number describing gravity terrain wide.
