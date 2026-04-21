@@ -32,8 +32,6 @@ namespace Caelum
 		: mCaelumSys(caelumSys)
 		, mVClouds(0)
 		, mHeight(Ogre::Vector2(-1, -1))
-		, mWindSpeed(800.0f)
-		, mAutoupdate(true)
 		, mCreated(false)
 		, mCurrentTimeSinceLastFrame(0)
 	{
@@ -94,8 +92,6 @@ namespace Caelum
 		mVClouds->create(height, selectedRadius);
 
 		mCreated = true;
-
-		_updateWindSpeedConfig();
 	}
 
 	void VCloudsManager::update(const Ogre::Real& timeSinceLastFrame)
@@ -147,20 +143,4 @@ namespace Caelum
 		mVClouds->setSunColor(mSunGradient.getColor(point));
 	}
 
-	void VCloudsManager::_updateWindSpeedConfig()
-	{
-		if (!mCreated)
-		{
-			return;
-		}
-
-		if (mAutoupdate)
-		{
-			mVClouds->setWindSpeed(mCaelumSys->getTimeScale() * mWindSpeed);
-		}
-		else
-		{
-			mVClouds->setWindSpeed(mWindSpeed);
-		}
-	}
 }

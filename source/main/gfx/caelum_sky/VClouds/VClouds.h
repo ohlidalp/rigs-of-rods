@@ -286,18 +286,12 @@ namespace VClouds{
 			return Ogre::Vector2(Ogre::Math::Cos(mWindDirection), Ogre::Math::Sin(mWindDirection));
 		}
 
-		/** Set wind speed
-		    @param WindSpeed Wind speed
-		 */
-		inline void setWindSpeed(const float& WindSpeed)
+		void setWindSpeed(float WindSpeed)
 		{
 			mWindSpeed = WindSpeed;
 		}
 
-		/** Get wind speed
-		    @return Wind speed
-		 */
-		inline const float& getWindSpeed() const
+		float getWindSpeed() const
 		{
 			return mWindSpeed;
 		}

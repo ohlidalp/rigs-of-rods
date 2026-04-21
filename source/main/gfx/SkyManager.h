@@ -40,15 +40,12 @@ public:
     ~SkyManager();
 
     void           LoadCaelumScript(Ogre::String script, int fogStart = -1, int fogEnd = -1);
-    void           SetSkyTimeFactor(Ogre::Real f);  //!< change the time scale
     Ogre::Light*   GetSkyMainLight();
-    float          GetSkyTimeFactor();              //!< gets the current time scale
     std::string    GetPrettyTime();                 //!< prints the current time of the simulation in the format of HH:MM:SS
     double         GetTime()                    { return m_caelum_system->getJulianDay(); };
     void           SetTime(double time)         {  m_caelum_system->setJulianDay(time); };
-    bool           UpdateSky(float dt);
+    void           UpdateSky(float dt_sim);
     void           NotifySkyCameraChanged(Ogre::Camera* cam);
-    void           DetectSkyUpdate();
     Caelum::CaelumSystem* GetCaelumSys()        { return m_caelum_system; }
 
     /// Set a Caelum parameter by section and property name;<br> See file '/resources/caelum_sky/RoRSkies.os' for list of available sections and parameters.
