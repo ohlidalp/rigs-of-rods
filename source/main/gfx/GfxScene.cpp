@@ -169,7 +169,7 @@ void GfxScene::UpdateScene(float dt)
     SkyManager* sky = App::GetGameContext()->GetTerrain()->getSkyManager();
     if (sky != nullptr)
     {
-        sky->DetectSkyUpdate();
+        sky->UpdateSky(dt);
     }
 
     SkyXManager* skyx_man = App::GetGameContext()->GetTerrain()->getSkyXManager();

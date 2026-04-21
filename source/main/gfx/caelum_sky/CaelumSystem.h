@@ -92,7 +92,6 @@ namespace Caelum
      *  is probably not the cause.
      */
     class CAELUM_EXPORT CaelumSystem:
-            public Ogre::FrameListener,
             public Ogre::RenderTargetListener
     {
 	private:
@@ -107,9 +106,6 @@ namespace Caelum
 
         /// Caelum scene node for ground-bound elements (only clouds currently).
 		PrivateSceneNodePtr mCaelumGroundNode;
-
-		/// Cleanup requested flag.
-		bool mCleanup;
 
         /// Automatically move the camera node.
         bool mAutoMoveCameraNode;
@@ -258,24 +254,13 @@ namespace Caelum
 		 */
 		~CaelumSystem ();
 
-		/** Shuts down the system and detaches itself from the Ogre engine.
-         *
-         *  shutdown(true) is equivalent to deleting CaelumSystem yourself.
-         *  shutdown(false) delays destruction to the next time caelum is called as
-         *  a frame listener. This makes it safe to shutdown Caelum from inside
-         *  another frame listener.
-         *
-         *  @param cleanup If this is true then detach and destroy the CaelumSystem instantly.
-		 */
-		void shutdown (bool cleanup);
+		void shutdown ();
 
-        /** Update the whole system manually.
-         *  You have to call this yourself if you don't register CaelumSystem
-         *  as an ogre frame listener. Otherwise it's called automatically.
+        /** RIGSOFRODS: Frame step, must be called manually.
          *
-         *  @param timeSinceLastFrame: Time passed since last frame.
+         *  @param dt_sim: Elapsed simulation time (not wall time) since last frame, in seconds.
          */
-        void updateSubcomponents (Real timeSinceLastFrame);
+        void frameStepSubcomponents (float dt_sim);
 
         /** Notify subcomponents of camera changes.
          *  This function must be called after camera changes but before
@@ -356,8 +341,6 @@ namespace Caelum
 
         inline LongReal getJulianDay () const { return mUniversalClock->getJulianDay (); }
         inline void setJulianDay (LongReal value) { mUniversalClock->setJulianDay (value); }
-        inline Real getTimeScale () const { return mUniversalClock->getTimeScale (); }
-        inline void setTimeScale (Real value) { mUniversalClock->setTimeScale (value); }
 
     public:
         /** Attach CaelumSystem to a viewport.
@@ -622,12 +605,6 @@ namespace Caelum
 		const Ogre::Vector3 getEclipticNorthPoleDirection (LongReal jday);
 		
     private:
-		/** Handle FrameListener::frameStarted to call updateSubcomponents every frame.
-         *  If you don't register CaelumSystem as a an ogre frame listener you have to
-         *  call updateSubcomponents yourself.
-		 */
-		virtual bool frameStarted (const Ogre::FrameEvent &e);
-
 		/** Event trigger called just before rendering a viewport in a render target Caelum is attached to.
 			Useful to make objects follow every camera that renders a viewport in a certain render target.
 		 */

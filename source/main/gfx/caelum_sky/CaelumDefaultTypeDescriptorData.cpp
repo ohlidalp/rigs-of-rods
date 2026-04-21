@@ -59,10 +59,6 @@ namespace Caelum
             std::unique_ptr<DefaultTypeDescriptor> td (new DefaultTypeDescriptor ());
 
             // Timing settings.
-            td->add("time_scale",
-                    new AccesorPropertyDescriptor<Caelum::CaelumSystem, Real, Real, Real>(
-                            &Caelum::CaelumSystem::getTimeScale,
-                            &Caelum::CaelumSystem::setTimeScale));
             td->add("julian_day",
                     new AccesorPropertyDescriptor<Caelum::CaelumSystem, LongReal, LongReal, LongReal>(
                             &Caelum::CaelumSystem::getJulianDay,
@@ -356,11 +352,6 @@ namespace Caelum
                     new AccesorPropertyDescriptor<Caelum::VCloudsManager, Radian, Radian, Radian>(
                             &Caelum::VCloudsManager::getWindDirection,
                             &Caelum::VCloudsManager::setWindDirection));
-
-            td->add("auto_update",
-                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, bool, bool, bool>(
-                            &Caelum::VCloudsManager::getAutoupdate,
-                            &Caelum::VCloudsManager::setAutoupdate));
 
             td->add("vertical_bounds",
                     new AccesorPropertyDescriptor<Caelum::VCloudsManager, Vector2>(

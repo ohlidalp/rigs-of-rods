@@ -306,16 +306,20 @@ public:
     bool getCaelumAvailable();
 
     /**
+     * gets Caelum's astronomical time in Julian days (since noon 45 B.C.)
+     */
+    double getCaelumTime();
+
+    /**
+     * sets Caelum's astronomical time in Julian days (since noon 45 B.C.)
+     */
+    void setCaelumTime(double value);
+
+    /**
      * gets the time of the day in seconds
      * @return string with HH::MM::SS format
      */
-    Ogre::String getCaelumTime();
-
-    /**
-     * sets the time of the day in seconds
-     * @param value day time in seconds
-     */
-    void setCaelumTime(float value);
+    Ogre::String getCaelumPrettyTime();
 
     /**
     * Sets a Caelum sky parameter dynamically.

@@ -157,7 +157,7 @@ Radian GameScript::getPersonRotation()
     return result;
 }
 
-String GameScript::getCaelumTime()
+String GameScript::getCaelumPrettyTime()
 {
     String result = "";
     if (App::GetGameContext()->GetTerrain())
@@ -167,13 +167,24 @@ String GameScript::getCaelumTime()
     return result;
 }
 
-void GameScript::setCaelumTime(float value)
+void GameScript::setCaelumTime(double value)
 {
     if (!this->HaveSimTerrain(__FUNCTION__))
         return;
 
-    App::GetGameContext()->GetTerrain()->getSkyManager()->SetSkyTimeFactor(value);
+    App::GetGameContext()->GetTerrain()->getSkyManager()->SetTime(value);
 }
+
+double GameScript::getCaelumTime()
+{
+    double result = 0.0;
+    if (App::GetGameContext()->GetTerrain() && App::GetGameContext()->GetTerrain()->getSkyManager())
+    {
+        result = App::GetGameContext()->GetTerrain()->getSkyManager()->GetTime();
+    }
+    return result;
+}
+
 
 bool GameScript::getCaelumAvailable()
 {

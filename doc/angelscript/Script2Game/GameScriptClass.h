@@ -392,17 +392,21 @@ public:
 	 */
 	bool getCaelumAvailable();
     
-	/**
-	 * gets the time of the day in seconds
-	 * @return string with HH::MM::SS format
-	 */
-	string getCaelumTime();
-	
-	/**
-	 * sets the time of the day in seconds
-	 * @param value day time in seconds
-	 */
-	void setCaelumTime(float value);
+    /**
+     * gets Caelum's astronomical time in Julian days (since noon 45 B.C.)
+     */
+    double getCaelumTime();
+
+    /**
+     * sets Caelum's astronomical time in Julian days (since noon 45 B.C.)
+     */
+    void setCaelumTime(double value);
+
+    /**
+     * gets the time of the day in seconds
+     * @return string with HH::MM::SS format
+     */
+    Ogre::String getCaelumPrettyTime();
     
     /**
     * Set a Caelum parameter by section and property name;<br> See file '/resources/caelum_sky/RoRSkies.os' for list of available sections and parameters.

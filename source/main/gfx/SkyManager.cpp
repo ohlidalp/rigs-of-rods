@@ -47,13 +47,12 @@ SkyManager::SkyManager() : m_caelum_system(nullptr), m_last_clock(0.0)
 
     // Register caelum as a listener.
     RoR::App::GetAppContext()->GetRenderWindow()->addListener(m_caelum_system);
-    RoR::App::GetAppContext()->GetOgreRoot()->addFrameListener(m_caelum_system);
 }
 
 SkyManager::~SkyManager()
 {
     RoR::App::GetAppContext()->GetRenderWindow()->removeListener(m_caelum_system);
-    m_caelum_system->shutdown(false);
+    m_caelum_system->shutdown();
     m_caelum_system = nullptr;
 }
 
@@ -63,12 +62,14 @@ void SkyManager::NotifySkyCameraChanged(Ogre::Camera* cam)
         m_caelum_system->notifyCameraChanged(cam);
 }
 
-void SkyManager::DetectSkyUpdate()
+void SkyManager::UpdateSky(float dt_sim)
 {
     if (!m_caelum_system || !App::GetGameContext()->GetTerrain())
     {
         return;
     }
+
+    m_caelum_system->frameStepSubcomponents(dt_sim);
 
     Caelum::LongReal c = m_caelum_system->getUniversalClock()->getJulianDay();
 
@@ -139,7 +140,7 @@ void SkyManager::LoadCaelumScript(std::string script, int fogStart, int fogEnd)
         m_caelum_system->setEnsureSingleLightSource(true);
 
         // enforcing update, so shadows are set correctly before creating the terrain
-        m_caelum_system->updateSubcomponents(0.1);
+        m_caelum_system->frameStepSubcomponents(0.01);
     }
     catch (Ogre::Exception& e)
     {
@@ -149,11 +150,6 @@ void SkyManager::LoadCaelumScript(std::string script, int fogStart, int fogEnd)
     m_caelum_system->getSun()->getMainLight()->setDirection(lightsrc.normalisedCopy());
 }
 
-void SkyManager::SetSkyTimeFactor(float factor)
-{
-    m_caelum_system->getUniversalClock()->setTimeScale(factor);
-}
-
 Ogre::Light* SkyManager::GetSkyMainLight()
 {
     if (m_caelum_system && m_caelum_system->getSun())
@@ -161,11 +157,6 @@ Ogre::Light* SkyManager::GetSkyMainLight()
         return m_caelum_system->getSun()->getMainLight();
     }
     return nullptr;
-}
-
-float SkyManager::GetSkyTimeFactor()
-{
-    return m_caelum_system->getUniversalClock()->getTimeScale();
 }
 
 std::string SkyManager::GetPrettyTime()

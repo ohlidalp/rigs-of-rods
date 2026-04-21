@@ -26,8 +26,7 @@ namespace Caelum
         CaelumComponent componentsToCreate/* = CAELUM_COMPONENTS_DEFAULT*/
     ):
         mOgreRoot (root),
-        mSceneMgr (sceneMgr),
-        mCleanup (false)
+        mSceneMgr (sceneMgr)
     {
         LogManager::getSingleton().logMessage ("Caelum: Initialising Caelum system...");
         //LogManager::getSingleton().logMessage ("Caelum: CaelumSystem* at d" +
@@ -204,19 +203,10 @@ namespace Caelum
         LogManager::getSingleton ().logMessage ("Caelum: DONE initializing");
     }
 
-    void CaelumSystem::shutdown (const bool cleanup) {
+    void CaelumSystem::shutdown () {
         LogManager::getSingleton ().logMessage ("Caelum: Shutting down Caelum system...");
 
         destroySubcomponents (true);
-
-        if (cleanup) {
-            mOgreRoot->removeFrameListener (this);
-            delete this;
-        } else {
-            // We'll delete later. Make sure we're registered as a frame listener, or we'd leak.
-            mOgreRoot->addFrameListener(this);
-            mCleanup = true;
-        }
     }
 
     void CaelumSystem::attachViewportImpl (Ogre::Viewport* vp)
@@ -380,20 +370,7 @@ namespace Caelum
         }
     }
 
-    bool CaelumSystem::frameStarted (const Ogre::FrameEvent &e) {
-        if (mCleanup) {
-            // Delayed destruction.
-            mOgreRoot->removeFrameListener (this);
-            delete this;
-            return true;
-        }
-
-        updateSubcomponents(e.timeSinceLastFrame);
-
-        return true;
-    }
-
-    void CaelumSystem::updateSubcomponents (Real timeSinceLastFrame)
+    void CaelumSystem::frameStepSubcomponents (Real dt_sim)
     {
         /*
         LogManager::getSingleton().getDefaultLog()->logMessage(
@@ -401,12 +378,11 @@ namespace Caelum
                 StringConverter::toString (timeSinceLastFrame, 10));
         */
 
-        mUniversalClock->update (timeSinceLastFrame);
+        mUniversalClock->update (dt_sim);
 
         // Timing variables
         LongReal julDay = mUniversalClock->getJulianDay ();
         LongReal relDayTime = fmod(julDay, 1);
-        Real secondDiff = timeSinceLastFrame * mUniversalClock->getTimeScale ();
 
         // Get astronomical parameters.
         Ogre::Vector3 sunDir = getSunDirection(julDay);
@@ -485,7 +461,7 @@ namespace Caelum
 
         // Update precipitation
         if (getPrecipitationController ()) {
-            getPrecipitationController ()->update (secondDiff, fogColour);
+            getPrecipitationController ()->update (dt_sim, fogColour);
         }
 
         // Update screen space fog
@@ -523,7 +499,7 @@ namespace Caelum
 
         // Update vClouds.
         if (getVCloudsManager()) {
-            getVCloudsManager()->update(timeSinceLastFrame);
+            getVCloudsManager()->update(dt_sim);
         }
     }
 

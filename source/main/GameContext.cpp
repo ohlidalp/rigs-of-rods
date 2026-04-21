@@ -1292,9 +1292,9 @@ void GameContext::UpdateSkyInputEvents(float dt)
             time_factor = App::gfx_sky_time_speed->getInt();
         }
 
-        if (m_terrain->getSkyManager()->GetSkyTimeFactor() != time_factor)
+        if (time_factor != 1.f)
         {
-            m_terrain->getSkyManager()->SetSkyTimeFactor(time_factor);
+            m_terrain->getSkyManager()->SetTime(m_terrain->getSkyManager()->GetTime() + (time_factor * dt));
             Str<200> msg; msg << _L("Time set to ") << m_terrain->getSkyManager()->GetPrettyTime();
             RoR::App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_INFO, Console::CONSOLE_SYSTEM_NOTICE, msg.ToCStr());
         }

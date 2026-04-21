@@ -24,14 +24,11 @@ namespace Caelum {
         /// Astronomical julian day at mCurrentTime = 0;
 		LongReal mJulianDayBase;
 
-        /// Seconds since mJulianDayBase.
+        /// Seconds since mJulianDayBase (simulation time, not wall time!).
         LongReal mCurrentTime;
 
 		/// Seconds since mJulianDayBase at last update.
 		LongReal mLastUpdateTime;
-
-        /// Time scale.
-        Ogre::Real mTimeScale;
 
 	public:
         /** Number of seconds per day; exactly 60*60*24.
@@ -42,18 +39,8 @@ namespace Caelum {
 		 */
 		UniversalClock ();
 
-		/** Sets the time scale.
-		 * @param scale The new time scale. If negative, time will move backwards; 2.0 means double speed...
-		 */
-		void setTimeScale (const Ogre::Real scale);
-
-		/** Gets the time scale.
-		 *  @return The current time scale. Defaults to 1.
-		 */
-		Ogre::Real getTimeScale () const;
-
 		/** Updates the clock.
-		 *  @param time The time to be added to the clock. It will beaffected by the time scale.
+		 *  @param time The time in seconds (simulation time, not wall time!) to be added to the clock.
 		 */
 		void update (const Ogre::Real time);
 

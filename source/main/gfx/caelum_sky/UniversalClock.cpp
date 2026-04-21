@@ -11,8 +11,7 @@ namespace Caelum
     const Caelum::LongReal UniversalClock::SECONDS_PER_DAY = 86400.0;
 
     UniversalClock::UniversalClock () {
-        setJulianDay (Astronomy::J2000);        
-	    setTimeScale (1.0);
+        setJulianDay (Astronomy::J2000);
     }
 
     void UniversalClock::setJulianDay (Caelum::LongReal value) {
@@ -51,18 +50,9 @@ namespace Caelum
         ScopedHighPrecissionFloatSwitch precissionSwitch;
         return mCurrentTime - mLastUpdateTime;
     }
-
-    void UniversalClock::setTimeScale (const Ogre::Real scale) {
-	    mTimeScale = scale;
-    }
-
-    Ogre::Real UniversalClock::getTimeScale () const {
-	    return mTimeScale;
-    }
-
     void UniversalClock::update (const Ogre::Real time) {
         mLastUpdateTime = mCurrentTime;
-        mCurrentTime += time * mTimeScale;
+        mCurrentTime += time;
     }
 }
 

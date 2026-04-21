@@ -84,38 +84,14 @@ namespace Caelum
 			return mHeight;
 		}
 
-		/** Autoupdate volumetric clouds wind depending of the SkyX time multiplier
-			@remarks You can use VClouds->setWindSpeed(..) for different winds speeds
-		 */
-		inline void setAutoupdate(bool Autoupdate) 
+		void setWindSpeed(float WindSpeed)
 		{
-			mAutoupdate = Autoupdate;
-			_updateWindSpeedConfig();
+            mVClouds->setWindSpeed(WindSpeed);
 		}
 
-		/** Get autoupdate
-		    @return true if you want to update volumetric clouds wind depending of the SkyX time multiplier
-		 */
-		inline bool getAutoupdate() const
+		float getWindSpeed() const
 		{
-			return mAutoupdate;
-		}
-
-		/** Set wind speed
-		    @param WindSpeed Wind speed
-		 */
-		inline void setWindSpeed(Ogre::Real WindSpeed)
-		{
-			mWindSpeed = WindSpeed;
-			_updateWindSpeedConfig();
-		}
-
-		/** Get wind speed
-		    @return Wind speed
-		 */
-		inline Ogre::Real getWindSpeed() const
-		{
-			return mWindSpeed;
+			return mVClouds->getWindSpeed();
 		}
 
 		/** Set wind direction
@@ -216,11 +192,6 @@ namespace Caelum
 			return mCreated;
 		}
 
-		/** Update wind speed config
-		    @remarks Only for internal use
-		 */
-		void _updateWindSpeedConfig();
-
 	private:
 		/** Set light parameters
 		 */
@@ -235,11 +206,6 @@ namespace Caelum
 
 		/// Height parameters, x = Cloud field y-coord start, y: Field height (both in world coordinates)
 		Ogre::Vector2 mHeight;
-
-		/// Autoupdate wind speed depending of skyx time multiplier?
-		bool mAutoupdate;
-		/// Wind speed
-		Ogre::Real mWindSpeed;
 
 		/// Is vclouds manager created?
 		bool mCreated;
