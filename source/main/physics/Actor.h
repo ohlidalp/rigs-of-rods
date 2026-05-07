@@ -369,8 +369,8 @@ public:
     std::vector<shock_t>           ar_shocks;     //!< Index = `ShockID_t`; Shock absorbers
     std::vector<wing_t>            ar_wings;      //!< Index = `WingID_t`; Airfoil surfaces
     std::vector<wheeldetacher_t>   ar_wheeldetachers;
-    std::vector<std::vector<int>>  ar_node_to_node_connections;
-    std::vector<std::vector<int>>  ar_node_to_beam_connections;
+    std::vector<std::vector<NodeNum_t>>  ar_node_to_node_connections;
+    std::vector<std::vector<BeamID_t>>  ar_node_to_beam_connections;
     std::vector<Ogre::AxisAlignedBox>  ar_collision_bounding_boxes; //!< smart bounding boxes, used for determining the state of an actor (every box surrounds only a subset of nodes)
     std::vector<Ogre::AxisAlignedBox>  ar_predicted_coll_bounding_boxes;
     std::map<std::string, Ogre::MaterialPtr>  ar_managed_materials;
