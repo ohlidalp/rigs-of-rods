@@ -373,7 +373,7 @@ public:
     Ogre::AxisAlignedBox      ar_predicted_bounding_box;
     
     std::vector<wheeldetacher_t>   ar_wheeldetachers;
-    std::vector<std::vector<int>>  ar_node_to_node_connections;
+    std::vector<std::vector<NodeNum_t>>  ar_node_to_node_connections;
     std::vector<std::vector<int>>  ar_node_to_beam_connections;
     std::vector<Ogre::AxisAlignedBox>  ar_collision_bounding_boxes; //!< smart bounding boxes, used for determining the state of an actor (every box surrounds only a subset of nodes)
     std::vector<Ogre::AxisAlignedBox>  ar_predicted_coll_bounding_boxes;

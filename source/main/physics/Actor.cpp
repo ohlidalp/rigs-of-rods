@@ -914,20 +914,18 @@ int Actor::getWheelNodeCount() const
 
 void Actor::calcNodeConnectivityGraph()
 {
-    int i;
+    ar_node_to_node_connections.resize(ar_num_nodes);
+    ar_node_to_beam_connections.resize(ar_num_nodes);
 
-    ar_node_to_node_connections.resize(ar_num_nodes, std::vector<int>());
-    ar_node_to_beam_connections.resize(ar_num_nodes, std::vector<int>());
-
-    for (i = 0; i < ar_num_beams; i++)
+    for (int i = 0; i < ar_num_beams; i++)
     {
         if (ar_beams[i].p1num != NODENUM_INVALID && 
             ar_beams[i].p2num != NODENUM_INVALID)
         {
-            ar_node_to_node_connections[ar_nodes[ar_beams[i].p1num].pos].push_back(ar_nodes[ar_beams[i].p2num].pos);
-            ar_node_to_beam_connections[ar_nodes[ar_beams[i].p1num].pos].push_back(i);
-            ar_node_to_node_connections[ar_nodes[ar_beams[i].p2num].pos].push_back(ar_nodes[ar_beams[i].p1num].pos);
-            ar_node_to_beam_connections[ar_nodes[ar_beams[i].p2num].pos].push_back(i);
+            ar_node_to_node_connections[ar_beams[i].p1num].push_back(ar_beams[i].p2num);
+            ar_node_to_beam_connections[ar_beams[i].p1num].push_back(i);
+            ar_node_to_node_connections[ar_beams[i].p2num].push_back(ar_beams[i].p1num);
+            ar_node_to_beam_connections[ar_beams[i].p2num].push_back(i);
         }
     }
 }
