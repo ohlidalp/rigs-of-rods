@@ -350,11 +350,9 @@ public:
     std::vector<bool>    ar_beams_user_defined; //!< True for 'beams', false for wheels/cinecam/hooknode/wings/rotators etc...
     std::vector<beam_t*> ar_inter_beams;       //!< Beams connecting 2 actors
 
-    bool                 ar_has_active_shocks = false; //!< Are there active stabilizer shocks?
-    rotator_t*           ar_rotators = nullptr;
-    int                  ar_num_rotators = 0;
-    wing_t*              ar_wings = nullptr;
-    int                  ar_num_wings = 0;
+    bool                 ar_has_active_shocks; //!< Are there active stabilizer shocks?
+    rotator_t*           ar_rotators;
+    int                  ar_num_rotators;
     std::vector<authorinfo_t> authors;
     std::vector<rope_t>       ar_ropes;
     std::vector<ropable_t>    ar_ropables;
@@ -369,6 +367,7 @@ public:
     std::vector<soundsource_t>     ar_soundsources;
     std::vector<camera_t>          ar_cameras;    //!< Index = `CineCameraID_t`; A frame of reference, one is generated if not defined (backwards compat).
     std::vector<shock_t>           ar_shocks;     //!< Index = `ShockID_t`; Shock absorbers
+    std::vector<wing_t>            ar_wings;      //!< Index = `WingID_t`; Airfoil surfaces
     std::vector<wheeldetacher_t>   ar_wheeldetachers;
     std::vector<std::vector<int>>  ar_node_to_node_connections;
     std::vector<std::vector<int>>  ar_node_to_beam_connections;

@@ -277,9 +277,6 @@ void ActorSpawner::InitializeRig()
     if (req.num_rotators > 0)
         m_actor->ar_rotators = new rotator_t[req.num_rotators];
 
-    if (req.num_wings > 0)
-        m_actor->ar_wings = new wing_t[req.num_wings];
-
     m_actor->ar_minimass.resize(req.num_nodes);
 
     memset(m_actor->ar_collcabs, 0, sizeof(int) * MAX_CABS);
@@ -581,7 +578,7 @@ void ActorSpawner::FinalizeRig()
     }
     
     //wing closure
-    if (m_first_wing_index!=-1)
+    if (m_first_wing_index!=WINGID_INVALID)
     {
         if (m_actor->ar_autopilot != nullptr) 
         {
@@ -593,10 +590,10 @@ void ActorSpawner::FinalizeRig()
                 );
         }
         //inform wing segments
-        float span=m_actor->ar_nodes[m_actor->ar_wings[m_first_wing_index].fa->nfrd].RelPosition.distance(m_actor->ar_nodes[m_actor->ar_wings[m_actor->ar_num_wings-1].fa->nfld].RelPosition);
+        float span=m_actor->ar_nodes[m_actor->ar_wings[m_first_wing_index].fa->nfrd].RelPosition.distance(m_actor->ar_nodes[m_actor->ar_wings[m_actor->ar_wings.size()-1].fa->nfld].RelPosition);
         
         m_actor->ar_wings[m_first_wing_index].fa->enableInducedDrag(span,m_wing_area, false);
-        m_actor->ar_wings[m_actor->ar_num_wings-1].fa->enableInducedDrag(span,m_wing_area, true);
+        m_actor->ar_wings[m_actor->ar_wings.size()-1].fa->enableInducedDrag(span,m_wing_area, true);
         //wash calculator
         WashCalculator();
     }
@@ -620,7 +617,7 @@ void ActorSpawner::WashCalculator()
     {
         Ogre::Vector3 prop=m_actor->ar_nodes[m_actor->ar_aeroengines[p]->getNoderef()].RelPosition;
         float radius=m_actor->ar_aeroengines[p]->getRadius();
-        for (w=0; w<m_actor->ar_num_wings; w++)
+        for (w=0; w<m_actor->ar_wings.size(); w++)
         {
             //left wash
             Ogre::Vector3 wcent=((m_actor->ar_nodes[m_actor->ar_wings[w].fa->nfld].RelPosition+m_actor->ar_nodes[m_actor->ar_wings[w].fa->nfrd].RelPosition)/2.0);
@@ -915,7 +912,7 @@ void ActorSpawner::ProcessAirbrake(RigDef::Airbrake & def)
 
 void ActorSpawner::ProcessWing(RigDef::Wing & def)
 {
-    if ((m_first_wing_index != -1) && (m_actor->ar_wings[m_actor->ar_num_wings - 1].fa == nullptr))
+    if ((m_first_wing_index != WINGID_INVALID) && (m_actor->ar_wings[m_actor->ar_wings.size() - 1].fa == nullptr))
     {
         this->AddMessage(Message::TYPE_ERROR, "Unable to process wing, previous wing has no Airfoil");
         return;
@@ -931,7 +928,7 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
 
     NodeNum_t node1 = this->GetNodeIndexOrThrow(def.nodes[1]);
 
-    const std::string wing_name = this->ComposeName("wing", m_actor->ar_num_wings);
+    const std::string wing_name = this->ComposeName("Wing", m_actor->ar_wings.size());
     auto flex_airfoil = new FlexAirfoil(
         wing_name,
         m_actor,
@@ -960,7 +957,7 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
     Ogre::Entity* entity = nullptr;
     try
     {
-        const std::string wing_instance_name = this->ComposeName("entity @ wing", m_actor->ar_num_wings);
+        const std::string wing_instance_name = this->ComposeName("WingEntity", m_actor->ar_wings.size());
         entity = App::GetGfxScene()->GetSceneManager()->createEntity(wing_instance_name, wing_name);
         m_actor->m_deletion_entities.emplace_back(entity);
         this->SetupNewEntity(entity, Ogre::ColourValue(0.5, 1, 0));
@@ -973,9 +970,9 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
     }
 
     // induced drag
-    if (m_first_wing_index == -1)
+    if (m_first_wing_index == WINGID_INVALID)
     {
-        m_first_wing_index = m_actor->ar_num_wings;
+        m_first_wing_index = static_cast<WingID_t>(m_actor->ar_wings.size());
         m_wing_area=ComputeWingArea(
             m_actor->ar_nodes[flex_airfoil->nfld].AbsPosition,    m_actor->ar_nodes[flex_airfoil->nfrd].AbsPosition,
             m_actor->ar_nodes[flex_airfoil->nbld].AbsPosition,    m_actor->ar_nodes[flex_airfoil->nbrd].AbsPosition
@@ -983,7 +980,7 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
     }
     else
     {
-        wing_t & previous_wing = m_actor->ar_wings[m_actor->ar_num_wings - 1];
+        wing_t & previous_wing = m_actor->ar_wings[m_actor->ar_wings.size() - 1];
 
         if (node1 != previous_wing.fa->nfld)
         {
@@ -1014,8 +1011,8 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
                 left_green_prop.pp_beacon_type='L';
                 left_green_prop.pp_beacon_light[0]=nullptr; //no light
                 //the flare billboard
-                left_green_prop.pp_beacon_scene_node[0] = m_flares_parent_scenenode->createChildSceneNode(this->ComposeName("left green flare @ wing", m_actor->ar_num_wings));
-                left_green_prop.pp_beacon_bbs[0]=App::GetGfxScene()->GetSceneManager()->createBillboardSet(this->ComposeName("left green flare bbs @ wing", m_actor->ar_num_wings),1);
+                left_green_prop.pp_beacon_scene_node[0] = m_flares_parent_scenenode->createChildSceneNode(this->ComposeName("left green flare @ wing", static_cast<int>(m_actor->ar_wings.size())));
+                left_green_prop.pp_beacon_bbs[0]=App::GetGfxScene()->GetSceneManager()->createBillboardSet(this->ComposeName("left green flare bbs @ wing", static_cast<int>(m_actor->ar_wings.size())),1);
                 left_green_prop.pp_beacon_bbs[0]->createBillboard(0,0,0);
                 if (left_green_prop.pp_beacon_bbs[0])
                 {
@@ -1040,7 +1037,7 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
                 left_flash_prop.pp_beacon_rot_rate[0]=1.0;
                 left_flash_prop.pp_beacon_type='w';
                 //light
-                left_flash_prop.pp_beacon_light[0]=App::GetGfxScene()->GetSceneManager()->createLight(this->ComposeName("left flash light @ wing", m_actor->ar_num_wings));
+                left_flash_prop.pp_beacon_light[0]=App::GetGfxScene()->GetSceneManager()->createLight(this->ComposeName("left flash light @ wing", static_cast<int>(m_actor->ar_wings.size())));
                 left_flash_prop.pp_beacon_light[0]->setType(Ogre::Light::LT_POINT);
                 left_flash_prop.pp_beacon_light[0]->setDiffuseColour( Ogre::ColourValue(1.0, 1.0, 1.0));
                 left_flash_prop.pp_beacon_light[0]->setSpecularColour( Ogre::ColourValue(1.0, 1.0, 1.0));
@@ -1048,8 +1045,8 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
                 left_flash_prop.pp_beacon_light[0]->setCastShadows(false);
                 left_flash_prop.pp_beacon_light[0]->setVisible(false);
                 //the flare billboard
-                left_flash_prop.pp_beacon_scene_node[0] = m_flares_parent_scenenode->createChildSceneNode(this->ComposeName("left flash flare @ wing", m_actor->ar_num_wings));
-                left_flash_prop.pp_beacon_bbs[0]=App::GetGfxScene()->GetSceneManager()->createBillboardSet(this->ComposeName("left flash flare bbs @ wing", m_actor->ar_num_wings),1);
+                left_flash_prop.pp_beacon_scene_node[0] = m_flares_parent_scenenode->createChildSceneNode(this->ComposeName("left flash flare @ wing", static_cast<int>(m_actor->ar_wings.size())));
+                left_flash_prop.pp_beacon_bbs[0]=App::GetGfxScene()->GetSceneManager()->createBillboardSet(this->ComposeName("left flash flare bbs @ wing", static_cast<int>(m_actor->ar_wings.size())),1);
                 left_flash_prop.pp_beacon_bbs[0]->createBillboard(0,0,0);
                 if (left_flash_prop.pp_beacon_bbs[0])
                 {
@@ -1077,8 +1074,8 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
                 right_red_prop.pp_beacon_type='R';
                 right_red_prop.pp_beacon_light[0]=nullptr; /* No light */
                 //the flare billboard
-                right_red_prop.pp_beacon_scene_node[0] = m_flares_parent_scenenode->createChildSceneNode(this->ComposeName("right red flare @ wing", m_actor->ar_num_wings));
-                right_red_prop.pp_beacon_bbs[0]=App::GetGfxScene()->GetSceneManager()->createBillboardSet(this->ComposeName("right red flare bbs @ wing", m_actor->ar_num_wings),1);
+                right_red_prop.pp_beacon_scene_node[0] = m_flares_parent_scenenode->createChildSceneNode(this->ComposeName("right red flare @ wing", static_cast<int>(m_actor->ar_wings.size())));
+                right_red_prop.pp_beacon_bbs[0]=App::GetGfxScene()->GetSceneManager()->createBillboardSet(this->ComposeName("right red flare bbs @ wing", static_cast<int>(m_actor->ar_wings.size())),1);
                 right_red_prop.pp_beacon_bbs[0]->createBillboard(0,0,0);
                 if (right_red_prop.pp_beacon_bbs[0])
                 {
@@ -1103,7 +1100,7 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
                 right_flash_prop.pp_beacon_rot_rate[0]=1.0;
                 right_flash_prop.pp_beacon_type='w';
                 //light
-                right_flash_prop.pp_beacon_light[0]=App::GetGfxScene()->GetSceneManager()->createLight(this->ComposeName("right flash flare light @ wing", m_actor->ar_num_wings));
+                right_flash_prop.pp_beacon_light[0]=App::GetGfxScene()->GetSceneManager()->createLight(this->ComposeName("right flash flare light @ wing", static_cast<int>(m_actor->ar_wings.size())));
                 right_flash_prop.pp_beacon_light[0]->setType(Ogre::Light::LT_POINT);
                 right_flash_prop.pp_beacon_light[0]->setDiffuseColour( Ogre::ColourValue(1.0, 1.0, 1.0));
                 right_flash_prop.pp_beacon_light[0]->setSpecularColour( Ogre::ColourValue(1.0, 1.0, 1.0));
@@ -1111,8 +1108,8 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
                 right_flash_prop.pp_beacon_light[0]->setCastShadows(false);
                 right_flash_prop.pp_beacon_light[0]->setVisible(false);
                 //the flare billboard
-                right_flash_prop.pp_beacon_scene_node[0] = m_flares_parent_scenenode->createChildSceneNode(this->ComposeName("right flash flare @ wing", m_actor->ar_num_wings));
-                right_flash_prop.pp_beacon_bbs[0]=App::GetGfxScene()->GetSceneManager()->createBillboardSet(this->ComposeName("right flash flare bbs @ wing", m_actor->ar_num_wings),1);
+                right_flash_prop.pp_beacon_scene_node[0] = m_flares_parent_scenenode->createChildSceneNode(this->ComposeName("right flash flare @ wing", static_cast<int>(m_actor->ar_wings.size())));
+                right_flash_prop.pp_beacon_bbs[0]=App::GetGfxScene()->GetSceneManager()->createBillboardSet(this->ComposeName("right flash flare bbs @ wing", static_cast<int>(m_actor->ar_wings.size())),1);
                 right_flash_prop.pp_beacon_bbs[0]->createBillboard(0,0,0);
                 if (right_flash_prop.pp_beacon_bbs[0] != nullptr)
                 {
@@ -1127,7 +1124,7 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
                 m_generate_wing_position_lights = false; // Already done
             }
 
-            m_first_wing_index = m_actor->ar_num_wings;
+            m_first_wing_index = m_actor->ar_wings.size();
             m_wing_area=ComputeWingArea(
                 m_actor->ar_nodes[flex_airfoil->nfld].AbsPosition,    m_actor->ar_nodes[flex_airfoil->nfrd].AbsPosition,
                 m_actor->ar_nodes[flex_airfoil->nbld].AbsPosition,    m_actor->ar_nodes[flex_airfoil->nbrd].AbsPosition
@@ -1143,11 +1140,11 @@ void ActorSpawner::ProcessWing(RigDef::Wing & def)
     }
 
     // Add new wing to rig
-    m_actor->ar_wings[m_actor->ar_num_wings].fa = flex_airfoil;
-    m_actor->ar_wings[m_actor->ar_num_wings].cnode = m_actor_grouping_scenenode->createChildSceneNode(this->ComposeName("wing", m_actor->ar_num_wings));
-    m_actor->ar_wings[m_actor->ar_num_wings].cnode->attachObject(entity);
-
-    ++m_actor->ar_num_wings;
+    wing_t wing;
+    wing.fa = flex_airfoil;
+    wing.cnode = m_actor_grouping_scenenode->createChildSceneNode(this->ComposeName("wing", static_cast<int>(m_actor->ar_wings.size())));
+    wing.cnode->attachObject(entity);
+    m_actor->ar_wings.push_back(wing);
 }
 
 float ActorSpawner::ComputeWingArea(Ogre::Vector3 const & ref, Ogre::Vector3 const & x, Ogre::Vector3 const & y, Ogre::Vector3 const & aref)
