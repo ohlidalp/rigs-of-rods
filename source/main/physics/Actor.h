@@ -351,8 +351,7 @@ public:
     std::vector<beam_t*> ar_inter_beams;       //!< Beams connecting 2 actors
 
     bool                 ar_has_active_shocks; //!< Are there active stabilizer shocks?
-    rotator_t*           ar_rotators;
-    int                  ar_num_rotators;
+
     std::vector<authorinfo_t> authors;
     std::vector<rope_t>       ar_ropes;
     std::vector<ropable_t>    ar_ropables;
@@ -369,6 +368,7 @@ public:
     std::vector<shock_t>           ar_shocks;     //!< Index = `ShockID_t`; Shock absorbers
     std::vector<wing_t>            ar_wings;      //!< Index = `WingID_t`; Airfoil surfaces
     std::vector<wheel_t>           ar_wheels;     //!< Index = `WheelID_t`;
+    std::vector<rotator_t>         ar_rotators;   //!< Index = `RotatorID_t`;
     std::vector<wheeldetacher_t>   ar_wheeldetachers;
     std::vector<std::vector<NodeNum_t>>  ar_node_to_node_connections;
     std::vector<std::vector<BeamID_t>>  ar_node_to_beam_connections;

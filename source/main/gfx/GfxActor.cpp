@@ -1261,12 +1261,13 @@ void RoR::GfxActor::UpdateDebugView()
     {
         // Rotators
         auto& nodes = m_actor->ar_nodes;
-        const rotator_t* rotators = m_actor->ar_rotators;
-        const size_t num_rotators = static_cast<size_t>(m_actor->ar_num_rotators);
-        for (int i = 0; i < num_rotators; i++)
+
+        for (size_t i = 0; i < m_actor->ar_rotators.size(); i++)
         {
-            Ogre::Vector3 pos1_xyz = world2screen.Convert(nodes[rotators[i].axis1].AbsPosition);
-            Ogre::Vector3 pos2_xyz = world2screen.Convert(nodes[rotators[i].axis2].AbsPosition);
+            rotator_t& rotator = m_actor->ar_rotators[i];
+
+            Ogre::Vector3 pos1_xyz = world2screen.Convert(nodes[rotator.axis1].AbsPosition);
+            Ogre::Vector3 pos2_xyz = world2screen.Convert(nodes[rotator.axis2].AbsPosition);
 
             // Rotator axle
             {
@@ -1275,7 +1276,7 @@ void RoR::GfxActor::UpdateDebugView()
                     ImVec2 pos(pos1_xyz.x, pos1_xyz.y);
                     drawlist->AddCircleFilled(pos, 1.25f * NODE_IMMOVABLE_RADIUS, NODE_COLOR);
                     Str<25> id_buf;
-                    id_buf << nodes[rotators[i].axis1].pos;
+                    id_buf << nodes[rotator.axis1].pos;
                     drawlist->AddText(pos, NODE_TEXT_COLOR, id_buf.ToCStr());
                 }
                 if (pos2_xyz.z < 0.f)
@@ -1283,7 +1284,7 @@ void RoR::GfxActor::UpdateDebugView()
                     ImVec2 pos(pos2_xyz.x, pos2_xyz.y);
                     drawlist->AddCircleFilled(pos, 1.25f * NODE_IMMOVABLE_RADIUS, NODE_COLOR);
                     Str<25> id_buf;
-                    id_buf << nodes[rotators[i].axis2].pos;
+                    id_buf << nodes[rotator.axis2].pos;
                     drawlist->AddText(pos, NODE_TEXT_COLOR, id_buf.ToCStr());
                 }
                 if ((pos1_xyz.z < 0.f) && (pos2_xyz.z < 0.f))
@@ -1304,11 +1305,11 @@ void RoR::GfxActor::UpdateDebugView()
                     float h1 = ImGui::CalcTextSize(rotator_id_buf.ToCStr()).x / 2.0f;
                     drawlist->AddText(ImVec2(pos.x - h1, pos.y), NODE_TEXT_COLOR, rotator_id_buf.ToCStr());
                     char angle_buf[25];
-                    snprintf(angle_buf, 25, "Rate: %.1f rpm", 60.0f * rotators[i].debug_rate / Ogre::Math::TWO_PI);
+                    snprintf(angle_buf, 25, "Rate: %.1f rpm", 60.0f * rotator.debug_rate / Ogre::Math::TWO_PI);
                     float h2 = ImGui::CalcTextSize(angle_buf).x / 2.0f;
                     drawlist->AddText(ImVec2(pos.x - h2, pos.y + v), NODE_TEXT_COLOR, angle_buf);
                     char aerror_buf[25];
-                    snprintf(aerror_buf, 25, "Error: %.1f mrad", 1000.0f * std::abs(rotators[i].debug_aerror));
+                    snprintf(aerror_buf, 25, "Error: %.1f mrad", 1000.0f * std::abs(rotator.debug_aerror));
                     float h3 = ImGui::CalcTextSize(aerror_buf).x / 2.0f;
                     drawlist->AddText(ImVec2(pos.x - h3, pos.y + v + v), NODE_TEXT_COLOR, aerror_buf);
                 }
@@ -1322,13 +1323,13 @@ void RoR::GfxActor::UpdateDebugView()
                     ImU32 node_color = Ogre::ColourValue(0.33f, 0.33f, 0.33f, j < 2 ? 1.0f : 0.5f).getAsABGR();
                     ImU32 beam_color = Ogre::ColourValue(0.33f, 0.33f, 0.33f, j < 2 ? 1.0f : 0.5f).getAsABGR();
 
-                    Ogre::Vector3 pos3_xyz = world2screen.Convert(nodes[rotators[i].nodes1[j]].AbsPosition);
+                    Ogre::Vector3 pos3_xyz = world2screen.Convert(nodes[rotator.nodes1[j]].AbsPosition);
                     if (pos3_xyz.z < 0.f)
                     {
                         ImVec2 pos(pos3_xyz.x, pos3_xyz.y);
                         drawlist->AddCircleFilled(pos, NODE_RADIUS, node_color);
                         Str<25> id_buf;
-                        id_buf << nodes[rotators[i].nodes1[j]].pos;
+                        id_buf << nodes[rotator.nodes1[j]].pos;
                         drawlist->AddText(pos, NODE_TEXT_COLOR, id_buf.ToCStr());
                     }
                     if ((pos1_xyz.z < 0.f) && (pos3_xyz.z < 0.f))
@@ -1343,13 +1344,13 @@ void RoR::GfxActor::UpdateDebugView()
                     ImU32 node_color = Ogre::ColourValue(1.00f, 0.87f, 0.27f, j < 2 ? 1.0f : 0.5f).getAsABGR();
                     ImU32 beam_color = Ogre::ColourValue(0.88f, 0.64f, 0.33f, j < 2 ? 1.0f : 0.5f).getAsABGR();
 
-                    Ogre::Vector3 pos3_xyz = world2screen.Convert(nodes[rotators[i].nodes2[j]].AbsPosition);
+                    Ogre::Vector3 pos3_xyz = world2screen.Convert(nodes[rotator.nodes2[j]].AbsPosition);
                     if (pos3_xyz.z < 0.f)
                     {
                         ImVec2 pos(pos3_xyz.x, pos3_xyz.y);
                         drawlist->AddCircleFilled(pos, NODE_RADIUS, node_color);
                         Str<25> id_buf;
-                        id_buf << nodes[rotators[i].nodes2[j]].pos;
+                        id_buf << nodes[rotator.nodes2[j]].pos;
                         drawlist->AddText(pos, NODE_TEXT_COLOR, id_buf.ToCStr());
                     }
                     if ((pos2_xyz.z < 0.f) && (pos3_xyz.z < 0.f))
@@ -1363,8 +1364,8 @@ void RoR::GfxActor::UpdateDebugView()
 
             // Projection plane
             {
-                Ogre::Vector3 mid = nodes[rotators[i].axis1].AbsPosition.midPoint(nodes[rotators[i].axis2].AbsPosition);
-                Ogre::Vector3 axis = nodes[rotators[i].axis1].RelPosition - nodes[rotators[i].axis2].RelPosition;
+                Ogre::Vector3 mid = nodes[rotator.axis1].AbsPosition.midPoint(nodes[rotator.axis2].AbsPosition);
+                Ogre::Vector3 axis = nodes[rotator.axis1].RelPosition - nodes[rotator.axis2].RelPosition;
                 Ogre::Vector3 perp = axis.perpendicular(); 
                 axis.normalise();
 
@@ -1375,12 +1376,12 @@ void RoR::GfxActor::UpdateDebugView()
                 Ogre::Real offset1 = 0.0f;
                 for (int k = 0; k < 2; k++)
                 {
-                    Ogre::Vector3 r1 = nodes[rotators[i].nodes1[k]].RelPosition - nodes[rotators[i].axis1].RelPosition;
+                    Ogre::Vector3 r1 = nodes[rotator.nodes1[k]].RelPosition - nodes[rotator.axis1].RelPosition;
                     Ogre::Real r = plane.projectVector(r1).length();
                     if (r > radius1)
                     {
                         radius1 = r;
-                        offset1 = plane.getDistance(nodes[rotators[i].nodes1[k]].AbsPosition);
+                        offset1 = plane.getDistance(nodes[rotator.nodes1[k]].AbsPosition);
                     }
                 }
                 std::vector<ImVec2> pos1_xy;
@@ -1402,12 +1403,12 @@ void RoR::GfxActor::UpdateDebugView()
                 Ogre::Real offset2 = 0.0f;
                 for (int k = 0; k < 2; k++)
                 {
-                    Ogre::Vector3 r2 = nodes[rotators[i].nodes2[k]].RelPosition - nodes[rotators[i].axis2].RelPosition;
+                    Ogre::Vector3 r2 = nodes[rotator.nodes2[k]].RelPosition - nodes[rotator.axis2].RelPosition;
                     Ogre::Real r = plane.projectVector(r2).length();
                     if (r > radius2)
                     {
                         radius2 = r;
-                        offset2 = plane.getDistance(nodes[rotators[i].nodes2[k]].AbsPosition);
+                        offset2 = plane.getDistance(nodes[rotator.nodes2[k]].AbsPosition);
                     }
                 }
                 std::vector<ImVec2> pos2_xy;
@@ -1428,8 +1429,8 @@ void RoR::GfxActor::UpdateDebugView()
                 for (int k = 0; k < 2; k++)
                 {
                     // Projected and rotated base plate arms (theory vectors)
-                    Ogre::Vector3 ref1 = plane.projectVector(nodes[rotators[i].nodes1[k]].AbsPosition - mid);
-                    Ogre::Vector3 th1 = Ogre::Quaternion(Ogre::Radian(rotators[i].angle), axis) * ref1;
+                    Ogre::Vector3 ref1 = plane.projectVector(nodes[rotator.nodes1[k]].AbsPosition - mid);
+                    Ogre::Vector3 th1 = Ogre::Quaternion(Ogre::Radian(rotator.angle), axis) * ref1;
                     {
                         Ogre::Vector3 pos1_xyz = world2screen.Convert(mid + axis * offset1);
                         Ogre::Vector3 pos2_xyz = world2screen.Convert(mid + axis * offset1 + th1);
@@ -1441,7 +1442,7 @@ void RoR::GfxActor::UpdateDebugView()
                         }
                     }
                     // Projected rotation plate arms
-                    Ogre::Vector3 ref2 = plane.projectVector(nodes[rotators[i].nodes2[k]].AbsPosition - mid);
+                    Ogre::Vector3 ref2 = plane.projectVector(nodes[rotator.nodes2[k]].AbsPosition - mid);
                     {
                         Ogre::Vector3 pos1_xyz = world2screen.Convert(mid + axis * offset2);
                         Ogre::Vector3 pos2_xyz = world2screen.Convert(mid + axis * offset2 + ref2);
@@ -1668,7 +1669,7 @@ bool RoR::GfxActor::IsDebugViewApplicable(DebugViewType dv)
         dv > DEBUGVIEWTYPE_LAST ||
         dv == DebugViewType::DEBUGVIEW_WHEELS     && m_actor->ar_wheels.size()== 0 ||
         dv == DebugViewType::DEBUGVIEW_SHOCKS     && m_actor->ar_shocks.size()== 0 ||
-        dv == DebugViewType::DEBUGVIEW_ROTATORS   && m_actor->ar_num_rotators == 0 ||
+        dv == DebugViewType::DEBUGVIEW_ROTATORS   && m_actor->ar_rotators.size() == 0 ||
         dv == DebugViewType::DEBUGVIEW_SLIDENODES && m_actor->hasSlidenodes() == 0 ||
         dv == DebugViewType::DEBUGVIEW_SUBMESH    && m_actor->ar_num_cabs     == 0 ||
         dv == DebugViewType::DEBUGVIEW_BUOYANCY   && m_actor->ar_buoycabs     == 0)
