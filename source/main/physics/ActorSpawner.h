@@ -325,10 +325,9 @@ private:
     /// Finds wheel with given axle nodes and returns it's WheelID_t index (or WHEELID_INVALID if such wheel wasn't found).
     WheelID_t                     AssignWheelToAxle(NodeNum_t axis_node_1, NodeNum_t axis_node_2);
 
-    // GetFree*(): Gets a free slot; checks limits, sets it's array position and updates 'free_node' index.
     node_t&                       AddNode();
-    beam_t&                       GetFreeBeam();
-    shock_t&                      GetFreeShock();
+    beam_t&                       AddBeam();
+    shock_t&                      AddShock();
 
     float ComputeWingArea(
         Ogre::Vector3 const & ref, 

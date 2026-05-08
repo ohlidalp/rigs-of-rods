@@ -3421,7 +3421,7 @@ void ActorSpawner::ProcessTrigger(RigDef::Trigger & def)
         LOG("Trigger added. BeamID " + TOSTRING(beam.bm_pos));
     }
 
-    shock_t& shock = this->GetFreeShock();
+    shock_t& shock = this->AddShock();
     shock.sk_beamid = beam.bm_pos;
     shock.trigger_switch_state = 0.0f;   // used as bool and countdowntimer, dont touch!
     if (!triggerblocker && !triggerblocker_inverted) // this is no triggerblocker (A/B)
@@ -3917,7 +3917,7 @@ beam_t & ActorSpawner::AddBeam(
 )
 {
     /* Init */
-    beam_t& beam = GetFreeBeam();
+    beam_t& beam = this->AddBeam();
     InitBeam(beam, &node_1, &node_2);
     beam.detacher_group = detacher_group;
     beam.bm_disabled = false;
@@ -4089,7 +4089,7 @@ void ActorSpawner::ProcessShock3(RigDef::Shock3 & def)
         m_actor->ar_beams_invisible[beam_index] = true;
     }
 
-    shock_t & shock  = GetFreeShock();
+    shock_t & shock  = this->AddShock();
     shock.sk_flags   = shock_flags;
     shock.sbd_spring = def.beam_defaults->springiness;
     shock.sbd_damp   = def.beam_defaults->damping_constant;
@@ -4178,7 +4178,7 @@ void ActorSpawner::ProcessShock2(RigDef::Shock2 & def)
         m_actor->ar_beams_invisible[beam_index] = true;
     }
 
-    shock_t & shock  = GetFreeShock();
+    shock_t & shock  = this->AddShock();
     shock.sk_flags   = shock_flags;
     shock.sbd_spring = def.beam_defaults->springiness;
     shock.sbd_damp   = def.beam_defaults->damping_constant;
@@ -4239,7 +4239,7 @@ void ActorSpawner::ProcessShock(RigDef::Shock & def)
     beam.L          *= def.precompression;
     beam.refL       *= def.precompression;
 
-    shock_t & shock  = GetFreeShock();
+    shock_t & shock  = this->AddShock();
     shock.sk_flags   = shock_flags;
     shock.sbd_spring = def.beam_defaults->springiness;
     shock.sbd_damp   = def.beam_defaults->damping_constant;
@@ -5400,7 +5400,7 @@ BeamID_t ActorSpawner::AddTyreBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1,
 BeamID_t ActorSpawner::_SectionWheels2AddBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1, node_t *node_2)
 {
     BeamID_t index = static_cast<int>(m_actor->ar_beams.size());
-    beam_t & beam = GetFreeBeam();
+    beam_t & beam = this->AddBeam();
     InitBeam(beam, node_1, node_2);
     beam.bm_type = BEAM_NORMAL;
     SetBeamStrength(beam, wheel_2_def.beam_defaults->breaking_threshold);
@@ -6342,13 +6342,13 @@ node_t & ActorSpawner::AddNode()
     return m_actor->ar_nodes.back();
 }
 
-beam_t & ActorSpawner::GetFreeBeam()
+beam_t & ActorSpawner::AddBeam()
 {
     m_actor->ar_beams.push_back(beam_t(static_cast<BeamID_t>(m_actor->ar_beams.size())));
     return m_actor->ar_beams.back();
 }
 
-shock_t & ActorSpawner::GetFreeShock()
+shock_t & ActorSpawner::AddShock()
 {
     m_actor->ar_shocks.push_back(shock_t(static_cast<ShockID_t>(m_actor->ar_shocks.size())));
     return m_actor->ar_shocks.back();
