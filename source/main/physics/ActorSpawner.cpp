@@ -5147,13 +5147,22 @@ void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
         AddWheelRimBeam(wheel_2_def, rim_inner_node, rim_next_outer_node);
 
         /* -- Rigidity -- */
+        
         if (wheel_2_def.rigidity_node.IsValidAnyState())
         {
-            unsigned int rig_beam_index = AddWheelRimBeam(wheel_2_def,
-                            GetNodePointer(wheel_2_def.rigidity_node),
-                            (rigidity_beam_side_1) ? rim_outer_node : rim_inner_node
-            );
-            m_actor->ar_beams[rig_beam_index].bm_type = BEAM_VIRTUAL;
+            NodeNum_t rigidity_node = ResolveNodeRef(wheel_2_def.rigidity_node);
+            if (rigidity_node != NODENUM_INVALID)
+            {
+                unsigned int rig_beam_index = AddWheelRimBeam(wheel_2_def,
+                                &m_actor->ar_nodes[rigidity_node],
+                                (rigidity_beam_side_1) ? rim_outer_node : rim_inner_node
+                );
+                m_actor->ar_beams[rig_beam_index].bm_type = BEAM_VIRTUAL;
+            }
+            else
+            {
+                this->AddMessage(Message::TYPE_ERROR, fmt::format("Invalid rigidity node reference '{}' for wheel ID '{}'", wheel_2_def.rigidity_node.Str(), wheel_id));
+            }
         }
 
         /* --- Tyre --- */
@@ -5915,31 +5924,6 @@ NodeNum_t ActorSpawner::ResolveNodeRef(RigDef::Node::Ref const & node_ref, bool 
         }
         return (NodeNum_t)node_ref.Num();
     }
-}
-
-node_t* ActorSpawner::GetNodePointer(RigDef::Node::Ref const & node_ref)
-{
-    NodeNum_t node = ResolveNodeRef(node_ref);
-    if (node != NODENUM_INVALID)
-    {
-        return & m_actor->ar_nodes[node];
-    }
-    else
-    {
-        return nullptr;
-    }
-}
-
-node_t* ActorSpawner::GetNodePointerOrThrow(RigDef::Node::Ref const & node_ref)
-{
-    node_t *node = GetNodePointer(node_ref);
-    if (node == nullptr)
-    {
-        std::stringstream msg;
-        msg << "Required node not found: " << node_ref.ToString();
-        throw Exception(msg.str());
-    }
-    return node;
 }
 
 NodeNum_t ActorSpawner::RegisterNode(RigDef::Node::Id & id)

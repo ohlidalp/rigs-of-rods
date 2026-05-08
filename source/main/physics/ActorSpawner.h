@@ -346,8 +346,6 @@ private:
     /// @name Traversal
     /// @{
     NodeNum_t                     ResolveNodeRef(RigDef::Node::Ref const & node_ref, bool optional = false);
-    node_t*                       GetNodePointer(RigDef::Node::Ref const & node_ref);
-    node_t*                       GetNodePointerOrThrow(RigDef::Node::Ref const & node_ref);
     beam_t&                       GetBeam(unsigned int index);
     beam_t*                       FindBeamInRig(NodeNum_t node_a, NodeNum_t node_b);
     NodeNum_t                     GetNodeIndexOrThrow(RigDef::Node::Ref const & id);
