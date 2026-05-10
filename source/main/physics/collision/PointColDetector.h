@@ -33,17 +33,15 @@ class PointColDetector
 {
 public:
 
-    struct pointid_t // use PointidID_t for indexing
+    struct pointid_t
     {
-        ActorInstanceID_t actorid = ACTORINSTANCEID_INVALID;
-        NodeNum_t nodenum = NODENUM_INVALID;
+        NodeNum_t node_id = NODENUM_INVALID;
+        Actor* actor = nullptr;
     };
 
-    std::vector<PointidID_t> hit_list;
-    std::unordered_set<ActorInstanceID_t> hit_list_actorset;
-    std::vector<pointid_t> hit_pointid_list;
+    std::vector<pointid_t*> hit_list;
 
-    PointColDetector(ActorPtr actor): m_actor(actor), m_object_list_size(-1) {};
+    PointColDetector(Actor* actor): m_actor(actor), m_object_list_size(-1) {};
 
     void UpdateIntraPoint(bool contactables = false);
     void UpdateInterPoint(bool ignorestate = false);
@@ -51,11 +49,10 @@ public:
 
 private:
 
-    struct refelem_t // use RefelemID_t for indexing
+    struct refelem_t
     {
-        PointidID_t pidrefid = POINTIDID_INVALID;
-        std::array<float, 3> point; // cached node AbsPosition
-        void setPoint(const Ogre::Vector3 pos) { point[0] = pos.x; point[1] = pos.y; point[2] = pos.z; }
+        pointid_t* pidref = nullptr;
+        const float* point = nullptr; // Not an issue - reassigned on every physics tick.
     };
 
     struct kdnode_t
@@ -63,15 +60,15 @@ private:
         float min;
         int end;
         float max;
-        RefelemID_t refid = REFELEMID_INVALID;
+        refelem_t* ref;
         float middle;
         int begin;
     };
 
-    ActorPtr                 m_actor;
-    std::vector<ActorInstanceID_t>    m_collision_partners; //!< IntraPoint: always just owning actor; InterPoint: all colliding actors
+    Actor*                 m_actor;
+    std::vector<Actor*>    m_collision_partners; //!< IntraPoint: always just owning actor; InterPoint: all colliding actors
     std::vector<refelem_t> m_ref_list;
-    
+    std::vector<pointid_t> m_pointid_list;
     std::vector<kdnode_t>  m_kdtree;
     Ogre::Vector3          m_bbmin = Ogre::Vector3::ZERO;
     Ogre::Vector3          m_bbmax = Ogre::Vector3::ZERO;
@@ -81,7 +78,6 @@ private:
     void build_kdtree_incr(int axis, int index);
     void partintwo(const int start, const int median, const int end, const int axis, float& minex, float& maxex);
     void update_structures_for_contacters(bool ignoreinternal);
-    void refresh_node_positions();
 };
 
 /// @} // addtogroup Collisions
