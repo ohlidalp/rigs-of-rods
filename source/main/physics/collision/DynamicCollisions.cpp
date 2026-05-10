@@ -26,7 +26,6 @@
 #include "SimData.h"
 #include "CartesianToTriangleTransform.h"
 #include "Collisions.h"
-#include "GameContext.h"
 #include "PointColDetector.h"
 #include "Triangle.h"
 
@@ -46,11 +45,17 @@ using namespace RoR;
  * @param neighbour_node_ids Indices of neighbouring nodes connected to the colliding node.
  * @param nodes         
  */
-static bool BackfaceCollisionTest(const float distance,
-        const Vector3 &normal,
-        const node_t &surface_point,
-        const std::vector<NodeNum_t> &neighbour_node_ids,
-        const std::vector<node_t>& nodes)
+static bool BackfaceCollisionTest(
+        // The local actor:
+        const Actor* surface_actor,
+        const NodeNum_t surface_point,
+        // The foreign actor:
+        const Actor* hit_actor,
+        const NodeNum_t hit_node,
+        // Parameters:
+        const float distance,
+        const Vector3 normal
+        )
 {
     auto sign = [](float x){ return (x >= 0) ? 1 : -1; };
 
@@ -63,9 +68,11 @@ static bool BackfaceCollisionTest(const float distance,
     int face_indicator = weight * sign(distance);
 
     // calculate the contribution of neighbouring nodes (if it can still change the final outcome)
-    if (neighbour_node_ids.size() > weight) {
-        for (auto id : neighbour_node_ids) {
-            const auto neighbour_distance = normal.dotProduct(nodes[id].AbsPosition - surface_point.AbsPosition);
+    if (hit_actor->ar_node_to_node_connections[hit_node].size() > weight)
+    {
+        for (NodeNum_t id : hit_actor->ar_node_to_node_connections[hit_node])
+        {
+            const auto neighbour_distance = normal.dotProduct(hit_actor->ar_nodes[id].AbsPosition - surface_actor->ar_nodes[surface_point].AbsPosition);
             face_indicator += sign(neighbour_distance);
         }
     }
@@ -94,30 +101,51 @@ static bool InsideTriangleTest(const CartesianToTriangleTransform::TriangleCoord
 
 
 /// Calculate collision forces and apply them to the collision node and the three vertex nodes of the collision triangle.
-void ResolveCollisionForces(const float penetration_depth,
-        node_t &hitnode, node_t &na, node_t &nb, node_t &no,
+void ResolveCollisionForces(
+        // Local actor:
+        Actor* const local_actor,
+        const NodeNum_t na,
+        const NodeNum_t nb,
+        const NodeNum_t no,
+        // Foreign actor:
+        Actor* const hit_actor,
+        const NodeNum_t hit_node,
+        // Params:
+        const float penetration_depth,
         const float alpha, const float beta, const float gamma,
         const Vector3 &normal,
         const float dt,
         const bool remote,
         ground_model_t &submesh_ground_model)
 {
-    const auto velocity = hitnode.Velocity - (na.Velocity * alpha + nb.Velocity * beta + no.Velocity * gamma);
-    const float tr_mass = na.mass * alpha + nb.mass * beta + no.mass * gamma;
-    const float    mass = remote ? hitnode.mass : (hitnode.mass * tr_mass) / (hitnode.mass + tr_mass);
+    //OLD: const auto velocity = hitnode.Velocity - (na.Velocity * alpha + nb.Velocity * beta + no.Velocity * gamma);
+    const Ogre::Vector3 velocity
+        = hit_actor->ar_nodes[hit_node].Velocity - (
+            local_actor->ar_nodes[na].Velocity * alpha,
+            local_actor->ar_nodes[nb].Velocity * beta,
+            local_actor->ar_nodes[no].Velocity * gamma);
 
-    auto forcevec = primitiveCollision(&hitnode, velocity, mass, normal, dt, &submesh_ground_model, penetration_depth);
+    //OLD: const float tr_mass = na.mass * alpha + nb.mass * beta + no.mass * gamma;
+    const float tr_mass
+        = local_actor->ar_nodes[na].mass * alpha
+        + local_actor->ar_nodes[nb].mass * beta
+        + local_actor->ar_nodes[no].mass * gamma;
 
-    hitnode.Forces += forcevec;
-    na.Forces      -= forcevec * alpha;
-    nb.Forces      -= forcevec * beta;
-    no.Forces      -= forcevec * gamma;
+    const float hitnode_mass = hit_actor->ar_nodes[hit_node].mass;
+    const float mass = remote ? hitnode_mass : (hitnode_mass * tr_mass) / (hitnode_mass + tr_mass);
+
+    const Ogre::Vector3 forcevec = primitiveCollision(hit_actor, hit_node, velocity, mass, normal, dt, &submesh_ground_model, penetration_depth);
+
+    hit_actor->ar_nodes[hit_node].Forces += forcevec;
+    local_actor->ar_nodes[na].Forces -= forcevec * alpha;
+    local_actor->ar_nodes[nb].Forces -= forcevec * beta;
+    local_actor->ar_nodes[no].Forces -= forcevec * gamma;
 }
 
 
-void RoR::ResolveInterActorCollisions(const float dt, PointColDetector &interPointCD,
+void RoR::ResolveInterActorCollisions(Actor* const actor, PointColDetector &interPointCD,
         const int free_collcab, int collcabs[], int cabs[],
-        collcab_rate_t inter_collcabrate[], std::vector<node_t>& nodes,
+        collcab_rate_t inter_collcabrate[],
         const float collrange,
         ground_model_t &submesh_ground_model)
 {
@@ -133,27 +161,31 @@ void RoR::ResolveInterActorCollisions(const float dt, PointColDetector &interPoi
         inter_collcabrate[i].distance = 0;
 
         int tmpv = collcabs[i]*3;
-        const auto no = &nodes[cabs[tmpv]];
-        const auto na = &nodes[cabs[tmpv+1]];
-        const auto nb = &nodes[cabs[tmpv+2]];
+        const NodeNum_t no = static_cast<NodeNum_t>(cabs[tmpv]);
+        const NodeNum_t na = static_cast<NodeNum_t>(cabs[tmpv+1]);
+        const NodeNum_t nb = static_cast<NodeNum_t>(cabs[tmpv+2]);
+        const Ogre::Vector3 no_AbsPosition = actor->ar_nodes[no].AbsPosition;
+        const Ogre::Vector3 na_AbsPosition = actor->ar_nodes[na].AbsPosition;
+        const Ogre::Vector3 nb_AbsPosition = actor->ar_nodes[nb].AbsPosition;
 
-        interPointCD.query(no->AbsPosition
-                , na->AbsPosition
-                , nb->AbsPosition, collrange);
+        interPointCD.query(
+                no_AbsPosition,
+                na_AbsPosition,
+                nb_AbsPosition, collrange);
 
         if (!interPointCD.hit_list.empty())
         {
             // setup transformation of points to triangle local coordinates
-            const Triangle triangle(na->AbsPosition, nb->AbsPosition, no->AbsPosition);
+            const Triangle triangle(na_AbsPosition, nb_AbsPosition, no_AbsPosition);
             const CartesianToTriangleTransform transform(triangle);
 
             for (auto h : interPointCD.hit_list)
             {
-                const auto hit_actor = h->actor;
-                const auto hitnode = &hit_actor->ar_nodes[h->node_id];
+                Actor* hit_actor = h->actor;
+                const NodeNum_t hit_node = h->node_id;
 
                 // transform point to triangle local coordinates
-                const auto local_point = transform(hitnode->AbsPosition);
+                const auto local_point = transform(hit_actor->ar_nodes[hit_node].AbsPosition);
 
                 // collision test
                 const bool is_colliding = InsideTriangleTest(local_point, collrange);
@@ -167,7 +199,11 @@ void RoR::ResolveInterActorCollisions(const float dt, PointColDetector &interPoi
 
                     // adapt in case the collision is occuring on the backface of the triangle
                     const auto& neighbour_node_ids = hit_actor->ar_node_to_node_connections[h->node_id];
-                    const bool is_backface = BackfaceCollisionTest(distance, normal, *no, neighbour_node_ids, hit_actor->ar_nodes);
+                    const bool is_backface = BackfaceCollisionTest(
+                        actor, no, // Local actor
+                        hit_actor, hit_node, // Foreign actor
+                        distance, normal); // Params
+
                     if (is_backface)
                     {
                         // flip surface normal and distance to triangle plane
@@ -179,14 +215,20 @@ void RoR::ResolveInterActorCollisions(const float dt, PointColDetector &interPoi
 
                     const bool remote = (hit_actor->ar_state == ActorState::NETWORKED_OK);
 
-                    ResolveCollisionForces(penetration_depth, *hitnode, *na, *nb, *no, coord.alpha,
-                            coord.beta, coord.gamma, normal, dt, remote, submesh_ground_model);
+                    ResolveCollisionForces(
+                        actor, na, nb, no,  // Local actor - cab triangle
+                        hit_actor, hit_node, // Foreign actor - colliding node
+                        penetration_depth,
+                        coord.alpha, coord.beta, coord.gamma,
+                        normal, PHYSICS_DT, remote, submesh_ground_model);
 
-                    hitnode->nd_last_collision_gm = &submesh_ground_model;
-                    hitnode->nd_has_mesh_contact = true;
-                    na->nd_has_mesh_contact = true;
-                    nb->nd_has_mesh_contact = true;
-                    no->nd_has_mesh_contact = true;
+                    hit_actor->ar_nodes[hit_node].nd_last_collision_gm = &submesh_ground_model;
+                    hit_actor->ar_nodes[hit_node].nd_has_mesh_contact = true;
+
+                    actor->ar_nodes[na].nd_has_mesh_contact = true;
+                    actor->ar_nodes[nb].nd_has_mesh_contact = true;
+                    actor->ar_nodes[no].nd_has_mesh_contact = true;
+                    
                 }
             }
         }
@@ -198,7 +240,7 @@ void RoR::ResolveInterActorCollisions(const float dt, PointColDetector &interPoi
 }
 
 
-void RoR::ResolveIntraActorCollisions(const float dt, PointColDetector &intraPointCD,
+void RoR::ResolveIntraActorCollisions(Actor* const actor, PointColDetector &intraPointCD,
         const int free_collcab, int collcabs[], int cabs[],
         collcab_rate_t intra_collcabrate[], std::vector<node_t>& nodes,
         const float collrange,
@@ -219,32 +261,36 @@ void RoR::ResolveIntraActorCollisions(const float dt, PointColDetector &intraPoi
         }
 
         int tmpv = collcabs[i]*3;
-        const auto no = &nodes[cabs[tmpv]];
-        const auto na = &nodes[cabs[tmpv+1]];
-        const auto nb = &nodes[cabs[tmpv+2]];
+        const NodeNum_t no = static_cast<NodeNum_t>(cabs[tmpv]);
+        const NodeNum_t na = static_cast<NodeNum_t>(cabs[tmpv+1]);
+        const NodeNum_t nb = static_cast<NodeNum_t>(cabs[tmpv+2]);
+        const Ogre::Vector3 no_AbsPosition = actor->ar_nodes[no].AbsPosition;
+        const Ogre::Vector3 na_AbsPosition = actor->ar_nodes[na].AbsPosition;
+        const Ogre::Vector3 nb_AbsPosition = actor->ar_nodes[nb].AbsPosition;
 
-        intraPointCD.query(no->AbsPosition
-                , na->AbsPosition
-                , nb->AbsPosition, collrange);
+        intraPointCD.query(
+                no_AbsPosition,
+                na_AbsPosition,
+                nb_AbsPosition, collrange);
 
         bool collision = false;
 
         if (!intraPointCD.hit_list.empty())
         {
             // setup transformation of points to triangle local coordinates
-            const Triangle triangle(na->AbsPosition, nb->AbsPosition, no->AbsPosition);
+            const Triangle triangle(na_AbsPosition, nb_AbsPosition, no_AbsPosition);
             const CartesianToTriangleTransform transform(triangle);
 
             for (auto h : intraPointCD.hit_list)
             {
-                const auto hitnode = &nodes[h->node_id];
+                NodeNum_t hitnode_num = h->node_id;
 
                 //ignore wheel/chassis self contact
-                if (hitnode->nd_tyre_node) continue;
-                if (no == hitnode || na == hitnode || nb == hitnode) continue;
+                if (actor->ar_nodes[hitnode_num].nd_tyre_node) continue;
+                if (no == hitnode_num || na == hitnode_num || nb == hitnode_num) continue;
 
                 // transform point to triangle local coordinates
-                const auto local_point = transform(hitnode->AbsPosition);
+                const auto local_point = transform(actor->ar_nodes[hitnode_num].AbsPosition);
 
                 // collision test
                 const bool is_colliding = InsideTriangleTest(local_point, collrange);
@@ -266,8 +312,12 @@ void RoR::ResolveIntraActorCollisions(const float dt, PointColDetector &intraPoi
 
                     const auto penetration_depth = collrange - distance;
 
-                    ResolveCollisionForces(penetration_depth, *hitnode, *na, *nb, *no, coord.alpha,
-                            coord.beta, coord.gamma, normal, dt, false, submesh_ground_model);
+                    ResolveCollisionForces(
+                        actor, na, nb, no,  // The cab triangle
+                        h->actor, hitnode_num, // The colliding node
+                        penetration_depth,
+                        coord.alpha, coord.beta, coord.gamma,
+                        normal, PHYSICS_DT, false, submesh_ground_model);
                 }
             }
         }

@@ -2559,7 +2559,8 @@ void Actor::CalcCabCollisions()
     if (m_intra_point_col_detector != nullptr)
     {
         m_intra_point_col_detector->UpdateIntraPoint();
-        ResolveIntraActorCollisions(PHYSICS_DT,
+        ResolveIntraActorCollisions(
+            this,
             *m_intra_point_col_detector,
             ar_num_collcabs,
             ar_collcabs,

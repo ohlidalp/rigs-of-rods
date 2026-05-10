@@ -1628,8 +1628,8 @@ void Actor::CalcNodes()
         if (!ar_nodes[i].nd_no_ground_contact)
         {
             Vector3 oripos = ar_nodes[i].AbsPosition;
-            bool contacted = App::GetGameContext()->GetTerrain()->GetCollisions()->groundCollision(&ar_nodes[i], PHYSICS_DT);
-            contacted = contacted | App::GetGameContext()->GetTerrain()->GetCollisions()->nodeCollision(&ar_nodes[i], PHYSICS_DT);
+            bool contacted = App::GetGameContext()->GetTerrain()->GetCollisions()->groundCollision(this, i, PHYSICS_DT);
+            contacted = contacted | App::GetGameContext()->GetTerrain()->GetCollisions()->nodeCollision(this, i, PHYSICS_DT);
             ar_nodes[i].nd_has_ground_contact = contacted;
             if (ar_nodes[i].nd_has_ground_contact || ar_nodes[i].nd_has_mesh_contact)
             {

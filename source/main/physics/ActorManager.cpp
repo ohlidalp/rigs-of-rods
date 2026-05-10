@@ -1279,13 +1279,13 @@ void ActorManager::UpdatePhysicsSimulation()
                             actor->m_inter_point_col_detector->UpdateInterPoint();
                             if (actor->ar_collision_relevant)
                             {
-                                ResolveInterActorCollisions(PHYSICS_DT,
+                                ResolveInterActorCollisions(
+                                    actor.GetRef(),
                                    *actor->m_inter_point_col_detector,
                                     actor->ar_num_collcabs,
                                     actor->ar_collcabs,
                                     actor->ar_cabs,
                                     actor->ar_inter_collcabrate,
-                                    actor->ar_nodes,
                                     actor->ar_collision_range,
                                    *actor->ar_submesh_ground_model);
                             }
