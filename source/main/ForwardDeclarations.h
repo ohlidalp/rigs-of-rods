@@ -42,12 +42,6 @@ namespace RoR
     static const ScriptUnitID_t SCRIPTUNITID_INVALID = -1;
     static const ScriptUnitID_t SCRIPTUNITID_DEFAULT = -2; //!< The script defined in .terrn2 [Scripts], or 'default.as' ~ classic behavior.
 
-    typedef int PointidID_t; //!< index to `PointColDetector::hit_pointid_list`, use `RoR::POINTIDID_INVALID` as empty value.
-    static const PointidID_t POINTIDID_INVALID = -1;
-
-    typedef int RefelemID_t; //!< index to `PointColDetector::m_ref_list`, use `RoR::REFELEMID_INVALID` as empty value.
-    static const RefelemID_t REFELEMID_INVALID = -1;
-
     typedef int CacheEntryID_t; //!< index to `CacheSystem::m_cache_entries`, use `RoR::CACHEENTRYNUM_INVALID` as empty value.
     static const CacheEntryID_t CACHEENTRYID_INVALID = -1;
 
