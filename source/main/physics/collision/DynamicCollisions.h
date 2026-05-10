@@ -32,15 +32,15 @@ namespace RoR {
 /// @addtogroup Collisions
 /// @{
 
-void ResolveInterActorCollisions(const float dt, PointColDetector &interPointCD,
+void ResolveInterActorCollisions(Actor* const actor, PointColDetector &interPointCD,
         const int free_collcab, int collcabs[], int cabs[],
-        collcab_rate_t inter_collcabrate[], node_t nodes[],
+        collcab_rate_t inter_collcabrate[],
         const float collrange,
         ground_model_t &submesh_ground_model);
 
-void ResolveIntraActorCollisions(const float dt, PointColDetector &intraPointCD,
+void ResolveIntraActorCollisions(Actor* const actor, PointColDetector &intraPointCD,
         const int free_collcab, int collcabs[], int cabs[],
-        collcab_rate_t intra_collcabrate[], node_t nodes[],
+        collcab_rate_t intra_collcabrate[],
         const float collrange,
         ground_model_t &submesh_ground_model);
 

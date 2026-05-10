@@ -2574,13 +2574,13 @@ void Actor::CalcCabCollisions()
         ar_prof.ProfEnd(PROF_INTRACOL_UPDATE);
 
         ar_prof.ProfBegin(PROF_INTRACOL_RESOLVE);
-        ResolveIntraActorCollisions(PHYSICS_DT,
+        ResolveIntraActorCollisions(
+           this,
             *m_intra_point_col_detector,
             ar_num_collcabs,
             ar_collcabs,
             ar_cabs,
             ar_intra_collcabrate,
-            ar_nodes,
             ar_collision_range,
             *ar_submesh_ground_model);
         ar_prof.ProfEnd(PROF_INTRACOL_RESOLVE);

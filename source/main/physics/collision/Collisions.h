@@ -190,10 +190,10 @@ public:
     float getSurfaceHeight(float x, float z);
     float getSurfaceHeightBelow(float x, float z, float height);
     bool collisionCorrect(Ogre::Vector3* refpos, bool envokeScriptCallbacks = true);
-    bool groundCollision(node_t* node, float dt);
+    bool groundCollision(Actor* const actor, const NodeNum_t node, float dt);
     bool isInside(Ogre::Vector3 pos, const Ogre::String& inst, const Ogre::String& box, float border = 0);
     bool isInside(Ogre::Vector3 pos, collision_box_t* cbox, float border = 0);
-    bool nodeCollision(node_t* node, float dt);
+    bool nodeCollision(Actor* const actor, const NodeNum_t node, float dt);
     void envokeScriptCallback(collision_box_t* cbox, node_t* node = 0); // Only invoke on main thread! Oterwise use `MSG_SIM_SCRIPT_CALLBACK_QUEUED`
     void findPotentialEventBoxes(Actor* actor, CollisionBoxPtrVec& out_boxes);
 
@@ -228,7 +228,7 @@ public:
     CollisionTriVec const& getCollisionTriangles() const { return m_collision_tris; }
 };
 
-Ogre::Vector3 primitiveCollision(node_t* node, Ogre::Vector3 velocity, float mass, Ogre::Vector3 normal, float dt, ground_model_t* gm, float penetration = 0);
+Ogre::Vector3 primitiveCollision(Actor* const actor, NodeNum_t node, Ogre::Vector3 velocity, float mass, Ogre::Vector3 normal, float dt, ground_model_t* gm, float penetration = 0);
 
 /// @} // addtogroup Collisions
 /// @} // addtogroup Physics
