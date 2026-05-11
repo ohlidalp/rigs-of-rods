@@ -357,6 +357,7 @@ public:
     std::vector<NodeNum_t>     ar_beams_P1;          //!< Index = `BeamID_t`; Node number of beam start
     std::vector<NodeNum_t>     ar_beams_P2;          //!< Index = `BeamID_t`; Node number of beam end
     std::vector<float>         ar_beams_L;           //!< Index = `BeamID_t`; Idle length of beam in meters
+    std::vector<BitMask_t>     ar_beams_Flags;       //!< Index = `BeamID_t`; Merged options from 'type', 'bounded' and broken/disabled/inter-actor bools.
     std::vector<BeamCachedLen> ar_beams_CalcLen;     //!< Index = `BeamID_t`; Cached length data, updated every physics tick
     std::vector<Ogre::Vector3> ar_beams_CalcForces;  //!< Index = `BeamID_t`; Cached force data, updated every physics tick
     std::vector<std::pair<float, float>> ar_initial_beam_defaults;

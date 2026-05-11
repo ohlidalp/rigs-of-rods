@@ -789,16 +789,16 @@ void RoR::GfxActor::UpdateDebugView()
                 ImVec2 pos1xy(pos1.x, pos1.y);
                 ImVec2 pos2xy(pos2.x, pos2.y);
 
-                if (beam.bm_broken)
+                if (BITMASK_IS_1(m_actor->ar_beams_Flags[i], BEAM_FLAG_BROKEN))
                 {
                     if (!App::diag_hide_broken_beams->getBool())
                     {
                         drawlist->AddLine(pos1xy, pos2xy, BEAM_BROKEN_COLOR, BEAM_BROKEN_THICKNESS);
                     }
                 }
-                else if (beam.bm_type == BEAM_HYDRO)
+                else if (BITMASK_IS_1(m_actor->ar_beams_Flags[i], BEAM_TYPE_HYDRO))
                 {
-                    if (!beam.bm_disabled)
+                    if (!BITMASK_IS_1(m_actor->ar_beams_Flags[i], BEAM_FLAG_DISABLED))
                     {
                         drawlist->AddLine(pos1xy, pos2xy, BEAM_HYDRO_COLOR, BEAM_HYDRO_THICKNESS);
                     }
@@ -1176,9 +1176,9 @@ void RoR::GfxActor::UpdateDebugView()
             const NodeNum_t p1num = m_actor->ar_beams_P1[i];
             const NodeNum_t p2num = m_actor->ar_beams_P2[i];
 
-            if (beam.bm_type != BEAM_HYDRO)
+            if (BITMASK_IS_0(m_actor->ar_beams_Flags[i], BEAM_TYPE_HYDRO))
                 continue;
-            if (!(beam.bounded == SHOCK1 || beam.bounded == SHOCK2 || beam.bounded == SHOCK3))
+            if (!(BITMASK_IS_1(m_actor->ar_beams_Flags[i], BEAM_BOUNDED_SHOCK1) || BITMASK_IS_1(m_actor->ar_beams_Flags[i], BEAM_BOUNDED_SHOCK2) || BITMASK_IS_1(m_actor->ar_beams_Flags[i], BEAM_BOUNDED_SHOCK3)))
                 continue;
 
             Ogre::Vector3 pos1_xyz = world2screen.Convert(m_actor->ar_nodes_AbsPosition[p1num]);
@@ -1198,7 +1198,7 @@ void RoR::GfxActor::UpdateDebugView()
                 ImVec2 pos1xy(pos1_xyz.x, pos1_xyz.y);
                 ImVec2 pos2xy(pos2_xyz.x, pos2_xyz.y);
 
-                ImU32 beam_color = (beam.bounded == SHOCK1) ? BEAM_HYDRO_COLOR : BEAM_BROKEN_COLOR;
+                ImU32 beam_color = (BITMASK_IS_1(m_actor->ar_beams_Flags[i], BEAM_BOUNDED_SHOCK1)) ? BEAM_HYDRO_COLOR : BEAM_BROKEN_COLOR;
 
                 drawlist->AddLine(pos1xy, pos2xy, beam_color, 1.25f * BEAM_BROKEN_THICKNESS);
             }
@@ -1222,9 +1222,9 @@ void RoR::GfxActor::UpdateDebugView()
             const NodeNum_t p1num = m_actor->ar_beams_P1[i];
             const NodeNum_t p2num = m_actor->ar_beams_P2[i];
 
-            if (beam.bm_type != BEAM_HYDRO)
+            if (BITMASK_IS_0(m_actor->ar_beams_Flags[i], BEAM_TYPE_HYDRO))
                 continue;
-            if (!(beam.bounded == SHOCK1 || beam.bounded == SHOCK2 || beam.bounded == SHOCK3))
+            if (!(BITMASK_IS_1(m_actor->ar_beams_Flags[i], BEAM_BOUNDED_SHOCK1) || BITMASK_IS_1(m_actor->ar_beams_Flags[i], BEAM_BOUNDED_SHOCK2) || BITMASK_IS_1(m_actor->ar_beams_Flags[i], BEAM_BOUNDED_SHOCK3)))
                 continue;
 
             Ogre::Vector3 pos1_xyz = world2screen.Convert(m_actor->ar_nodes_AbsPosition[p1num]);
@@ -1828,15 +1828,14 @@ void RoR::GfxActor::UpdateSimDataBuffer()
     for (BeamGfx& rod: m_gfx_beams)
     {
         const beam_t& beam = m_actor->ar_beams[rod.rod_beam_index];
-        const NodeNum_t p1num = m_actor->ar_beams_P1[rod.rod_beam_index];
-        const NodeNum_t p2num = m_actor->ar_beams_P2[rod.rod_beam_index];
-        rod.rod_node1 = p1num;
-        rod.rod_node2 = p2num;
-        if (beam.bm_inter_actor)
+        rod.rod_node1 = m_actor->ar_beams_P1[rod.rod_beam_index];
+        rod.rod_node2 = m_actor->ar_beams_P2[rod.rod_beam_index];
+        const BitMask_t flags = m_actor->ar_beams_Flags[rod.rod_beam_index];
+        if (BITMASK_IS_1(flags, BEAM_FLAG_INTER_ACTOR))
         {
             rod.rod_target_actor = beam.bm_locked_actor;
         }
-        rod.rod_is_visible = !beam.bm_disabled && !beam.bm_broken;
+        rod.rod_is_visible = !BITMASK_IS_1(flags, BEAM_FLAG_DISABLED) && !BITMASK_IS_1(flags, BEAM_FLAG_BROKEN);
     }
 
     // Elements: airbrakes

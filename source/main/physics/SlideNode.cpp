@@ -89,7 +89,8 @@ void SlideNode::UpdateForces(float dt)
     ROR_ASSERT(m_actor->ar_state != ActorState::DISPOSED);
 
     // only do calcs if we have a beam to slide on
-    if (!m_cur_railgroup || m_cur_railgroup->rg_actor->ar_beams[m_cur_railgroup->rg_segments[m_cur_rail_seg]].bm_broken || sn_slide_broken)
+    const BeamID_t beamid = m_cur_railgroup ? m_cur_railgroup->rg_segments[m_cur_rail_seg] : BEAMID_INVALID;
+    if (!m_cur_railgroup || BITMASK_IS_1(m_cur_railgroup->rg_actor->ar_beams_Flags[beamid], BEAM_FLAG_BROKEN) || sn_slide_broken)
     {
         return;
     }
@@ -109,7 +110,6 @@ void SlideNode::UpdateForces(float dt)
     }
 
     m_actor->ar_nodes_Forces[m_sliding_node] += -perpForces;
-    const BeamID_t beamid = m_cur_railgroup->rg_segments[m_cur_rail_seg];
     beam_t& sliding_beam = m_cur_railgroup->rg_actor->ar_beams[beamid];
     const NodeNum_t p1num = m_actor->ar_beams_P1[beamid];
     const NodeNum_t p2num = m_actor->ar_beams_P2[beamid];
@@ -175,7 +175,8 @@ void SlideNode::UpdatePosition()
     ROR_ASSERT(m_actor->ar_state != ActorState::DISPOSED);
 
     // only do calcs if we have a beam to slide on
-    if (!m_cur_railgroup || m_actor->ar_beams[m_cur_railgroup->rg_segments[m_cur_rail_seg]].bm_broken)
+    const BeamID_t beamid = m_cur_railgroup ? m_cur_railgroup->rg_segments[m_cur_rail_seg] : BEAMID_INVALID;
+    if (!m_cur_railgroup || BITMASK_IS_1(m_cur_railgroup->rg_actor->ar_beams_Flags[beamid], BEAM_FLAG_BROKEN) || sn_slide_broken)
     {
         m_ideal_position = m_actor->ar_nodes_AbsPosition[m_sliding_node];
         return;
@@ -184,7 +185,6 @@ void SlideNode::UpdatePosition()
     // find which beam to use
     m_cur_rail_seg = m_cur_railgroup->CheckCurSlideSegment(m_cur_rail_seg, m_actor->ar_nodes_AbsPosition[m_sliding_node]);
 
-    const BeamID_t beamid = m_cur_railgroup->rg_segments[m_cur_rail_seg];
     beam_t& sliding_beam = m_cur_railgroup->rg_actor->ar_beams[beamid];
     const NodeNum_t p1num = m_actor->ar_beams_P1[beamid];
     const NodeNum_t p2num = m_actor->ar_beams_P2[beamid];

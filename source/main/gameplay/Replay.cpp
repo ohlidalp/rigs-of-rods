@@ -202,8 +202,8 @@ void Replay::onPhysicsStep()
         {
             for (int i = 0; i < static_cast<int>(m_actor->ar_beams.size()); i++)
             {
-                bbuff[i].broken = m_actor->ar_beams[i].bm_broken;
-                bbuff[i].disabled = m_actor->ar_beams[i].bm_disabled;
+                bbuff[i].broken = BITMASK_IS_1(m_actor->ar_beams_Flags[i], BEAM_FLAG_BROKEN);
+                bbuff[i].disabled = BITMASK_IS_1(m_actor->ar_beams_Flags[i], BEAM_FLAG_DISABLED);
             }
         }
 
@@ -240,8 +240,8 @@ void Replay::replayStepActor()
         {
             for (int i = 0; i < static_cast<int>(m_actor->ar_beams.size()); i++)
             {
-                m_actor->ar_beams[i].bm_broken = bbuff[i].broken;
-                m_actor->ar_beams[i].bm_disabled = bbuff[i].disabled;
+                BITMASK_SET(m_actor->ar_beams_Flags[i], BEAM_FLAG_BROKEN, bbuff[i].broken);
+                BITMASK_SET(m_actor->ar_beams_Flags[i], BEAM_FLAG_DISABLED, bbuff[i].disabled);
             }
         }
         m_replay_pos_prev = ar_replay_pos;

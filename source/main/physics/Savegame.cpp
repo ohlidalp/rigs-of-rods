@@ -752,9 +752,9 @@ bool ActorManager::SaveScene(Ogre::String filename)
             j_beam.PushBack(actor->ar_beams[i].minmaxposnegstress, j_doc.GetAllocator());
             j_beam.PushBack(actor->ar_beams[i].strength, j_doc.GetAllocator());
             j_beam.PushBack(actor->ar_beams_L[i], j_doc.GetAllocator());
-            j_beam.PushBack(actor->ar_beams[i].bm_broken, j_doc.GetAllocator());
-            j_beam.PushBack(actor->ar_beams[i].bm_disabled, j_doc.GetAllocator());
-            j_beam.PushBack(actor->ar_beams[i].bm_inter_actor, j_doc.GetAllocator());
+            j_beam.PushBack(BITMASK_IS_1(actor->ar_beams_Flags[i], BEAM_FLAG_BROKEN), j_doc.GetAllocator());
+            j_beam.PushBack(BITMASK_IS_1(actor->ar_beams_Flags[i], BEAM_FLAG_DISABLED), j_doc.GetAllocator());
+            j_beam.PushBack(BITMASK_IS_1(actor->ar_beams_Flags[i], BEAM_FLAG_INTER_ACTOR), j_doc.GetAllocator());
             ActorPtr locked_actor = actor->ar_beams[i].bm_locked_actor;
             j_beam.PushBack(locked_actor ? vector_index_lookup[locked_actor->ar_vector_index] : -1, j_doc.GetAllocator());
 
@@ -955,9 +955,9 @@ void ActorManager::RestoreSavedState(ActorPtr actor, rapidjson::Value const& j_e
         actor->ar_beams[i].minmaxposnegstress = data[2].GetFloat();
         actor->ar_beams[i].strength           = data[3].GetFloat();
         actor->ar_beams_L[i]                  = data[4].GetFloat();
-        actor->ar_beams[i].bm_broken          = data[5].GetBool();
-        actor->ar_beams[i].bm_disabled        = data[6].GetBool();
-        actor->ar_beams[i].bm_inter_actor     = data[7].GetBool();
+        BITMASK_SET(actor->ar_beams_Flags[i], BEAM_FLAG_BROKEN, data[5].GetBool());
+        BITMASK_SET(actor->ar_beams_Flags[i], BEAM_FLAG_DISABLED, data[6].GetBool());
+        BITMASK_SET(actor->ar_beams_Flags[i], BEAM_FLAG_INTER_ACTOR, data[7].GetBool());
         int locked_actor                      = data[8].GetInt();
         if (locked_actor != -1 &&
             locked_actor < (int)actors.size() &&
@@ -983,7 +983,7 @@ void ActorManager::RestoreSavedState(ActorPtr actor, rapidjson::Value const& j_e
 
             const BeamID_t beamid = actor->ar_hooks[i].hk_beam;
             beam_t& hookbeam = actor->ar_beams[beamid];
-            if (hookbeam.bm_inter_actor)
+            if (BITMASK_IS_1(actor->ar_beams_Flags[beamid], BEAM_FLAG_INTER_ACTOR))
             {
                 actor->ar_beams_P2[beamid] = actor->ar_hooks[i].hk_locked_node;
             }
@@ -1023,7 +1023,7 @@ void ActorManager::RestoreSavedState(ActorPtr actor, rapidjson::Value const& j_e
 
             const BeamID_t beamid = actor->ar_ties[i].ti_beamid;
             beam_t& tiebeam = actor->ar_beams[beamid];
-            if (tiebeam.bm_inter_actor)
+            if (BITMASK_IS_1(actor->ar_beams_Flags[beamid], BEAM_FLAG_INTER_ACTOR))
             {
                 ActorPtr tied_actor = actor->ar_ties[i].ti_locked_actor;
                 const RopableID_t tied_ropableid = actor->ar_ties[i].ti_locked_ropable_id;

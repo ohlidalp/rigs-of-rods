@@ -54,19 +54,6 @@ enum CollisionEventFilter: short
     EVENT_BOAT,              //!< 'boat' ~ Triggered by any node of boats (`ActorType::BOAT`)
 };
 
-
-/// @addtogroup Physics
-/// @{
-
-enum BeamType: short
-{
-    BEAM_NORMAL,
-    BEAM_HYDRO,
-    BEAM_VIRTUAL,         //!< Excluded from mass calculations, visuals permanently disabled
-};
-
-/// @} // addtogroup Physics
-
 /// @addtogroup Gameplay
 /// @{
 
@@ -88,27 +75,6 @@ enum ActorType //!< Aka 'Driveable'
     MACHINE        = 4,   //!< its a machine
     AI             = 5,   //!< machine controlled by an Artificial Intelligence
 };
-
-/// @}
-
-/// @addtogroup Physics
-/// @{
-
-enum SpecialBeam: short //!< aka 'bounded'
-{
-    NOSHOCK,        //!< not a shock
-    SHOCK1,         //!< either 'shock1' (with flag `BEAM_HYDRO`) or a wheel beam
-    SHOCK2,         //!< shock2
-    SHOCK3,         //!< shock3
-    TRIGGER,        //!< trigger
-    SUPPORTBEAM,    //!<
-    ROPE            //!<
-};
-
-/// @} // addtogroup Physics
-
-/// @addtogroup Gameplay
-/// @{
 
 enum BlinkType //!< Turn signal
 {
@@ -314,6 +280,27 @@ struct node_t
     ground_model_t* nd_last_collision_gm = nullptr;                //!< Physics state; last collision 'ground model' (surface definition)
 };
 
+// booleans from `beam_t`
+const BitMask_t BEAM_FLAG_INTER_ACTOR = BITMASK(1);
+const BitMask_t BEAM_FLAG_DISABLED = BITMASK(2);
+const BitMask_t BEAM_FLAG_BROKEN = BITMASK(3);
+// classic 'bounded' enum:
+const BitMask_t BEAM_BOUNDED_NOSHOCK = BITMASK(4);
+const BitMask_t BEAM_BOUNDED_SHOCK1 = BITMASK(5); //!< either 'shock1' (with flag `BEAM_HYDRO`) or a wheel beam
+const BitMask_t BEAM_BOUNDED_SHOCK2 = BITMASK(6);
+const BitMask_t BEAM_BOUNDED_SHOCK3 = BITMASK(7);
+const BitMask_t BEAM_BOUNDED_TRIGGER = BITMASK(8);
+const BitMask_t BEAM_BOUNDED_SUPPORTBEAM = BITMASK(9);
+const BitMask_t BEAM_BOUNDED_ROPE = BITMASK(10);
+// classic 'type' enum:
+const BitMask_t BEAM_TYPE_NORMAL = BITMASK(11);
+const BitMask_t BEAM_TYPE_HYDRO = BITMASK(12);
+const BitMask_t BEAM_TYPE_VIRTUAL = BITMASK(13); //!< Excluded from mass calculations, visuals permanently disabled
+
+// Helper bitmasks to erase previous value of 'bounded' or 'type'
+const BitMask_t BEAM_ALLFLAGS_BOUNDED = (BEAM_BOUNDED_NOSHOCK | BEAM_BOUNDED_ROPE | BEAM_BOUNDED_SHOCK1 | BEAM_BOUNDED_SHOCK2 | BEAM_BOUNDED_SHOCK3 | BEAM_BOUNDED_TRIGGER | BEAM_BOUNDED_SUPPORTBEAM);
+const BitMask_t BEAM_ALLFLAGS_TYPE = (BEAM_TYPE_HYDRO | BEAM_TYPE_NORMAL | BEAM_TYPE_VIRTUAL);
+
 /// Simulation: An edge in the softbody structure
 struct beam_t
 {
@@ -324,6 +311,12 @@ struct beam_t
     NodeNum_t       p1num = NODENUM_INVALID;  ~~>  Actor::ar_beams_P1
     NodeNum_t       p2num = NODENUM_INVALID;  ~~>  Actor::ar_beams_P2
     float           L = 0.f;                  ~~>  Actor::ar_beams_L
+
+    bool            bm_inter_actor = false;   ~~>  Actor::ar_beams_Flags & BEAM_FLAG_INTER_ACTOR
+    bool            bm_disabled = false;      ~~>  Actor::ar_beams_Flags & BEAM_FLAG_DISABLED
+    bool            bm_broken = false;        ~~>  Actor::ar_beams_Flags & BEAM_FLAG_BROKEN
+    SpecialBeam     bounded                   ~~>  Actor::ar_beams_Flags & BEAM_BOUNDED_***
+    BeamType        bm_type                   ~~>  Actor::ar_beams_Flags & BEAM_TYPE_***
     */
 
     float           k = 0.f;                     //!< tensile spring
@@ -335,12 +328,8 @@ struct beam_t
     float           stress = 0.f;
     float           plastic_coef = 0.f;
     int             detacher_group = DEFAULT_DETACHER_GROUP; //!< Attribute: detacher group number (integer)
-    SpecialBeam     bounded = SpecialBeam::NOSHOCK;
-    BeamType        bm_type = BeamType::BEAM_NORMAL;
-    bool            bm_inter_actor = false;      //!< in case p2 is on another actor
     ActorPtr        bm_locked_actor;             //!< in case p2 is on another actor
-    bool            bm_disabled = false;
-    bool            bm_broken = false;
+
     BeamID_t        bm_pos = BEAMID_INVALID;
     ShockID_t       bm_shockid = SHOCKID_INVALID;
 
@@ -613,7 +602,7 @@ struct command_t
 
 struct hydrobeam_t //!< beams updating length based on simulation variables, generally known as actuators.
 {
-    uint16_t  hb_beam_index{0}; //!< Index to Actor::ar_beams array
+    BeamID_t  hb_beam_index{0}; //!< Index to Actor::ar_beams array
     float     hb_ref_length{0}; //!< Idle length in meters
     float     hb_speed{0};      //!< Rate of change
     BitMask_t hb_flags{0};      //!< Only for 'hydros'

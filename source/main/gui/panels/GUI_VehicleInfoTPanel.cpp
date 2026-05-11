@@ -646,13 +646,13 @@ void VehicleInfoTPanel::UpdateStats(float dt, ActorPtr actor)
     for (int i = 0; i < static_cast<int>(actor->ar_beams.size()); i++)
     {
         beam_t* beam = &actor->ar_beams[i];
-        if (beam->bm_broken != 0)
+        if (BITMASK_IS_1(actor->ar_beams_Flags[i], BEAM_FLAG_BROKEN))
         {
             beambroken++;
         }
         beamstress += std::abs(beam->stress);
         float current_deformation = fabs(actor->ar_beams_L[i] - beam->refL);
-        if (fabs(current_deformation) > 0.0001f && beam->bm_type != BEAM_HYDRO)
+        if (fabs(current_deformation) > 0.0001f && !BITMASK_IS_1(actor->ar_beams_Flags[i], BEAM_TYPE_HYDRO))
         {
             beamdeformed++;
         }

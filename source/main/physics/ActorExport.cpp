@@ -48,21 +48,21 @@ static RigDef::Node::Ref BuildNodeRef(Actor* actor, NodeNum_t n)
     }
 }
 
-static bool IsActuallyShockBeam(const beam_t& beam)
+static bool IsActuallyShockBeam(const BitMask_t flags)
 {
     // Beams with attributes {SHOCK1 && BEAM_NORMAL} are actually wheel beams ~ don't ask.
-    return beam.bm_type == BEAM_HYDRO 
-        && (beam.bounded == SHOCK1 || beam.bounded == SHOCK2 || beam.bounded == SHOCK3);
+    return BITMASK_IS_1(flags, BEAM_TYPE_HYDRO) 
+        && (BITMASK_IS_1(flags, BEAM_BOUNDED_SHOCK1) || BITMASK_IS_1(flags, BEAM_BOUNDED_SHOCK2) || BITMASK_IS_1(flags, BEAM_BOUNDED_SHOCK3));
 }
 
-static void UpdateSetBeamDefaults(std::shared_ptr<BeamDefaults>& beam_defaults, Actor* actor, int i)
+static void UpdateSetBeamDefaults(std::shared_ptr<BeamDefaults>& beam_defaults, Actor* actor, BeamID_t i)
 {
     float b_spring = actor->ar_beams[i].k;
     float b_damp = actor->ar_beams[i].d;
     float b_deform = actor->ar_beams[i].default_beam_deform;
     float b_break = actor->ar_beams[i].initial_beam_strength;
     float b_diameter = actor->ar_beams[i].default_beam_diameter;
-    if (IsActuallyShockBeam(actor->ar_beams[i]))
+    if (IsActuallyShockBeam(actor->ar_beams_Flags[i]))
     {
         const shock_t& shock = actor->ar_shocks[actor->ar_beams[i].bm_shockid];
         b_spring = shock.sbd_spring;
@@ -240,12 +240,12 @@ void Actor::propagateNodeBeamChangesToDef()
         beam.detacher_group = detacher_group;
         beam.extension_break_limit = ar_beams[i].longbound;
         
-        if (ar_beams[i].bounded == SUPPORTBEAM)
+        if (BITMASK_IS_1(ar_beams_Flags[i], BEAM_BOUNDED_SUPPORTBEAM))
         {
             beam._has_extension_break_limit = true;
             beam.options |= RigDef::Beam::OPTION_s_SUPPORT;
         }
-        else if (ar_beams[i].bounded == ROPE)
+        else if (BITMASK_IS_1(ar_beams_Flags[i], BEAM_BOUNDED_ROPE))
         {
             beam.options |= RigDef::Beam::OPTION_r_ROPE;
         }
@@ -503,11 +503,9 @@ void Actor::propagateNodeBeamChangesToDef()
     for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
         const beam_t& beam = ar_beams[i];
-        switch (beam.bounded)
+        if (BITMASK_IS_1(ar_beams_Flags[i], BEAM_BOUNDED_SHOCK1))
         {
-        case SpecialBeam::SHOCK1:
-        {
-            if (!IsActuallyShockBeam(beam))
+            if (!IsActuallyShockBeam(ar_beams_Flags[i]))
             {
                 // This is actually a wheel beam - skip it.
                 continue;
@@ -544,10 +542,8 @@ void Actor::propagateNodeBeamChangesToDef()
             }
 
             m_used_actor_entry->actor_def->root_module->shocks.push_back(def);
-            break;
         }
-
-        case SpecialBeam::SHOCK2:
+        else if (BITMASK_IS_1(ar_beams_Flags[i], BEAM_BOUNDED_SHOCK2))
         {
             UpdateSetBeamDefaults(beam_defaults, this, i);
 
@@ -580,10 +576,8 @@ void Actor::propagateNodeBeamChangesToDef()
             }
 
             m_used_actor_entry->actor_def->root_module->shocks2.push_back(def);
-            break;
         }
-
-        case SpecialBeam::SHOCK3:
+        else if (BITMASK_IS_1(ar_beams_Flags[i], BEAM_BOUNDED_SHOCK3))
         {
             UpdateSetBeamDefaults(beam_defaults, this, i);
 
@@ -620,11 +614,6 @@ void Actor::propagateNodeBeamChangesToDef()
             }
 
             m_used_actor_entry->actor_def->root_module->shocks3.push_back(def);
-            break;
-        }
-
-        default: // Not a shock
-            break;
         }
     }
 
@@ -633,7 +622,8 @@ void Actor::propagateNodeBeamChangesToDef()
     {
         int i = hydrobeam.hb_beam_index;
         const beam_t& beam = ar_beams[i];
-        if (beam.bm_type != BEAM_HYDRO)
+        ROR_ASSERT(BITMASK_IS_1(ar_beams_Flags[i], BEAM_TYPE_HYDRO));
+        if (BITMASK_IS_0(ar_beams_Flags[i], BEAM_TYPE_HYDRO))
         {
             continue; // Should never happen.
         }

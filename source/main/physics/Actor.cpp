@@ -744,7 +744,7 @@ void Actor::recalculateNodeMasses()
     Real len = 0.0f;
     for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
-        if (ar_beams[i].bm_type != BEAM_VIRTUAL)
+        if (BITMASK_IS_0(ar_beams_Flags[i], BEAM_TYPE_VIRTUAL))
         {
             Real half_newlen = ar_beams[i].refL / 2.0;
             if (!ar_nodes[ar_beams_P1[i]].nd_tyre_node)
@@ -756,7 +756,7 @@ void Actor::recalculateNodeMasses()
 
     for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
-        if (ar_beams[i].bm_type != BEAM_VIRTUAL)
+        if (BITMASK_IS_0(ar_beams_Flags[i], BEAM_TYPE_VIRTUAL))
         {
             Real half_mass = ar_beams[i].refL * ar_dry_mass / len / 2.0f;
             if (!ar_nodes[ar_beams_P1[i]].nd_tyre_node)
@@ -1702,8 +1702,8 @@ void Actor::SyncReset(bool reset_position)
         ar_beams[i].strength        = ar_beams[i].initial_beam_strength;
         ar_beams_L[i]               = ar_beams[i].refL;
         ar_beams[i].stress          = 0.0;
-        ar_beams[i].bm_broken       = false;
-        ar_beams[i].bm_disabled     = false;
+        BITMASK_SET(ar_beams_Flags[i], BEAM_FLAG_BROKEN, false);
+        BITMASK_SET(ar_beams_Flags[i], BEAM_FLAG_DISABLED, false);
     }
 
     this->applyNodeBeamScales();
@@ -1712,13 +1712,13 @@ void Actor::SyncReset(bool reset_position)
 
     for (auto& h : ar_hooks)
     {
-        ar_beams[h.hk_beam].bm_disabled = true; // should only be active if the hook is locked
+        BITMASK_SET(ar_beams_Flags[h.hk_beam], BEAM_FLAG_DISABLED, true); // should only be active if the hook is locked
     }
 
     for (auto& t : ar_ties)
     {
         t.ti_locked_ropable_id = ROPABLEID_INVALID; // `tieToggle()` doesn't do this - bug or feature? ~ ohlidalp, 06/2024
-        ar_beams[t.ti_beamid].bm_disabled = true; // should only be active if the tie is tied
+        BITMASK_SET(ar_beams_Flags[t.ti_beamid], BEAM_FLAG_DISABLED, true); // should only be active if the tie is tied
     }
 
     // End extra cleanup
@@ -1823,7 +1823,7 @@ void Actor::applyNodeBeamScales()
             ar_beams[i].k = ar_initial_beam_defaults[i].first * ar_nb_wheels_scale.first;
             ar_beams[i].d = ar_initial_beam_defaults[i].second * ar_nb_wheels_scale.second;
         }
-        else if (ar_beams[i].bounded == SHOCK1 || ar_beams[i].bounded == SHOCK2 || ar_beams[i].bounded == SHOCK3)
+        else if (BITMASK_IS_1(ar_beams_Flags[i], BEAM_BOUNDED_SHOCK1) || BITMASK_IS_1(ar_beams_Flags[i], BEAM_BOUNDED_SHOCK2) || BITMASK_IS_1(ar_beams_Flags[i], BEAM_BOUNDED_SHOCK3))
         {
             ar_beams[i].k = ar_initial_beam_defaults[i].first * ar_nb_shocks_scale.first;;
             ar_beams[i].d = ar_initial_beam_defaults[i].second * ar_nb_shocks_scale.second;
@@ -1922,7 +1922,7 @@ void Actor::searchBeamDefaults()
             velocity = std::max(velocity, std::abs(v));
             sum_stress += std::abs(ar_beams[i].stress) / (float)ar_nb_measure_steps;
             stress = std::max(stress, std::abs(ar_beams[i].stress));
-            if (k == 0 && ar_beams[i].bm_broken)
+            if (k == 0 && BITMASK_IS_1(ar_beams_Flags[i], BEAM_FLAG_BROKEN))
             {
                 sum_broken++;
             }
@@ -3523,7 +3523,7 @@ void Actor::tieToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_t
         {
             beam_t& tiebeam = ar_beams[it->ti_beamid];
 
-            istied = !tiebeam.bm_disabled;
+            istied = !BITMASK_IS_1(ar_beams_Flags[it->ti_beamid], BEAM_FLAG_DISABLED);
 
             // tie is locked and should get unlocked and stop tying
             it->ti_tied = false;
@@ -3534,8 +3534,8 @@ void Actor::tieToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_t
             }
             // disable the ties beam
             ar_beams_P2[it->ti_beamid] = NodeNum_t(0);
-            tiebeam.bm_inter_actor = false;
-            tiebeam.bm_disabled = true;
+            BITMASK_SET_0(ar_beams_Flags[it->ti_beamid], BEAM_FLAG_INTER_ACTOR);
+            BITMASK_SET_1(ar_beams_Flags[it->ti_beamid], BEAM_FLAG_DISABLED);
             if (it->ti_locked_actor != this)
             {
                 this->RemoveInterActorBeam(&tiebeam, mode); // OK to invoke here - tieToggle() - processing `MSG_SIM_ACTOR_LINKING_REQUESTED`
@@ -3598,18 +3598,18 @@ void Actor::tieToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_t
                 if (nearest_node != NODENUM_INVALID)
                 {
                     // enable the beam and visually display the beam
-                    tiebeam.bm_disabled = false;
+                    BITMASK_SET_0(ar_beams_Flags[it->ti_beamid], BEAM_FLAG_DISABLED);
                     // now trigger the tying action
                     it->ti_locked_actor = nearest_actor;
                     ar_beams_P2[it->ti_beamid] = nearest_node;
-                    tiebeam.bm_inter_actor = nearest_actor != this;
+                    BITMASK_SET(ar_beams_Flags[it->ti_beamid], BEAM_FLAG_INTER_ACTOR, nearest_actor != this);
                     tiebeam.stress = 0;
                     ar_beams_L[it->ti_beamid] = tiebeam.refL;
                     it->ti_tied = true;
                     it->ti_tying = true;
                     it->ti_locked_ropable_id = locktedto_id;
                     it->ti_locked_actor->ar_ropables[it->ti_locked_ropable_id].attached_ties++;
-                    if (tiebeam.bm_inter_actor)
+                    if (BITMASK_IS_1(ar_beams_Flags[it->ti_beamid], BEAM_FLAG_INTER_ACTOR))
                     {
                         this->AddInterActorBeam(&tiebeam, nearest_actor, mode); // OK to invoke here - tieToggle() - processing `MSG_SIM_ACTOR_LINKING_REQUESTED`
                     }
@@ -3813,21 +3813,21 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
                     it->hk_locked = PRELOCK;
                     //enable beam if not enabled yet between those 2 nodes
                     beam_t& hookbeam = ar_beams[it->hk_beam];
-                    if (hookbeam.bm_disabled)
+                    if (BITMASK_IS_1(ar_beams_Flags[it->hk_beam], BEAM_FLAG_DISABLED))
                     {
                         ar_beams_P2[it->hk_beam] = it->hk_locked_node;
-                        hookbeam.bm_inter_actor = (it->hk_locked_actor != nullptr);
+                        BITMASK_SET(ar_beams_Flags[it->hk_beam], BEAM_FLAG_INTER_ACTOR, (it->hk_locked_actor != nullptr));
                         ar_beams_L[it->hk_beam] = (ar_nodes_AbsPosition[it->hk_hook_node] - ar_nodes_AbsPosition[it->hk_locked_node]).length();
                         ar_beams_L[it->hk_beam] = ar_nodes_AbsPosition[it->hk_hook_node].distance(
                             it->hk_locked_actor->ar_nodes_AbsPosition[it->hk_locked_node]);
-                        hookbeam.bm_disabled = false;
+                        BITMASK_SET_0(ar_beams_Flags[it->hk_beam], BEAM_FLAG_DISABLED);
                         this->AddInterActorBeam(&hookbeam, it->hk_locked_actor, mode); // OK to invoke here - hookToggle() - processing `MSG_SIM_ACTOR_LINKING_REQUESTED`
                     }
                 }
             }
         }
         // this is a locked or prelocked hook and its not a locking attempt or the locked actor was removed (bm_inter_actor == false)
-        else if ((it->hk_locked == LOCKED || it->hk_locked == PRELOCK) && (mode != ActorLinkingRequestType::HOOK_LOCK || !ar_beams[it->hk_beam].bm_inter_actor))
+        else if ((it->hk_locked == LOCKED || it->hk_locked == PRELOCK) && (mode != ActorLinkingRequestType::HOOK_LOCK || !BITMASK_IS_1(ar_beams_Flags[it->hk_beam], BEAM_FLAG_INTER_ACTOR)))
         {
             // we unlock ropes immediatelly
             it->hk_locked = UNLOCKED;
@@ -3842,9 +3842,9 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
             it->hk_locked_actor = nullptr;
             //disable hook-assistance beam
             ar_beams_P2[it->hk_beam] = NodeNum_t(0);
-            hookbeam.bm_inter_actor = false;
+            BITMASK_SET_0(ar_beams_Flags[it->hk_beam], BEAM_FLAG_INTER_ACTOR);
             ar_beams_L[it->hk_beam] = (ar_nodes_AbsPosition[0] - ar_nodes_AbsPosition[it->hk_hook_node]).length();
-            hookbeam.bm_disabled = true;
+            BITMASK_SET_1(ar_beams_Flags[it->hk_beam], BEAM_FLAG_DISABLED);
         }
     }
 }
@@ -3951,7 +3951,9 @@ int Actor::GetNumActiveConnectedBeams(int nodeid)
     int totallivebeams = 0;
     for (unsigned int ni = 0; ni < ar_node_to_beam_connections[nodeid].size(); ++ni)
     {
-        if (!ar_beams[ar_node_to_beam_connections[nodeid][ni]].bm_disabled && !ar_beams[ar_node_to_beam_connections[nodeid][ni]].bounded)
+        const BeamID_t beamid = ar_node_to_beam_connections[nodeid][ni];
+        if (!BITMASK_IS_1(ar_beams_Flags[beamid], BEAM_FLAG_DISABLED)
+            && BITMASK_IS_1(ar_beams_Flags[beamid], BEAM_BOUNDED_NOSHOCK))
             totallivebeams++;
     }
     return totallivebeams;

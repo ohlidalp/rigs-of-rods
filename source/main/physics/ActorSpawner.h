@@ -267,7 +267,7 @@ private:
         std::shared_ptr<RigDef::BeamDefaults> beam_defaults,
         float max_contraction = -1.f,
         float max_extension = -1.f,
-        BeamType type = BEAM_NORMAL);
+        BitMask_t type = BEAM_TYPE_NORMAL);
 
     /// Sets up wheel and builds nodes for sections 'wheels', 'meshwheels' and 'meshwheels2'.
     /// @param wheel_width Width of the wheel (used in section 'wheels'). Use negative value to calculate width from axis beam.

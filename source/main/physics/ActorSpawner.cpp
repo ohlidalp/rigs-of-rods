@@ -2971,11 +2971,11 @@ void ActorSpawner::ProcessTie(RigDef::Tie & def)
     SetBeamStrength(beam, def.beam_defaults->GetScaledBreakingThreshold());
     beam.k = def.beam_defaults->GetScaledSpringiness();
     beam.d = def.beam_defaults->GetScaledDamping();
-    beam.bm_type = BEAM_HYDRO;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_TYPE_HYDRO);
     m_actor->ar_beams_L[beam_index] = def.max_reach_length;
     beam.refL = def.max_reach_length;
-    beam.bounded = ROPE;
-    beam.bm_disabled = true;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_BOUNDED_ROPE);
+    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_FLAG_DISABLED);
 
     if (BITMASK_IS_0(def.options, RigDef::Tie::OPTION_i_INVISIBLE))
     {
@@ -3013,8 +3013,8 @@ void ActorSpawner::ProcessRope(RigDef::Rope & def)
     SetBeamStrength(beam, def.beam_defaults->GetScaledBreakingThreshold());
     beam.k = def.beam_defaults->GetScaledSpringiness();
     beam.d = def.beam_defaults->GetScaledDamping();
-    beam.bounded = ROPE;
-    beam.bm_type = BEAM_HYDRO;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_BOUNDED_ROPE);
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_TYPE_HYDRO);
     m_actor->ar_beams_L[beam_index] = m_actor->ar_nodes_AbsPosition[root_node.pos].distance(m_actor->ar_nodes_AbsPosition[end_node.pos]);
     beam.refL = m_actor->ar_beams_L[beam_index];
 
@@ -3258,7 +3258,7 @@ void ActorSpawner::ProcessHook(RigDef::Hook & def)
     }
     if (def.flag_no_rope)
     {
-        m_actor->ar_beams[hook->hk_beam].bounded = NOSHOCK;
+        BITMASK_SET_0(m_actor->ar_beams_Flags[hook->hk_beam], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[hook->hk_beam], BEAM_BOUNDED_NOSHOCK);
     }
     if (!def.flag_visible) // NOTE: This flag can only hide a visible beam - it won't show a beam defined with 'invisible' flag.
     {
@@ -3397,14 +3397,14 @@ void ActorSpawner::ProcessTrigger(RigDef::Trigger & def)
     }
 
     beam_t & beam = AddBeam(m_actor->ar_nodes[node_1_index], m_actor->ar_nodes[node_2_index], def.beam_defaults, def.detacher_group);
-    beam.bm_type = BEAM_HYDRO;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam.bm_pos], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam.bm_pos], BEAM_TYPE_HYDRO);
     SetBeamStrength(beam, def.beam_defaults->breaking_threshold);
     SetBeamSpring(beam, 0.f);
     SetBeamDamping(beam, 0.f);
     CalculateBeamLength(beam);
     beam.shortbound = sbound;
     beam.longbound = lbound;
-    beam.bounded = TRIGGER;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam.bm_pos], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam.bm_pos], BEAM_BOUNDED_TRIGGER);
 
     if (!invisible)
     {
@@ -3654,10 +3654,10 @@ void ActorSpawner::ProcessCommand(RigDef::Command2 & def)
     SetBeamStrength(beam, def.beam_defaults->GetScaledBreakingThreshold()); /* Override settings from AddBeam() */
     SetBeamSpring(beam, def.beam_defaults->GetScaledSpringiness());
     SetBeamDamping(beam, def.beam_defaults->GetScaledDamping());
-    beam.bm_type = BEAM_HYDRO;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_TYPE_HYDRO);
 
     /* Options */
-    if (def.option_r_rope)          { beam.bounded = ROPE; }
+    if (def.option_r_rope)          { BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_BOUNDED_ROPE); }
 
     /* set the middle of the command, so its not required to recalculate this everytime ... */
     float center_length = 0.f;
@@ -3863,7 +3863,7 @@ void ActorSpawner::ProcessAnimator(RigDef::Animator & def)
     /* set the limits to something with sense by default */
     beam.shortbound = 0.99999f;
     beam.longbound = 1000000.0f;
-    beam.bm_type = BEAM_HYDRO;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_TYPE_HYDRO);
     CalculateBeamLength(beam);
     SetBeamStrength(beam, def.beam_defaults->GetScaledBreakingThreshold());
     SetBeamSpring(beam, def.beam_defaults->GetScaledSpringiness());
@@ -3920,7 +3920,7 @@ beam_t & ActorSpawner::AddBeam(
     beam_t& beam = this->AddBeam();
     InitBeam(beam, &node_1, &node_2);
     beam.detacher_group = detacher_group;
-    beam.bm_disabled = false;
+    
 
     /* Breaking threshold (strength) */
     float strength = beam_defaults->breaking_threshold;
@@ -4001,7 +4001,7 @@ void ActorSpawner::ProcessHydro(RigDef::Hydro & def)
     beam_t & beam = AddBeam(node_1, node_2, def.beam_defaults, def.detacher_group);
     SetBeamStrength(beam, def.beam_defaults->GetScaledBreakingThreshold());
     CalculateBeamLength(beam);
-    beam.bm_type              = BEAM_HYDRO;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_TYPE_HYDRO);
     beam.k                    = def.beam_defaults->GetScaledSpringiness();
     beam.d                    = def.beam_defaults->GetScaledDamping();
 
@@ -4068,8 +4068,8 @@ void ActorSpawner::ProcessShock3(RigDef::Shock3 & def)
     int beam_index = static_cast<int>(m_actor->ar_beams.size());
     beam_t & beam = AddBeam(node_1, node_2, def.beam_defaults, def.detacher_group);
     SetBeamStrength(beam, def.beam_defaults->breaking_threshold * 4.f);
-    beam.bm_type              = BEAM_HYDRO;
-    beam.bounded              = SHOCK3;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_TYPE_HYDRO);
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_BOUNDED_SHOCK3);
     beam.k                    = def.spring_in;
     beam.d                    = def.damp_in;
     beam.shortbound           = short_bound;
@@ -4157,8 +4157,8 @@ void ActorSpawner::ProcessShock2(RigDef::Shock2 & def)
     int beam_index = static_cast<int>(m_actor->ar_beams.size());
     beam_t & beam = AddBeam(node_1, node_2, def.beam_defaults, def.detacher_group);
     SetBeamStrength(beam, def.beam_defaults->breaking_threshold * 4.f);
-    beam.bm_type              = BEAM_HYDRO;
-    beam.bounded              = SHOCK2;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_TYPE_HYDRO);
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_BOUNDED_SHOCK2);
     beam.k                    = def.spring_in;
     beam.d                    = def.damp_in;
     beam.shortbound           = short_bound;
@@ -4228,8 +4228,8 @@ void ActorSpawner::ProcessShock(RigDef::Shock & def)
     beam_t & beam = AddBeam(node_1, node_2, def.beam_defaults, def.detacher_group);
     beam.shortbound = short_bound;
     beam.longbound  = long_bound;
-    beam.bounded    = SHOCK1;
-    beam.bm_type    = BEAM_HYDRO;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_BOUNDED_SHOCK1);
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_TYPE_HYDRO);
     beam.k          = def.spring_rate;
     beam.d          = def.damping;
     SetBeamStrength(beam, def.beam_defaults->breaking_threshold * 4.f);
@@ -4454,7 +4454,7 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
                     axis_node_closest_to_rigidity_node = base_node_index+i*2+1+rays*2;
                 };
                 BeamID_t beam_index = AddWheelBeam(rigidity_node, axis_node_closest_to_rigidity_node, tyre_spring, tyre_damp, def.beam_defaults);
-                GetBeam(beam_index).bm_type = BEAM_VIRTUAL;
+                BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_TYPE_VIRTUAL);
             }
         }
     }
@@ -4473,12 +4473,12 @@ void ActorSpawner::ProcessFlexBodyWheel(RigDef::FlexBodyWheel & def)
         beam_index = AddWheelBeam(axis_node_1, tirenode,     tyre_spring/2.f, tyre_damp, def.beam_defaults);
         GetBeam(beam_index).shortbound = support_beams_short_bound;
         GetBeam(beam_index).longbound  = 0.f;
-        GetBeam(beam_index).bounded = SHOCK1;
+        BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_BOUNDED_SHOCK1);
 
         beam_index = AddWheelBeam(axis_node_2, tirenode + 1, tyre_spring/2.f, tyre_damp, def.beam_defaults);
         GetBeam(beam_index).shortbound = support_beams_short_bound;
         GetBeam(beam_index).longbound  = 0.f;
-        GetBeam(beam_index).bounded = SHOCK1;
+        BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_BOUNDED_SHOCK1);
     }
 
     // Wheel object
@@ -4895,8 +4895,7 @@ void ActorSpawner::BuildWheelBeams(
         if (rigidity_node != NODENUM_INVALID)
         {
             NodeNum_t target_node = (rigidity_beam_side_1) ? outer_ring_node : inner_ring_node;
-            unsigned int beam_index = AddWheelBeam(rigidity_node, target_node, tyre_spring, tyre_damping, beam_defaults, -1.f, -1.f, BEAM_VIRTUAL);
-            m_actor->ar_beams[beam_index].bm_type = BEAM_VIRTUAL;
+            unsigned int beam_index = AddWheelBeam(rigidity_node, target_node, tyre_spring, tyre_damping, beam_defaults, -1.f, -1.f, BEAM_TYPE_VIRTUAL);
         }
     }
 }
@@ -5137,7 +5136,7 @@ void ActorSpawner::ProcessWheel2(RigDef::Wheel2 & wheel_2_def)
                                 &m_actor->ar_nodes[rigidity_node],
                                 (rigidity_beam_side_1) ? rim_outer_node : rim_inner_node
                 );
-                m_actor->ar_beams[rig_beam_index].bm_type = BEAM_VIRTUAL;
+                BITMASK_SET_0(m_actor->ar_beams_Flags[rig_beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[rig_beam_index], BEAM_TYPE_VIRTUAL);
             }
             else
             {
@@ -5337,23 +5336,23 @@ BeamID_t ActorSpawner::AddWheelBeam(
     std::shared_ptr<RigDef::BeamDefaults> beam_defaults,
     float max_contraction,   /* Default: -1.f */
     float max_extension,     /* Default: -1.f */
-    BeamType type            /* Default: BEAM_INVISIBLE */
+    BitMask_t type           /* Default: BEAM_TYPE_NORMAL */
 )
 {
-    unsigned int index = static_cast<int>(m_actor->ar_beams.size());
+    unsigned int beam_index = static_cast<int>(m_actor->ar_beams.size());
     beam_t & beam = AddBeam(m_actor->ar_nodes[node_1], m_actor->ar_nodes[node_2], beam_defaults, DEFAULT_DETACHER_GROUP); 
-    beam.bm_type = type;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], type);
     beam.k = spring;
     beam.d = damping;
     if (max_contraction > 0.f)
     {
         beam.shortbound = max_contraction;
         beam.longbound = max_extension;
-        beam.bounded = SHOCK1;
+        BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_BOUNDED_SHOCK1);
     }
     CalculateBeamLength(beam);
 
-    return index;
+    return beam_index;
 }
 
 BeamID_t ActorSpawner::AddWheelRimBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1, node_t *node_2)
@@ -5379,13 +5378,13 @@ BeamID_t ActorSpawner::AddTyreBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1,
 
 BeamID_t ActorSpawner::_SectionWheels2AddBeam(RigDef::Wheel2 & wheel_2_def, node_t *node_1, node_t *node_2)
 {
-    BeamID_t index = static_cast<int>(m_actor->ar_beams.size());
+    BeamID_t beam_index = static_cast<int>(m_actor->ar_beams.size());
     beam_t & beam = this->AddBeam();
     InitBeam(beam, node_1, node_2);
-    beam.bm_type = BEAM_NORMAL;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_TYPE_NORMAL);
     SetBeamStrength(beam, wheel_2_def.beam_defaults->breaking_threshold);
     SetBeamDeformationThreshold(beam, wheel_2_def.beam_defaults);
-    return index;
+    return beam_index;
 }
 
 void ActorSpawner::ProcessWheelDetacher(RigDef::WheelDetacher & def)
@@ -5600,10 +5599,10 @@ void ActorSpawner::ProcessBeam(RigDef::Beam & def)
     int beam_index = static_cast<int>(m_actor->ar_beams.size());
     m_actor->ar_beams_user_defined[beam_index] = true;
     beam_t & beam = AddBeam(m_actor->ar_nodes[n1], m_actor->ar_nodes[n2], def.defaults, def.detacher_group);
-    beam.bm_type = BEAM_NORMAL;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_TYPE_NORMAL);
     beam.k = def.defaults->GetScaledSpringiness();
     beam.d = def.defaults->GetScaledDamping();
-    beam.bounded = NOSHOCK; // Orig: if (shortbound) ... hardcoded in BTS_BEAMS
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_BOUNDED_NOSHOCK); // Orig: if (shortbound) ... hardcoded in BTS_BEAMS
 
     /* Calculate length */
     // orig = precompression hardcoded to 1
@@ -5616,11 +5615,11 @@ void ActorSpawner::ProcessBeam(RigDef::Beam & def)
     /* Options */
     if (BITMASK_IS_1(def.options, RigDef::Beam::OPTION_r_ROPE))
     {
-        beam.bounded = ROPE;
+        BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_BOUNDED_ROPE);
     }
     if (BITMASK_IS_1(def.options, RigDef::Beam::OPTION_s_SUPPORT))
     {
-        beam.bounded = SUPPORTBEAM;
+        BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_BOUNDED_SUPPORTBEAM);
         beam.longbound = def.extension_break_limit;
     }
 
@@ -5765,7 +5764,7 @@ void ActorSpawner::CreateBeamVisuals(beam_t & beam, int beam_index, bool visible
     std::string material_name = material_override;
     if (material_name.empty())
     {
-        if (beam.bm_type == BEAM_HYDRO)
+        if (BITMASK_IS_1(m_actor->ar_beams_Flags[beam_index], BEAM_TYPE_HYDRO))
         {
             material_name = "tracks/Chrome";
         }
@@ -6064,11 +6063,11 @@ void ActorSpawner::AddHook(NodeNum_t nodenum, RigDef::Node& def)
 
     beam_t& beam = this->AddBeam(node, node_2, def.beam_defaults, def.detacher_group);
     this->SetBeamStrength(beam, def.beam_defaults->GetScaledBreakingThreshold() * 100.f);
-    beam.bm_type = BEAM_HYDRO;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_TYPE_HYDRO);
     beam.d = def.beam_defaults->GetScaledDamping() * 0.1f;
     beam.k = def.beam_defaults->GetScaledSpringiness();
-    beam.bounded = ROPE;
-    beam.bm_disabled = true;
+    BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_BOUNDED);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_BOUNDED_ROPE);
+    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_FLAG_DISABLED);
     m_actor->ar_beams_L[beam_index] = HOOK_RANGE_DEFAULT;
     beam.refL = HOOK_RANGE_DEFAULT;
     this->SetBeamDeformationThreshold(beam, def.beam_defaults);
@@ -6152,7 +6151,7 @@ void ActorSpawner::ProcessCinecam(RigDef::Cinecam & def)
         int beam_index = static_cast<int>(m_actor->ar_beams.size());
         node_t& node = m_actor->ar_nodes[this->GetNodeIndexOrThrow(def.nodes[i])];
         beam_t & beam = AddBeam(camera_node, node, def.beam_defaults, DEFAULT_DETACHER_GROUP);
-        beam.bm_type = BEAM_NORMAL;
+        BITMASK_SET_0(m_actor->ar_beams_Flags[beam_index], BEAM_ALLFLAGS_TYPE);    BITMASK_SET_1(m_actor->ar_beams_Flags[beam_index], BEAM_TYPE_NORMAL);
         CalculateBeamLength(beam);
         beam.k = def.spring;
         beam.d = def.damping;
@@ -6309,6 +6308,7 @@ beam_t & ActorSpawner::AddBeam()
     ROR_ASSERT(m_actor->ar_beams_L.size() == m_actor->ar_beams.size());
     ROR_ASSERT(m_actor->ar_beams_CalcLen.size() == m_actor->ar_beams.size());
     ROR_ASSERT(m_actor->ar_beams_CalcForces.size() == m_actor->ar_beams.size());
+    ROR_ASSERT(m_actor->ar_beams_Flags.size() == m_actor->ar_beams.size());
 
     const BeamID_t beamid = static_cast<BeamID_t>(m_actor->ar_beams.size());
     m_actor->ar_beams.push_back(beam_t(beamid));
@@ -6318,6 +6318,7 @@ beam_t & ActorSpawner::AddBeam()
     m_actor->ar_beams_L.push_back(-1.f);
     m_actor->ar_beams_CalcLen.push_back(BeamCachedLen());
     m_actor->ar_beams_CalcForces.push_back(Ogre::Vector3::ZERO);
+    m_actor->ar_beams_Flags.push_back(0);
     return m_actor->ar_beams.back();
 }
 
