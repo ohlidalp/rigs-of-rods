@@ -350,6 +350,7 @@ public:
     // Beam data (split to layers)
     std::vector<beam_t>  ar_beams;
     std::vector<std::pair<float, float>> ar_initial_beam_defaults;
+    BeamRangesByOrigin   ar_beam_ranges_by_origin;
     std::vector<bool>    ar_beams_invisible;    //!< Used only by the exporter (for rendering, invisible beams simply get no mesh).
     std::vector<bool>    ar_beams_user_defined; //!< True for 'beams', false for wheels/cinecam/hooknode/wings/rotators etc...
     std::vector<beam_t*> ar_inter_beams;       //!< Beams connecting 2 actors

@@ -696,6 +696,52 @@ struct UniqueCommandKeyPair
     CommandkeyID_t uckp_key2 = COMMANDKEYID_INVALID;
 };
 
+/// Groups beams in `Actor::ar_beams` by their type and origin.
+/// Introduced in 2024, this is an auxiliary mechanism with limited use (`SyncReset()`) - it relies on current spawning code processing elements in predetermined order, see `ActorSpawner::ProcessNewActor()` in file 'ActorSpawnerFlow.cpp'.
+/// The original mechanism is ad-hoc detection by `SpecialBeam bounded` and `BeamType bm_type` - still used for physics.
+struct BeamRangesByOrigin
+{
+    // Variables are _IN ORDER_ of elements in `ar_beams`, see `ActorSpawner::ProcessNewActor()` in file 'ActorSpawnerFlow.cpp'.
+    // ------------------------------------------------------------------------------------------------------------------------
+
+    // generated from `Keyword::NODES` based on 'h' flag
+    BeamID_t hookbeams_start = BEAMID_INVALID;
+    BeamID_t hookbeams_end = BEAMID_INVALID;
+    // generated from `Keyword::CINECAM`
+    BeamID_t cinecambeams_start = BEAMID_INVALID;
+    BeamID_t cinecambeams_end = BEAMID_INVALID;
+    // generated from *WHEELS*
+    BeamID_t wheelbeams_start = BEAMID_INVALID;
+    BeamID_t wheelbeams_end = BEAMID_INVALID;
+    // generated from BEAMS and BEAMS2
+    BeamID_t regularbeams_start = BEAMID_INVALID;
+    BeamID_t regularbeams_end = BEAMID_INVALID;
+    // generated from `Keyword::SHOCKS`
+    BeamID_t shocks1beams_start = BEAMID_INVALID;
+    BeamID_t shocks1beams_end = BEAMID_INVALID;
+    // generated from `Keyword::SHOCKS2`
+    BeamID_t shocks2beams_start = BEAMID_INVALID;
+    BeamID_t shocks2beams_end = BEAMID_INVALID;
+    // generated from `Keyword::SHOCKS3`
+    BeamID_t shocks3beams_start = BEAMID_INVALID;
+    BeamID_t shocks3beams_end = BEAMID_INVALID;
+    // generated from `Keyword::COMMANDS` / COMMANDS2
+    BeamID_t commandbeams_start = BEAMID_INVALID;
+    BeamID_t commandbeams_end = BEAMID_INVALID;
+    // generated from `Keyword::HYDROS`
+    BeamID_t hydrobeams_start = BEAMID_INVALID;
+    BeamID_t hydrobeams_end = BEAMID_INVALID;
+    // generated from `Keyword::TRIGGERS`
+    BeamID_t triggerbeams_start = BEAMID_INVALID;
+    BeamID_t triggerbeams_end = BEAMID_INVALID;
+    // generated from `Keyword::ROPES`
+    BeamID_t ropebeams_start = BEAMID_INVALID;
+    BeamID_t ropebeams_end = BEAMID_INVALID;
+    // generated from `Keyword::TIES`
+    BeamID_t tiebeams_start = BEAMID_INVALID;
+    BeamID_t tiebeams_end = BEAMID_INVALID;
+};
+
 /// @}
 
 // --------------------------------

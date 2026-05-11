@@ -147,7 +147,9 @@ void ActorSpawner::ProcessNewActor(ActorPtr actor, ActorSpawnRequest rq, RigDef:
     m_actor->m_gfx_actor = std::unique_ptr<RoR::GfxActor>(
         new RoR::GfxActor(m_actor, this, m_custom_resource_group, m_oldstyle_renderdash));
 
+    m_actor->ar_beam_ranges_by_origin.hookbeams_start = (BeamID_t)m_actor->ar_beams.size();
     PROCESS_ELEMENT(RigDef::Keyword::NODES, nodes, ProcessNode);
+    m_actor->ar_beam_ranges_by_origin.hookbeams_end = (BeamID_t)m_actor->ar_beams.size();
 
     // Old-format exhaust (defined by flags 'x/y' in section 'nodes', one per vehicle)
     if (m_actor->ar_exhaust_pos_node != 0 && m_actor->ar_exhaust_dir_node != 0)
@@ -157,15 +159,19 @@ void ActorSpawner::ProcessNewActor(ActorPtr actor, ActorSpawnRequest rq, RigDef:
 
     // ---------------------------- Node generating sections ----------------------------
 
+    m_actor->ar_beam_ranges_by_origin.cinecambeams_start = (BeamID_t)m_actor->ar_beams.size();
     PROCESS_ELEMENT(RigDef::Keyword::CINECAM, cinecam, ProcessCinecam);
+    m_actor->ar_beam_ranges_by_origin.cinecambeams_end = (BeamID_t)m_actor->ar_beams.size();
 
     // ---------------------------- Wheels (also generate nodes) ----------------------------
 
+    m_actor->ar_beam_ranges_by_origin.wheelbeams_start = (BeamID_t)m_actor->ar_beams.size();
     PROCESS_ELEMENT(RigDef::Keyword::WHEELS, wheels, ProcessWheel);
     PROCESS_ELEMENT(RigDef::Keyword::WHEELS2, wheels2, ProcessWheel2);
     PROCESS_ELEMENT(RigDef::Keyword::MESHWHEELS, meshwheels, ProcessMeshWheel);
     PROCESS_ELEMENT(RigDef::Keyword::MESHWHEELS2, meshwheels2, ProcessMeshWheel2);
     PROCESS_ELEMENT(RigDef::Keyword::FLEXBODYWHEELS, flexbodywheels, ProcessFlexBodyWheel);
+    m_actor->ar_beam_ranges_by_origin.wheelbeams_end = (BeamID_t)m_actor->ar_beams.size();
 
     // ---------------------------- WheelDetachers ----------------------------
 
@@ -174,14 +180,33 @@ void ActorSpawner::ProcessNewActor(ActorPtr actor, ActorSpawnRequest rq, RigDef:
     // ---------------------------- User-defined beams ----------------------------
     //              (may reference any generated/user-defined node)
 
+    m_actor->ar_beam_ranges_by_origin.regularbeams_start = (BeamID_t)m_actor->ar_beams.size();
     PROCESS_ELEMENT(RigDef::Keyword::BEAMS, beams, ProcessBeam);
+    m_actor->ar_beam_ranges_by_origin.regularbeams_end = (BeamID_t)m_actor->ar_beams.size();
+    m_actor->ar_beam_ranges_by_origin.shocks1beams_start = (BeamID_t)m_actor->ar_beams.size();
     PROCESS_ELEMENT(RigDef::Keyword::SHOCKS, shocks, ProcessShock);
+    m_actor->ar_beam_ranges_by_origin.shocks1beams_end = (BeamID_t)m_actor->ar_beams.size();
+    m_actor->ar_beam_ranges_by_origin.shocks2beams_start = (BeamID_t)m_actor->ar_beams.size();
     PROCESS_ELEMENT(RigDef::Keyword::SHOCKS2, shocks2, ProcessShock2);
+    m_actor->ar_beam_ranges_by_origin.shocks2beams_end = (BeamID_t)m_actor->ar_beams.size();
+    m_actor->ar_beam_ranges_by_origin.shocks3beams_start = (BeamID_t)m_actor->ar_beams.size();
     PROCESS_ELEMENT(RigDef::Keyword::SHOCKS3, shocks3, ProcessShock3);
+    m_actor->ar_beam_ranges_by_origin.shocks3beams_end = (BeamID_t)m_actor->ar_beams.size();
+    m_actor->ar_beam_ranges_by_origin.commandbeams_start = (BeamID_t)m_actor->ar_beams.size();
     PROCESS_ELEMENT(RigDef::Keyword::COMMANDS2, commands2, ProcessCommand); // 'commands' are auto-imported as 'commands2'.
+    m_actor->ar_beam_ranges_by_origin.commandbeams_end = (BeamID_t)m_actor->ar_beams.size();
+    m_actor->ar_beam_ranges_by_origin.hydrobeams_start = (BeamID_t)m_actor->ar_beams.size();
     PROCESS_ELEMENT(RigDef::Keyword::HYDROS, hydros, ProcessHydro);
+    m_actor->ar_beam_ranges_by_origin.hydrobeams_end = (BeamID_t)m_actor->ar_beams.size();
+    m_actor->ar_beam_ranges_by_origin.triggerbeams_start = (BeamID_t)m_actor->ar_beams.size();
     PROCESS_ELEMENT(RigDef::Keyword::TRIGGERS, triggers, ProcessTrigger);
+    m_actor->ar_beam_ranges_by_origin.triggerbeams_end = (BeamID_t)m_actor->ar_beams.size();
+    m_actor->ar_beam_ranges_by_origin.ropebeams_start = (BeamID_t)m_actor->ar_beams.size();
     PROCESS_ELEMENT(RigDef::Keyword::ROPES, ropes, ProcessRope);
+    m_actor->ar_beam_ranges_by_origin.ropebeams_end = (BeamID_t)m_actor->ar_beams.size();
+    m_actor->ar_beam_ranges_by_origin.tiebeams_start = (BeamID_t)m_actor->ar_beams.size();
+    PROCESS_ELEMENT(RigDef::Keyword::TIES, ties, ProcessTie);
+    m_actor->ar_beam_ranges_by_origin.tiebeams_end = (BeamID_t)m_actor->ar_beams.size();
 
     // ---------------------------- Other ----------------------------
 
@@ -195,8 +220,7 @@ void ActorSpawner::ProcessNewActor(ActorPtr actor, ActorSpawnRequest rq, RigDef:
     PROCESS_ELEMENT(RigDef::Keyword::SUBMESH, submeshes, ProcessSubmesh);
     PROCESS_ELEMENT(RigDef::Keyword::CONTACTERS, contacters, ProcessContacter);
     PROCESS_ELEMENT(RigDef::Keyword::CAMERAS, cameras, ProcessCamera);
-    PROCESS_ELEMENT(RigDef::Keyword::HOOKS, hooks, ProcessHook);	
-    PROCESS_ELEMENT(RigDef::Keyword::TIES, ties, ProcessTie);
+    PROCESS_ELEMENT(RigDef::Keyword::HOOKS, hooks, ProcessHook);
     PROCESS_ELEMENT(RigDef::Keyword::ROPABLES, ropables, ProcessRopable);
     PROCESS_ELEMENT(RigDef::Keyword::ANIMATORS, animators, ProcessAnimator);
     PROCESS_ELEMENT(RigDef::Keyword::FUSEDRAG, fusedrag, ProcessFusedrag);
