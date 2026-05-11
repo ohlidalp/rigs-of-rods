@@ -6307,6 +6307,8 @@ beam_t & ActorSpawner::AddBeam()
     ROR_ASSERT(m_actor->ar_beams_P1.size() == m_actor->ar_beams.size());
     ROR_ASSERT(m_actor->ar_beams_P2.size() == m_actor->ar_beams.size());
     ROR_ASSERT(m_actor->ar_beams_L.size() == m_actor->ar_beams.size());
+    ROR_ASSERT(m_actor->ar_beams_CalcLen.size() == m_actor->ar_beams.size());
+    ROR_ASSERT(m_actor->ar_beams_CalcForces.size() == m_actor->ar_beams.size());
 
     const BeamID_t beamid = static_cast<BeamID_t>(m_actor->ar_beams.size());
     m_actor->ar_beams.push_back(beam_t(beamid));
@@ -6314,6 +6316,8 @@ beam_t & ActorSpawner::AddBeam()
     m_actor->ar_beams_P1.push_back(NODENUM_INVALID);
     m_actor->ar_beams_P2.push_back(NODENUM_INVALID);
     m_actor->ar_beams_L.push_back(-1.f);
+    m_actor->ar_beams_CalcLen.push_back(BeamCachedLen());
+    m_actor->ar_beams_CalcForces.push_back(Ogre::Vector3::ZERO);
     return m_actor->ar_beams.back();
 }
 

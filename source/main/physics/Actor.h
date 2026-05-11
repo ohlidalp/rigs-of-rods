@@ -354,9 +354,11 @@ public:
     /// @{
     // Data layers (Index = `BeamID_t`)
     std::vector<beam_t>        ar_beams;
-    std::vector<NodeNum_t>     ar_beams_P1;        //!< Index = `BeamID_t`; Node number of beam start
-    std::vector<NodeNum_t>     ar_beams_P2;        //!< Index = `BeamID_t`; Node number of beam end
-    std::vector<float>         ar_beams_L;         //!< Index = `BeamID_t`; Idle length of beam in meters
+    std::vector<NodeNum_t>     ar_beams_P1;          //!< Index = `BeamID_t`; Node number of beam start
+    std::vector<NodeNum_t>     ar_beams_P2;          //!< Index = `BeamID_t`; Node number of beam end
+    std::vector<float>         ar_beams_L;           //!< Index = `BeamID_t`; Idle length of beam in meters
+    std::vector<BeamCachedLen> ar_beams_CalcLen;     //!< Index = `BeamID_t`; Cached length data, updated every physics tick
+    std::vector<Ogre::Vector3> ar_beams_CalcForces;  //!< Index = `BeamID_t`; Cached force data, updated every physics tick
     std::vector<std::pair<float, float>> ar_initial_beam_defaults;
     std::vector<bool>    ar_beams_invisible;    //!< Used only by the exporter (for rendering, invisible beams simply get no mesh).
     std::vector<bool>    ar_beams_user_defined; //!< True for 'beams', false for wheels/cinecam/hooknode/wings/rotators etc...
@@ -564,7 +566,9 @@ private:
     void              CalcAircraftForces(bool doUpdate);   
     void              CalcForcesEulerCompute(bool doUpdate, int num_steps); 
     void              CalcAnimators(hydrobeam_t const& hydrobeam, float &cstate, int &div);
-    void              CalcBeams(bool trigger_hooks);       
+    void              CalcBeams_LenPrepass();
+    void              CalcBeams(bool trigger_hooks);
+    void              CalcBeams_ForcesPostpass();
     void              CalcBeamsInterActor();               
     void              CalcBuoyance(bool doUpdate);         
     void              CalcCommands(bool doUpdate);         

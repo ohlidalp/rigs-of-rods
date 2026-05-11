@@ -60,7 +60,9 @@ void Actor::CalcForcesEulerCompute(bool doUpdate, int num_steps)
     this->CalcTies();
     this->CalcTruckEngine(doUpdate); // must be done after the commands / engine triggers are updated
     this->CalcMouse();
+    this->CalcBeams_LenPrepass();
     this->CalcBeams(doUpdate);
+    this->CalcBeams_ForcesPostpass();
     this->CalcCabCollisions();
     this->updateSlideNodeForces(PHYSICS_DT); // must be done after the contacters are updated
     this->CalcForceFeedback(doUpdate);
@@ -1210,6 +1212,24 @@ void LogBeamNodes(Actor* actor, RoR::Str<L>& msg, BeamID_t beamid) // Internal h
     msg << ".";
 }
 
+void Actor::CalcBeams_LenPrepass()
+{
+    // Pre-calculate everything that needs reading node data
+    // -----------------------------------------------------
+    for (size_t i = 0; i < ar_beams.size(); i++)
+    {
+        // Pre-calculate length
+        const NodeNum_t p1num = ar_beams_P1[i];
+        const NodeNum_t p2num = ar_beams_P2[i];
+        const Vector3 dis = ar_nodes_RelPosition[p1num] - ar_nodes_RelPosition[p2num];
+        const float inverted_dislen = fast_invSqrt(dis.squaredLength());
+        ar_beams_CalcLen[i].dis = dis;
+        ar_beams_CalcLen[i].inverted_dislen = inverted_dislen;
+        // Pre-calculate beam's rate of change
+        ar_beams_CalcLen[i].v = (ar_nodes_Velocity[p1num] - ar_nodes_Velocity[p2num]).dotProduct(dis) * inverted_dislen;
+    }
+}
+
 void Actor::CalcBeams(bool trigger_hooks)
 {
     for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
@@ -1217,12 +1237,9 @@ void Actor::CalcBeams(bool trigger_hooks)
         if (!ar_beams[i].bm_disabled && !ar_beams[i].bm_inter_actor)
         {
             // Calculate beam length
-            Vector3 dis = ar_nodes_RelPosition[ar_beams_P1[i]] - ar_nodes_RelPosition[ar_beams_P2[i]];
-
-            Real dislen = dis.squaredLength();
-            Real inverted_dislen = fast_invSqrt(dislen);
-
-            dislen *= inverted_dislen;
+            const Vector3 dis = ar_beams_CalcLen[i].dis;
+            const float inverted_dislen = ar_beams_CalcLen[i].inverted_dislen;
+            const float dislen = dis.squaredLength() * inverted_dislen;
 
             // Calculate beam's deviation from normal
             Real difftoBeamL = dislen - ar_beams_L[i];
@@ -1231,7 +1248,7 @@ void Actor::CalcBeams(bool trigger_hooks)
             Real d = ar_beams[i].d;
 
             // Calculate beam's rate of change
-            float v = (ar_nodes_Velocity[ar_beams_P1[i]] - ar_nodes_Velocity[ar_beams_P2[i]]).dotProduct(dis) * inverted_dislen;
+            const float v = ar_beams_CalcLen[i].v;
 
             if (ar_beams[i].bounded == SHOCK1)
             {
@@ -1460,9 +1477,22 @@ void Actor::CalcBeams(bool trigger_hooks)
                 }
             }
 
-            // At last update the beam forces
+            // _Cache_ the beam forces
             Vector3 f = dis;
             f *= (slen * inverted_dislen);
+            ar_beams_CalcForces[i] = f;
+        }
+    }
+}
+
+void Actor::CalcBeams_ForcesPostpass()
+{
+    for (size_t i = 0; i < ar_beams.size(); i++)
+    {
+        if (!ar_beams[i].bm_disabled && !ar_beams[i].bm_inter_actor)
+        {
+            // Update beam forces
+            const Vector3 f = ar_beams_CalcForces[i];
             ar_nodes_Forces[ar_beams_P1[i]] += f;
             ar_nodes_Forces[ar_beams_P2[i]] -= f;
         }

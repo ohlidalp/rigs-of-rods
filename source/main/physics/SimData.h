@@ -357,6 +357,13 @@ struct beam_t
     float           debug_v = 0.f;               //!< debug shock velocity
 };
 
+struct BeamCachedLen
+{
+    Ogre::Vector3 dis; // Distance between nodes
+    float inverted_dislen; // 1/sqrt(dis.squaredLength())
+    float v; // rate of change
+};
+
 /// Camera (jargon) = frame of reference, mainly for viewing angle but also other purposes.
 /// Camera at index 0 is main camera which always exists and (as fallback) has nodes set to 0.
 struct camera_t
