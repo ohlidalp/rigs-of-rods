@@ -320,11 +320,14 @@ struct beam_t
     beam_t(BeamID_t id);
     ~beam_t();
 
-    NodeNum_t       p1num = NODENUM_INVALID;
-    NodeNum_t       p2num = NODENUM_INVALID;
+    /* MIGRATED to `Actor` (SOA approach - improves CPU cache utilization)
+    NodeNum_t       p1num = NODENUM_INVALID;  ~~>  Actor::ar_beams_P1
+    NodeNum_t       p2num = NODENUM_INVALID;  ~~>  Actor::ar_beams_P2
+    float           L = 0.f;                  ~~>  Actor::ar_beams_L
+    */
+
     float           k = 0.f;                     //!< tensile spring
     float           d = 0.f;                     //!< damping factor
-    float           L = 0.f;                     //!< length
     float           minmaxposnegstress = 0.f;
     float           maxposstress = 0.f;
     float           maxnegstress = 0.f;

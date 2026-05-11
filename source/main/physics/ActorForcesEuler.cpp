@@ -576,9 +576,9 @@ void Actor::CalcShocks(bool doUpdate, int num_steps)
         {
             // active shocks now
             if (ar_shocks[i].sk_flags & SHOCK_FLAG_RACTIVE)
-                ar_beams[ar_shocks[i].sk_beamid].L = ar_beams[ar_shocks[i].sk_beamid].refL * (1.0 + m_stabilizer_shock_ratio);
+                ar_beams_L[ar_shocks[i].sk_beamid] = ar_beams[ar_shocks[i].sk_beamid].refL * (1.0 + m_stabilizer_shock_ratio);
             else if (ar_shocks[i].sk_flags & SHOCK_FLAG_LACTIVE)
-                ar_beams[ar_shocks[i].sk_beamid].L = ar_beams[ar_shocks[i].sk_beamid].refL * (1.0 - m_stabilizer_shock_ratio);
+                ar_beams_L[ar_shocks[i].sk_beamid] = ar_beams[ar_shocks[i].sk_beamid].refL * (1.0 - m_stabilizer_shock_ratio);
         }
     }
     //auto shock adjust
@@ -806,7 +806,7 @@ void Actor::CalcHydros()
                     factor = 1.0f + ar_beams[beam_idx].longbound;
             }
 
-            ar_beams[beam_idx].L = hydrobeam.hb_ref_length * factor;
+            ar_beams_L[beam_idx] = hydrobeam.hb_ref_length * factor;
         }
     }
 }
@@ -898,10 +898,10 @@ void Actor::CalcCommands(bool doUpdate)
                 if (cmd_beam.cmb_is_autocentering && !cmd_beam.cmb_state->auto_move_lock)
                 {
                     // check for some error
-                    if (ar_beams[bbeam].refL == 0 || ar_beams[bbeam].L == 0)
+                    if (ar_beams[bbeam].refL == 0 || ar_beams_L[bbeam] == 0)
                         continue;
 
-                    float current = (ar_beams[bbeam].L / ar_beams[bbeam].refL);
+                    float current = (ar_beams_L[bbeam] / ar_beams[bbeam].refL);
 
                     if (fabs(current - cmd_beam.cmb_center_length) < 0.0001)
                     {
@@ -921,18 +921,18 @@ void Actor::CalcCommands(bool doUpdate)
                         // avoid overshooting
                         if (mode != 0 && mode != cmd_beam.cmb_state->auto_moving_mode)
                         {
-                            ar_beams[bbeam].L = cmd_beam.cmb_center_length * ar_beams[bbeam].refL;
+                            ar_beams_L[bbeam] = cmd_beam.cmb_center_length * ar_beams[bbeam].refL;
                             cmd_beam.cmb_state->auto_moving_mode = 0;
                         }
                     }
                 }
 
-                if (ar_beams[bbeam].refL != 0 && ar_beams[bbeam].L != 0)
+                if (ar_beams[bbeam].refL != 0 && ar_beams_L[bbeam] != 0)
                 {
-                    float clen = ar_beams[bbeam].L / ar_beams[bbeam].refL;
+                    float clen = ar_beams_L[bbeam] / ar_beams[bbeam].refL;
                     if ((bbeam_dir > 0 && clen < cmd_beam.cmb_boundary_length) || (bbeam_dir < 0 && clen > cmd_beam.cmb_boundary_length))
                     {
-                        float dl = ar_beams[bbeam].L;
+                        float dl = ar_beams_L[bbeam];
 
                         if (cmd_beam.cmb_is_1press_center)
                         {
@@ -1009,11 +1009,11 @@ void Actor::CalcCommands(bool doUpdate)
                             cf = crankfactor;
 
                         if (bbeam_dir > 0)
-                            ar_beams[bbeam].L *= (1.0 + cmd_beam.cmb_speed * v * cf * PHYSICS_DT / ar_beams[bbeam].L);
+                            ar_beams_L[bbeam] *= (1.0 + cmd_beam.cmb_speed * v * cf * PHYSICS_DT / ar_beams_L[bbeam]);
                         else
-                            ar_beams[bbeam].L *= (1.0 - cmd_beam.cmb_speed * v * cf * PHYSICS_DT / ar_beams[bbeam].L);
+                            ar_beams_L[bbeam] *= (1.0 - cmd_beam.cmb_speed * v * cf * PHYSICS_DT / ar_beams_L[bbeam]);
 
-                        dl = fabs(dl - ar_beams[bbeam].L);
+                        dl = fabs(dl - ar_beams_L[bbeam]);
                         if (requestpower)
                         {
                             active++;
@@ -1135,16 +1135,16 @@ void Actor::CalcTies()
         if (!it->ti_tying)
             continue;
 
-        beam_t& tiebeam = ar_beams[it->ti_beamid];
+        const BeamID_t beamid = it->ti_beamid;
 
         // division through zero guard
-        if (tiebeam.refL == 0 || tiebeam.L == 0)
+        if (ar_beams[beamid].refL == 0 || ar_beams_L[beamid] == 0)
             continue;
 
-        float clen = tiebeam.L / tiebeam.refL;
+        float clen = ar_beams_L[beamid] / ar_beams[beamid].refL;
         if (clen > it->ti_min_length)
         {
-            tiebeam.L *= (1.0 - it->ti_contract_speed * PHYSICS_DT / tiebeam.L);
+            ar_beams_L[beamid] *= (1.0 - it->ti_contract_speed * PHYSICS_DT / ar_beams_L[beamid]);
         }
         else
         {
@@ -1153,7 +1153,7 @@ void Actor::CalcTies()
         }
 
         // check if we hit a certain force limit, then abort the tying process
-        if (fabs(tiebeam.stress) > it->ti_max_stress)
+        if (fabs(ar_beams[beamid].stress) > it->ti_max_stress)
         {
             it->ti_tying = false;
         }
@@ -1204,9 +1204,9 @@ template <size_t L>
 void LogBeamNodes(Actor* actor, RoR::Str<L>& msg, BeamID_t beamid) // Internal helper
 {
     msg << "It was between nodes ";
-    msg << " (index: " << actor->ar_beams[beamid].p1num << ")";
+    msg << " (index: " << actor->ar_beams_P1[beamid] << ")";
     msg << " and ";
-    msg << " (index: " << actor->ar_beams[beamid].p2num << ")";
+    msg << " (index: " << actor->ar_beams_P2[beamid] << ")";
     msg << ".";
 }
 
@@ -1217,7 +1217,7 @@ void Actor::CalcBeams(bool trigger_hooks)
         if (!ar_beams[i].bm_disabled && !ar_beams[i].bm_inter_actor)
         {
             // Calculate beam length
-            Vector3 dis = ar_nodes_RelPosition[ar_beams[i].p1num] - ar_nodes_RelPosition[ar_beams[i].p2num];
+            Vector3 dis = ar_nodes_RelPosition[ar_beams_P1[i]] - ar_nodes_RelPosition[ar_beams_P2[i]];
 
             Real dislen = dis.squaredLength();
             Real inverted_dislen = fast_invSqrt(dislen);
@@ -1225,23 +1225,23 @@ void Actor::CalcBeams(bool trigger_hooks)
             dislen *= inverted_dislen;
 
             // Calculate beam's deviation from normal
-            Real difftoBeamL = dislen - ar_beams[i].L;
+            Real difftoBeamL = dislen - ar_beams_L[i];
 
             Real k = ar_beams[i].k;
             Real d = ar_beams[i].d;
 
             // Calculate beam's rate of change
-            float v = (ar_nodes_Velocity[ar_beams[i].p1num] - ar_nodes_Velocity[ar_beams[i].p2num]).dotProduct(dis) * inverted_dislen;
+            float v = (ar_nodes_Velocity[ar_beams_P1[i]] - ar_nodes_Velocity[ar_beams_P2[i]]).dotProduct(dis) * inverted_dislen;
 
             if (ar_beams[i].bounded == SHOCK1)
             {
                 float interp_ratio = 0.0f;
 
                 // Following code interpolates between defined beam parameters and default beam parameters
-                if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L)
-                    interp_ratio = difftoBeamL - ar_beams[i].longbound * ar_beams[i].L;
-                else if (difftoBeamL < -ar_beams[i].shortbound * ar_beams[i].L)
-                    interp_ratio = -difftoBeamL - ar_beams[i].shortbound * ar_beams[i].L;
+                if (difftoBeamL > ar_beams[i].longbound * ar_beams_L[i])
+                    interp_ratio = difftoBeamL - ar_beams[i].longbound * ar_beams_L[i];
+                else if (difftoBeamL < -ar_beams[i].shortbound * ar_beams_L[i])
+                    interp_ratio = -difftoBeamL - ar_beams[i].shortbound * ar_beams_L[i];
 
                 if (interp_ratio != 0.0f)
                 {
@@ -1286,7 +1286,7 @@ void Actor::CalcBeams(bool trigger_hooks)
                     }
 
                     // If support beam is extended the originallength * break_limit, break and disable it
-                    if (difftoBeamL > ar_beams[i].L * break_limit)
+                    if (difftoBeamL > ar_beams_L[i] * break_limit)
                     {
                         ar_beams[i].bm_broken = true;
                         ar_beams[i].bm_disabled = true;
@@ -1294,7 +1294,7 @@ void Actor::CalcBeams(bool trigger_hooks)
                         {
                             RoR::Str<300> msg;
                             msg << "[RoR|Diag] XXX Support-Beam " << i << " limit extended and broke. "
-                                << "Length: " << difftoBeamL << " / max. Length: " << (ar_beams[i].L*break_limit) << ". ";
+                                << "Length: " << difftoBeamL << " / max. Length: " << (ar_beams_L[i]*break_limit) << ". ";
                             LogBeamNodes(this, msg, static_cast<BeamID_t>(i));
                             App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE, msg.ToCStr());
                         }
@@ -1331,14 +1331,14 @@ void Actor::CalcBeams(bool trigger_hooks)
                     {
                         Real yield_length = ar_beams[i].maxposstress / k;
                         Real deform = difftoBeamL + yield_length * (1.0f - ar_beams[i].plastic_coef);
-                        Real Lold = ar_beams[i].L;
-                        ar_beams[i].L += deform;
-                        ar_beams[i].L = std::max(MIN_BEAM_LENGTH, ar_beams[i].L);
+                        Real Lold = ar_beams_L[i];
+                        ar_beams_L[i] += deform;
+                        ar_beams_L[i] = std::max(MIN_BEAM_LENGTH, ar_beams_L[i]);
                         slen = slen - (slen - ar_beams[i].maxposstress) * 0.5f;
                         len = slen;
-                        if (ar_beams[i].L > 0.0f && Lold > ar_beams[i].L)
+                        if (ar_beams_L[i] > 0.0f && Lold > ar_beams_L[i])
                         {
-                            ar_beams[i].maxposstress *= Lold / ar_beams[i].L;
+                            ar_beams[i].maxposstress *= Lold / ar_beams_L[i];
                             ar_beams[i].minmaxposnegstress = std::min(ar_beams[i].maxposstress, -ar_beams[i].maxnegstress);
                             ar_beams[i].minmaxposnegstress = std::min(ar_beams[i].minmaxposnegstress, ar_beams[i].strength);
                         }
@@ -1358,13 +1358,13 @@ void Actor::CalcBeams(bool trigger_hooks)
                     {
                         Real yield_length = ar_beams[i].maxnegstress / k;
                         Real deform = difftoBeamL + yield_length * (1.0f - ar_beams[i].plastic_coef);
-                        Real Lold = ar_beams[i].L;
-                        ar_beams[i].L += deform;
+                        Real Lold = ar_beams_L[i];
+                        ar_beams_L[i] += deform;
                         slen = slen - (slen - ar_beams[i].maxnegstress) * 0.5f;
                         len = -slen;
-                        if (Lold > 0.0f && ar_beams[i].L > Lold)
+                        if (Lold > 0.0f && ar_beams_L[i] > Lold)
                         {
-                            ar_beams[i].maxnegstress *= ar_beams[i].L / Lold;
+                            ar_beams[i].maxnegstress *= ar_beams_L[i] / Lold;
                             ar_beams[i].minmaxposnegstress = std::min(ar_beams[i].maxposstress, -ar_beams[i].maxnegstress);
                             ar_beams[i].minmaxposnegstress = std::min(ar_beams[i].minmaxposnegstress, ar_beams[i].strength);
                         }
@@ -1391,7 +1391,7 @@ void Actor::CalcBeams(bool trigger_hooks)
                     //Break the beam only when it is not connected to a node
                     //which is a part of a collision triangle and has 2 "live" beams or less
                     //connected to it.
-                    if (!((ar_nodes[ar_beams[i].p1num].nd_cab_node && GetNumActiveConnectedBeams(ar_nodes[ar_beams[i].p1num].pos) < 3) || (ar_nodes[ar_beams[i].p2num].nd_cab_node && GetNumActiveConnectedBeams(ar_nodes[ar_beams[i].p2num].pos) < 3)))
+                    if (!((ar_nodes[ar_beams_P1[i]].nd_cab_node && GetNumActiveConnectedBeams(ar_nodes[ar_beams_P1[i]].pos) < 3) || (ar_nodes[ar_beams_P2[i]].nd_cab_node && GetNumActiveConnectedBeams(ar_nodes[ar_beams_P2[i]].pos) < 3)))
                     {
                         slen = 0.0f;
                         ar_beams[i].bm_broken = true;
@@ -1451,8 +1451,8 @@ void Actor::CalcBeams(bool trigger_hooks)
                         int tmpv = ar_buoycabs[mk] * 3;
                         if (ar_buoycab_types[mk] == Buoyance::BUOY_DRAGONLY)
                             continue;
-                        if ((ar_beams[i].p1num == ar_cabs[tmpv] || ar_beams[i].p1num == ar_cabs[tmpv + 1] || ar_beams[i].p1num == ar_cabs[tmpv + 2]) &&
-                            (ar_beams[i].p2num == ar_cabs[tmpv] || ar_beams[i].p2num == ar_cabs[tmpv + 1] || ar_beams[i].p2num == ar_cabs[tmpv + 2]))
+                        if ((ar_beams_P1[i] == ar_cabs[tmpv] || ar_beams_P1[i] == ar_cabs[tmpv + 1] || ar_beams_P1[i] == ar_cabs[tmpv + 2]) &&
+                            (ar_beams_P2[i] == ar_cabs[tmpv] || ar_beams_P2[i] == ar_cabs[tmpv + 1] || ar_beams_P2[i] == ar_cabs[tmpv + 2]))
                         {
                             m_buoyance->sink = true;
                         }
@@ -1463,8 +1463,8 @@ void Actor::CalcBeams(bool trigger_hooks)
             // At last update the beam forces
             Vector3 f = dis;
             f *= (slen * inverted_dislen);
-            ar_nodes_Forces[ar_beams[i].p1num] += f;
-            ar_nodes_Forces[ar_beams[i].p2num] -= f;
+            ar_nodes_Forces[ar_beams_P1[i]] += f;
+            ar_nodes_Forces[ar_beams_P2[i]] -= f;
         }
     }
 }
@@ -1473,9 +1473,9 @@ template <size_t L>
 void LogInterBeamNodes(Actor* actor, RoR::Str<L>& msg, BeamID_t beamid) // Internal helper
 {
     msg << "It was between nodes ";
-    msg << " (index: " << actor->ar_inter_beams[beamid]->p1num << ")";
+    msg << " (index: " << actor->ar_beams_P1[beamid] << ")";
     msg << " and ";
-    msg << " (index: " << actor->ar_inter_beams[beamid]->p2num << ")";
+    msg << " (index: " << actor->ar_beams_P2[beamid] << ")";
     msg << ".";
 }
 
@@ -1483,22 +1483,22 @@ void Actor::CalcBeamsInterActor()
 {
     for (int i = 0; i < static_cast<int>(ar_inter_beams.size()); i++)
     {
-        if (!ar_inter_beams[i]->bm_disabled && ar_inter_beams[i]->bm_inter_actor)
+        const BeamID_t beamid = ar_inter_beams[i];
+        if (!ar_beams[beamid].bm_disabled && ar_beams[beamid].bm_inter_actor)
         {
             Actor* const actor1 = this;
-            ActorPtr& actor2 = ar_inter_beams[i]->bm_locked_actor;
+            ActorPtr& actor2 = ar_beams[beamid].bm_locked_actor;
 
-            const NodeNum_t node1 = ar_inter_beams[i]->p1num;
-            const NodeNum_t node2 = ar_inter_beams[i]->p2num;
+            const NodeNum_t node1 = ar_beams_P1[beamid];
+            const NodeNum_t node2 = ar_beams_P2[beamid];
 
-            const node_t& node_p1             = actor1->ar_nodes[ar_inter_beams[i]->p1num];
-            const Vector3 node_p1_AbsPosition = actor1->ar_nodes_AbsPosition[ar_inter_beams[i]->p1num];
-            const Vector3 node_p1_Velocity    = actor1->ar_nodes_Velocity[ar_inter_beams[i]->p1num];
+            const node_t& node_p1             = actor1->ar_nodes[node1];
+            const Vector3 node_p1_AbsPosition = actor1->ar_nodes_AbsPosition[node1];
+            const Vector3 node_p1_Velocity    = actor1->ar_nodes_Velocity[node1];
 
-            const node_t& node_p2             = actor2->ar_nodes[ar_inter_beams[i]->p2num];
-            const Vector3 node_p2_AbsPosition = actor2->ar_nodes_AbsPosition[ar_inter_beams[i]->p2num];
-            const Vector3 node_p2_Velocity    = actor2->ar_nodes_Velocity[ar_inter_beams[i]->p2num];
-
+            const node_t& node_p2             = actor2->ar_nodes[node2];
+            const Vector3 node_p2_AbsPosition = actor2->ar_nodes_AbsPosition[node2];
+            const Vector3 node_p2_Velocity    = actor2->ar_nodes_Velocity[node2];
             // Calculate beam length
             Vector3 dis = node_p1_AbsPosition - node_p2_AbsPosition;
 
@@ -1508,12 +1508,12 @@ void Actor::CalcBeamsInterActor()
             dislen *= inverted_dislen;
 
             // Calculate beam's deviation from normal
-            Real difftoBeamL = dislen - ar_inter_beams[i]->L;
+            Real difftoBeamL = dislen - ar_beams_L[beamid];
 
-            Real k = ar_inter_beams[i]->k;
-            Real d = ar_inter_beams[i]->d;
+            Real k = ar_beams[beamid].k;
+            Real d = ar_beams[beamid].d;
 
-            if (ar_inter_beams[i]->bounded == ROPE && difftoBeamL < 0.0f)
+            if (ar_beams[beamid].bounded == ROPE && difftoBeamL < 0.0f)
             {
                 k = 0.0f;
                 d *= 0.1f;
@@ -1523,62 +1523,62 @@ void Actor::CalcBeamsInterActor()
             Vector3 v = node_p1_Velocity - node_p2_Velocity;
 
             float slen = -k * (difftoBeamL) - d * v.dotProduct(dis) * inverted_dislen;
-            ar_inter_beams[i]->stress = slen;
+            ar_beams[beamid].stress = slen;
 
             // Fast test for deformation
             float len = std::abs(slen);
-            if (len > ar_inter_beams[i]->minmaxposnegstress)
+            if (len > ar_beams[beamid].minmaxposnegstress)
             {
-                if (ar_inter_beams[i]->bm_type == BEAM_NORMAL && ar_inter_beams[i]->bounded != SHOCK1 && k != 0.0f)
+                if (ar_beams[beamid].bm_type == BEAM_NORMAL && ar_beams[beamid].bounded != SHOCK1 && k != 0.0f)
                 {
                     // Actual deformation tests
-                    if (slen > ar_inter_beams[i]->maxposstress && difftoBeamL < 0.0f) // compression
+                    if (slen > ar_beams[beamid].maxposstress && difftoBeamL < 0.0f) // compression
                     {
-                        Real yield_length = ar_inter_beams[i]->maxposstress / k;
-                        Real deform = difftoBeamL + yield_length * (1.0f - ar_inter_beams[i]->plastic_coef);
-                        Real Lold = ar_inter_beams[i]->L;
-                        ar_inter_beams[i]->L += deform;
-                        ar_inter_beams[i]->L = std::max(MIN_BEAM_LENGTH, ar_inter_beams[i]->L);
-                        slen = slen - (slen - ar_inter_beams[i]->maxposstress) * 0.5f;
+                        Real yield_length = ar_beams[beamid].maxposstress / k;
+                        Real deform = difftoBeamL + yield_length * (1.0f - ar_beams[beamid].plastic_coef);
+                        Real Lold = ar_beams_L[beamid];
+                        ar_beams_L[beamid] += deform;
+                        ar_beams_L[beamid] = std::max(MIN_BEAM_LENGTH, ar_beams_L[beamid]);
+                        slen = slen - (slen - ar_beams[beamid].maxposstress) * 0.5f;
                         len = slen;
-                        if (ar_inter_beams[i]->L > 0.0f && Lold > ar_inter_beams[i]->L)
+                        if (ar_beams_L[beamid] > 0.0f && Lold > ar_beams_L[beamid])
                         {
-                            ar_inter_beams[i]->maxposstress *= Lold / ar_inter_beams[i]->L;
-                            ar_inter_beams[i]->minmaxposnegstress = std::min(ar_inter_beams[i]->maxposstress, -ar_inter_beams[i]->maxnegstress);
-                            ar_inter_beams[i]->minmaxposnegstress = std::min(ar_inter_beams[i]->minmaxposnegstress, ar_inter_beams[i]->strength);
+                            ar_beams[beamid].maxposstress *= Lold / ar_beams_L[beamid];
+                            ar_beams[beamid].minmaxposnegstress = std::min(ar_beams[beamid].maxposstress, -ar_beams[beamid].maxnegstress);
+                            ar_beams[beamid].minmaxposnegstress = std::min(ar_beams[beamid].minmaxposnegstress, ar_beams[beamid].strength);
                         }
                         // For the compression case we do not remove any of the beam's
                         // strength for structure stability reasons
-                        //ar_inter_beams[i]->strength += deform * k * 0.5f;
+                        //ar_beams[beamid].strength += deform * k * 0.5f;
                         if (m_beam_deform_debug_enabled)
                         {
                             RoR::Str<300> msg;
-                            msg << "[RoR|Diag] YYY Beam " << i << " just deformed with extension force "
-                                << len << " / " << ar_inter_beams[i]->strength << ". ";
-                            LogInterBeamNodes(this, msg, static_cast<BeamID_t>(i));
+                            msg << "[RoR|Diag] YYY Beam " << beamid << " just deformed with extension force "
+                                << len << " / " << ar_beams[beamid].strength << ". ";
+                            LogInterBeamNodes(this, msg, beamid);
                             RoR::Log(msg.ToCStr());
                         }
                     }
-                    else if (slen < ar_inter_beams[i]->maxnegstress && difftoBeamL > 0.0f) // expansion
+                    else if (slen < ar_beams[beamid].maxnegstress && difftoBeamL > 0.0f) // expansion
                     {
-                        Real yield_length = ar_inter_beams[i]->maxnegstress / k;
-                        Real deform = difftoBeamL + yield_length * (1.0f - ar_inter_beams[i]->plastic_coef);
-                        Real Lold = ar_inter_beams[i]->L;
-                        ar_inter_beams[i]->L += deform;
-                        slen = slen - (slen - ar_inter_beams[i]->maxnegstress) * 0.5f;
+                        Real yield_length = ar_beams[beamid].maxnegstress / k;
+                        Real deform = difftoBeamL + yield_length * (1.0f - ar_beams[beamid].plastic_coef);
+                        Real Lold = ar_beams_L[beamid];
+                        ar_beams_L[beamid] += deform;
+                        slen = slen - (slen - ar_beams[beamid].maxnegstress) * 0.5f;
                         len = -slen;
-                        if (Lold > 0.0f && ar_inter_beams[i]->L > Lold)
+                        if (Lold > 0.0f && ar_beams_L[beamid] > Lold)
                         {
-                            ar_inter_beams[i]->maxnegstress *= ar_inter_beams[i]->L / Lold;
-                            ar_inter_beams[i]->minmaxposnegstress = std::min(ar_inter_beams[i]->maxposstress, -ar_inter_beams[i]->maxnegstress);
-                            ar_inter_beams[i]->minmaxposnegstress = std::min(ar_inter_beams[i]->minmaxposnegstress, ar_inter_beams[i]->strength);
+                            ar_beams[beamid].maxnegstress *= ar_beams_L[beamid] / Lold;
+                            ar_beams[beamid].minmaxposnegstress = std::min(ar_beams[beamid].maxposstress, -ar_beams[beamid].maxnegstress);
+                            ar_beams[beamid].minmaxposnegstress = std::min(ar_beams[beamid].minmaxposnegstress, ar_beams[beamid].strength);
                         }
-                        ar_inter_beams[i]->strength -= deform * k;
+                        ar_beams[beamid].strength -= deform * k;
                         if (m_beam_deform_debug_enabled)
                         {
                             RoR::Str<300> msg;
                             msg << "[RoR|Diag] YYY Beam " << i << " just deformed with extension force "
-                                << len << " / " << ar_inter_beams[i]->strength << ". ";
+                                << len << " / " << ar_beams[beamid].strength << ". ";
                             LogInterBeamNodes(this, msg, static_cast<BeamID_t>(i));
                             RoR::Log(msg.ToCStr());
                         }
@@ -1586,7 +1586,7 @@ void Actor::CalcBeamsInterActor()
                 }
 
                 // Test if the beam should break
-                if (len > ar_inter_beams[i]->strength)
+                if (len > ar_beams[beamid].strength)
                 {
                     // Sound effect.
                     // Sound volume depends on springs stored energy
@@ -1599,20 +1599,20 @@ void Actor::CalcBeamsInterActor()
                     if (!((node_p1.nd_cab_node && GetNumActiveConnectedBeams(node_p1.pos) < 3) || (node_p2.nd_cab_node && GetNumActiveConnectedBeams(node_p2.pos) < 3)))
                     {
                         slen = 0.0f;
-                        ar_inter_beams[i]->bm_broken = true;
-                        ar_inter_beams[i]->bm_disabled = true;
+                        ar_beams[beamid].bm_broken = true;
+                        ar_beams[beamid].bm_disabled = true;
 
                         if (m_beam_break_debug_enabled)
                         {
                             RoR::Str<200> msg;
-                            msg << "Beam " << i << " just broke with force " << len << " / " << ar_inter_beams[i]->strength << ". ";
+                            msg << "Beam " << i << " just broke with force " << len << " / " << ar_beams[beamid].strength << ". ";
                             LogInterBeamNodes(this, msg, static_cast<BeamID_t>(i));
                             App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE, msg.ToCStr());
                         }
                     }
                     else
                     {
-                        ar_inter_beams[i]->strength = 2.0f * ar_inter_beams[i]->minmaxposnegstress;
+                        ar_beams[beamid].strength = 2.0f * ar_beams[beamid].minmaxposnegstress;
                     }
                 }
             }
@@ -1819,10 +1819,10 @@ void Actor::CalcHooks()
         //we need to do this here to avoid countdown speedup by triggers
         it->hk_timer = std::max(0.0f, it->hk_timer - PHYSICS_DT);
 
-        beam_t& hookbeam = ar_beams[it->hk_beam];
+        const BeamID_t beamid = it->hk_beam;
         if (it->hk_locked_node != NODENUM_INVALID && it->hk_locked == PRELOCK)
         {
-            if (hookbeam.L < it->hk_min_length)
+            if (ar_beams_L[beamid] < it->hk_min_length)
             {
                 //shortlimit reached -> status LOCKED
                 it->hk_locked = LOCKED;
@@ -1830,15 +1830,15 @@ void Actor::CalcHooks()
             else
             {
                 //shorten the connecting beam slowly to locking minrange
-                if (hookbeam.L > it->hk_lockspeed && fabs(hookbeam.stress) < it->hk_maxforce)
+                if (ar_beams_L[beamid] > it->hk_lockspeed && fabs(ar_beams[beamid].stress) < it->hk_maxforce)
                 {
-                    hookbeam.L = (hookbeam.L - it->hk_lockspeed);
+                    ar_beams_L[beamid] = (ar_beams_L[beamid] - it->hk_lockspeed);
                 }
                 else
                 {
-                    if (fabs(hookbeam.stress) < it->hk_maxforce)
+                    if (fabs(ar_beams[beamid].stress) < it->hk_maxforce)
                     {
-                        hookbeam.L = 0.001f;
+                        ar_beams_L[beamid] = 0.001f;
                         //locking minrange or stress exeeded -> status LOCKED
                         it->hk_locked = LOCKED;
                     }
@@ -1872,7 +1872,7 @@ void Actor::CalcRopes()
         {
             ropable_t& locked_ropable = r.rp_locked_actor->ar_ropables[r.rp_locked_ropable_id];
             const NodeNum_t locked_node = locked_ropable.rb_nodenum; // r.rp_locked_actor->ar_nodes[
-            const NodeNum_t rope_node = ar_beams[r.rp_beam].p2num; // ar_nodes[
+            const NodeNum_t rope_node = ar_beams_P2[r.rp_beam]; // ar_nodes[
 
             ar_nodes_AbsPosition[rope_node] = r.rp_locked_actor->ar_nodes_AbsPosition[locked_node];
             ar_nodes_RelPosition[rope_node] = r.rp_locked_actor->ar_nodes_AbsPosition[locked_node] - ar_origin;

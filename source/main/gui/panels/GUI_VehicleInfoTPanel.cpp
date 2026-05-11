@@ -651,7 +651,7 @@ void VehicleInfoTPanel::UpdateStats(float dt, ActorPtr actor)
             beambroken++;
         }
         beamstress += std::abs(beam->stress);
-        float current_deformation = fabs(beam->L - beam->refL);
+        float current_deformation = fabs(actor->ar_beams_L[i] - beam->refL);
         if (fabs(current_deformation) > 0.0001f && beam->bm_type != BEAM_HYDRO)
         {
             beamdeformed++;
@@ -870,11 +870,13 @@ void VehicleInfoTPanel::DrawVehicleCommandHighlights(RoR::GfxActor* actorx)
     for (const commandbeam_t& cmdbeam: actorx->GetActor()->ar_command_key[m_hovered_commandkey].beams)
     {
         const ActorPtr& actor = actorx->GetActor();
-        const beam_t& beam = actor->ar_beams[cmdbeam.cmb_beam_index];
+        const BeamID_t beamid = cmdbeam.cmb_beam_index;
+        const NodeNum_t p1num = actor->ar_beams_P1[beamid];
+        const NodeNum_t p2num = actor->ar_beams_P2[beamid];
 
         ImVec2 p1_pos, p2_pos;
-        if (GetScreenPosFromWorldPos(actor->ar_nodes_AbsPosition[beam.p1num], p1_pos) 
-            && GetScreenPosFromWorldPos(actor->ar_nodes_AbsPosition[beam.p2num], p2_pos))
+        if (GetScreenPosFromWorldPos(actor->ar_nodes_AbsPosition[p1num], p1_pos) 
+            && GetScreenPosFromWorldPos(actor->ar_nodes_AbsPosition[p2num], p2_pos))
         {
             draw_list->AddLine(p1_pos, p2_pos, ImColor(m_cmdbeam_highlight_color), m_cmdbeam_highlight_thickness);
         }

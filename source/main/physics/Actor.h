@@ -328,6 +328,7 @@ public:
 
     /// @name Nodes
     /// @{
+    // Data layers (Index = `NodeNum_t`)
     std::vector<node_t>        ar_nodes;
     std::vector<Ogre::Vector3> ar_nodes_AbsPosition;             //!< Index = `NodeNum_t`; 
     std::vector<Ogre::Vector3> ar_nodes_RelPosition;             //!< Index = `NodeNum_t`; relative to the local physics origin (one origin per actor) (shaky)
@@ -343,19 +344,28 @@ public:
     std::vector<float>         ar_orig_minimass;                 //!< minimum node mass in Kg - original unscaled values
     std::vector<float>         ar_initial_node_masses;
     std::vector<Ogre::Vector3> ar_initial_node_positions;        //!< Absolute world positions, for resetting to pristine state.
+
+    // Aggregate info
     bool                 ar_minimass_skip_loaded_nodes = false;
     int                  ar_nodes_name_top_length = 0; //!< For nicely formatted diagnostic output
     /// @}
 
-    // Beam data (split to layers)
-    std::vector<beam_t>  ar_beams;
+    /// @name Beams
+    /// @{
+    // Data layers (Index = `BeamID_t`)
+    std::vector<beam_t>        ar_beams;
+    std::vector<NodeNum_t>     ar_beams_P1;        //!< Index = `BeamID_t`; Node number of beam start
+    std::vector<NodeNum_t>     ar_beams_P2;        //!< Index = `BeamID_t`; Node number of beam end
+    std::vector<float>         ar_beams_L;         //!< Index = `BeamID_t`; Idle length of beam in meters
     std::vector<std::pair<float, float>> ar_initial_beam_defaults;
-    BeamRangesByOrigin   ar_beam_ranges_by_origin;
     std::vector<bool>    ar_beams_invisible;    //!< Used only by the exporter (for rendering, invisible beams simply get no mesh).
     std::vector<bool>    ar_beams_user_defined; //!< True for 'beams', false for wheels/cinecam/hooknode/wings/rotators etc...
-    std::vector<beam_t*> ar_inter_beams;       //!< Beams connecting 2 actors
+    std::vector<BeamID_t> ar_inter_beams;       //!< Beams connecting 2 actors
 
+    // Aggregate info
+    BeamRangesByOrigin   ar_beam_ranges_by_origin;
     bool                 ar_has_active_shocks; //!< Are there active stabilizer shocks?
+    /// @}
 
     std::vector<authorinfo_t> authors;
     std::vector<rope_t>       ar_ropes;

@@ -314,7 +314,7 @@ void Actor::scaleTruck(float value)
     {
         //ar_beams[i].k *= value;
         ar_beams[i].d *= value;
-        ar_beams[i].L *= value;
+        ar_beams_L[i] *= value;
         ar_beams[i].refL *= value;
     }
     // scale hydros
@@ -747,9 +747,9 @@ void Actor::recalculateNodeMasses()
         if (ar_beams[i].bm_type != BEAM_VIRTUAL)
         {
             Real half_newlen = ar_beams[i].refL / 2.0;
-            if (!ar_nodes[ar_beams[i].p1num].nd_tyre_node)
+            if (!ar_nodes[ar_beams_P1[i]].nd_tyre_node)
                 len += half_newlen;
-            if (!ar_nodes[ar_beams[i].p2num].nd_tyre_node)
+            if (!ar_nodes[ar_beams_P2[i]].nd_tyre_node)
                 len += half_newlen;
         }
     }
@@ -759,10 +759,10 @@ void Actor::recalculateNodeMasses()
         if (ar_beams[i].bm_type != BEAM_VIRTUAL)
         {
             Real half_mass = ar_beams[i].refL * ar_dry_mass / len / 2.0f;
-            if (!ar_nodes[ar_beams[i].p1num].nd_tyre_node)
-                ar_nodes[ar_beams[i].p1num].mass += half_mass;
-            if (!ar_nodes[ar_beams[i].p2num].nd_tyre_node)
-                ar_nodes[ar_beams[i].p2num].mass += half_mass;
+            if (!ar_nodes[ar_beams_P1[i]].nd_tyre_node)
+                ar_nodes[ar_beams_P1[i]].mass += half_mass;
+            if (!ar_nodes[ar_beams_P2[i]].nd_tyre_node)
+                ar_nodes[ar_beams_P2[i]].mass += half_mass;
         }
     }
 
@@ -775,7 +775,7 @@ void Actor::recalculateNodeMasses()
     //fix rope masses
     for (std::vector<rope_t>::iterator it = ar_ropes.begin(); it != ar_ropes.end(); it++)
     {
-        ar_nodes[ar_beams[it->rp_beam].p2num].mass = 100.0f;
+        ar_nodes[ar_beams_P2[it->rp_beam]].mass = 100.0f;
     }
 
     // Apply pre-defined cinecam node mass
@@ -908,13 +908,13 @@ void Actor::calcNodeConnectivityGraph()
 
     for (BeamID_t i = 0; i < static_cast<BeamID_t>(ar_beams.size()); i++)
     {
-        if (ar_beams[i].p1num != NODENUM_INVALID && 
-            ar_beams[i].p2num != NODENUM_INVALID)
+        if (ar_beams_P1[i] != NODENUM_INVALID && 
+            ar_beams_P2[i] != NODENUM_INVALID)
         {
-            ar_node_to_node_connections[ar_beams[i].p1num].push_back(ar_beams[i].p2num);
-            ar_node_to_beam_connections[ar_beams[i].p1num].push_back(i);
-            ar_node_to_node_connections[ar_beams[i].p2num].push_back(ar_beams[i].p1num);
-            ar_node_to_beam_connections[ar_beams[i].p2num].push_back(i);
+            ar_node_to_node_connections[ar_beams_P1[i]].push_back(ar_beams_P2[i]);
+            ar_node_to_beam_connections[ar_beams_P1[i]].push_back(i);
+            ar_node_to_node_connections[ar_beams_P2[i]].push_back(ar_beams_P1[i]);
+            ar_node_to_beam_connections[ar_beams_P2[i]].push_back(i);
         }
     }
 }
@@ -931,14 +931,14 @@ bool Actor::Intersects(ActorPtr other_actor, Vector3 offset)
     // Test own (contactable) beams against others cabs
     for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
-        const NodeNum_t p1num = ar_beams[i].p1num;
-        const NodeNum_t p2num = ar_beams[i].p2num;
+        const NodeNum_t p1num = ar_beams_P1[i];
+        const NodeNum_t p2num = ar_beams_P2[i];
         if (!(ar_nodes[p1num].nd_contacter || ar_nodes[p1num].nd_contactable) ||
             !(ar_nodes[p2num].nd_contacter || ar_nodes[p2num].nd_contactable))
             continue;
 
-        Vector3 origin = ar_nodes_AbsPosition[ar_beams[i].p1num] + offset;
-        Vector3 target = ar_nodes_AbsPosition[ar_beams[i].p2num] + offset;
+        Vector3 origin = ar_nodes_AbsPosition[ar_beams_P1[i]] + offset;
+        Vector3 target = ar_nodes_AbsPosition[ar_beams_P2[i]] + offset;
 
         Ray ray(origin, target - origin);
 
@@ -960,8 +960,8 @@ bool Actor::Intersects(ActorPtr other_actor, Vector3 offset)
     // Test own cabs against others (contactable) beams
     for (int i = 0; i < static_cast<int>(other_actor->ar_beams.size()); i++)
     {
-        NodeNum_t p1num = other_actor->ar_beams[i].p1num;
-        NodeNum_t p2num = other_actor->ar_beams[i].p2num;
+        NodeNum_t p1num = other_actor->ar_beams_P1[i];
+        NodeNum_t p2num = other_actor->ar_beams_P2[i];
         if (!(other_actor->ar_nodes[p1num].nd_contacter || other_actor->ar_nodes[p1num].nd_contactable) ||
             !(other_actor->ar_nodes[p2num].nd_contacter || other_actor->ar_nodes[p2num].nd_contactable))
             continue;
@@ -1700,7 +1700,7 @@ void Actor::SyncReset(bool reset_position)
         ar_beams[i].maxnegstress    = -ar_beams[i].default_beam_deform;
         ar_beams[i].minmaxposnegstress = ar_beams[i].default_beam_deform;
         ar_beams[i].strength        = ar_beams[i].initial_beam_strength;
-        ar_beams[i].L               = ar_beams[i].refL;
+        ar_beams_L[i]               = ar_beams[i].refL;
         ar_beams[i].stress          = 0.0;
         ar_beams[i].bm_broken       = false;
         ar_beams[i].bm_disabled     = false;
@@ -1817,8 +1817,8 @@ void Actor::applyNodeBeamScales()
 {
     for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
     {
-        if ((ar_nodes[ar_beams[i].p1num].nd_tyre_node || ar_nodes[ar_beams[i].p1num].nd_rim_node) ||
-            (ar_nodes[ar_beams[i].p2num].nd_tyre_node || ar_nodes[ar_beams[i].p2num].nd_rim_node))
+        if ((ar_nodes[ar_beams_P1[i]].nd_tyre_node || ar_nodes[ar_beams_P1[i]].nd_rim_node) ||
+            (ar_nodes[ar_beams_P2[i]].nd_tyre_node || ar_nodes[ar_beams_P2[i]].nd_rim_node))
         {
             ar_beams[i].k = ar_initial_beam_defaults[i].first * ar_nb_wheels_scale.first;
             ar_beams[i].d = ar_initial_beam_defaults[i].second * ar_nb_wheels_scale.second;
@@ -1916,8 +1916,8 @@ void Actor::searchBeamDefaults()
         }
         for (int i = 0; i < static_cast<int>(ar_beams.size()); i++)
         {
-            Vector3 dis = (ar_nodes_RelPosition[ar_beams[i].p1num] - ar_nodes_RelPosition[ar_beams[i].p2num]).normalisedCopy();
-            float v = (ar_nodes_Velocity[ar_beams[i].p1num] - ar_nodes_Velocity[ar_beams[i].p2num]).dotProduct(dis);
+            Vector3 dis = (ar_nodes_RelPosition[ar_beams_P1[i]] - ar_nodes_RelPosition[ar_beams_P2[i]]).normalisedCopy();
+            float v = (ar_nodes_Velocity[ar_beams_P1[i]] - ar_nodes_Velocity[ar_beams_P2[i]]).dotProduct(dis);
             sum_velocity += std::abs(v) / (float)ar_nb_measure_steps;
             velocity = std::max(velocity, std::abs(v));
             sum_stress += std::abs(ar_beams[i].stress) / (float)ar_nb_measure_steps;
@@ -2586,7 +2586,7 @@ void Actor::CalcShocks2(int i, Real difftoBeamL, Real& k, Real& d, Real v)
         float logafactor = 1.0f;
         if (ar_beams[i].longbound != 0.0f)
         {
-            logafactor = difftoBeamL / (ar_beams[i].longbound * ar_beams[i].L);
+            logafactor = difftoBeamL / (ar_beams[i].longbound * ar_beams_L[i]);
             logafactor = std::min(logafactor * logafactor, 1.0f);
         }
         k += shock.sprogout * k * logafactor;
@@ -2600,7 +2600,7 @@ void Actor::CalcShocks2(int i, Real difftoBeamL, Real& k, Real& d, Real v)
         float logafactor = 1.0f;
         if (ar_beams[i].shortbound != 0.0f)
         {
-            logafactor = difftoBeamL / (ar_beams[i].shortbound * ar_beams[i].L);
+            logafactor = difftoBeamL / (ar_beams[i].shortbound * ar_beams_L[i]);
             logafactor = std::min(logafactor * logafactor, 1.0f);
         }
         k += shock.sprogin * k * logafactor;
@@ -2609,7 +2609,7 @@ void Actor::CalcShocks2(int i, Real difftoBeamL, Real& k, Real& d, Real v)
     if (shock.sk_flags & SHOCK_FLAG_SOFTBUMP)
     {
         // soft bump shocks
-        float beamsLep = ar_beams[i].L * 0.8f;
+        float beamsLep = ar_beams_L[i] * 0.8f;
         float longboundprelimit = ar_beams[i].longbound * beamsLep;
         float shortboundprelimit = -ar_beams[i].shortbound * beamsLep;
         if (difftoBeamL > longboundprelimit)
@@ -2621,7 +2621,7 @@ void Actor::CalcShocks2(int i, Real difftoBeamL, Real& k, Real& d, Real v)
             float logafactor = 1.0f;
             if (ar_beams[i].longbound != 0.0f)
             {
-                logafactor = difftoBeamL / (ar_beams[i].longbound * ar_beams[i].L);
+                logafactor = difftoBeamL / (ar_beams[i].longbound * ar_beams_L[i]);
                 logafactor = std::min(logafactor * logafactor, 1.0f);
             }
             k += shock.sprogout * k * logafactor;
@@ -2630,7 +2630,7 @@ void Actor::CalcShocks2(int i, Real difftoBeamL, Real& k, Real& d, Real v)
             logafactor = 1.0f;
             if (ar_beams[i].longbound != 0.0f)
             {
-                logafactor = ((difftoBeamL - longboundprelimit) * 5.0f) / (ar_beams[i].longbound * ar_beams[i].L);
+                logafactor = ((difftoBeamL - longboundprelimit) * 5.0f) / (ar_beams[i].longbound * ar_beams_L[i]);
                 logafactor = std::min(logafactor * logafactor, 1.0f);
             }
             k += (k + 100.0f) * shock.sprogout * logafactor;
@@ -2651,7 +2651,7 @@ void Actor::CalcShocks2(int i, Real difftoBeamL, Real& k, Real& d, Real v)
             float logafactor = 1.0f;
             if (ar_beams[i].shortbound != 0.0f)
             {
-                logafactor = difftoBeamL / (ar_beams[i].shortbound * ar_beams[i].L);
+                logafactor = difftoBeamL / (ar_beams[i].shortbound * ar_beams_L[i]);
                 logafactor = std::min(logafactor * logafactor, 1.0f);
             }
             k += shock.sprogin * k * logafactor;
@@ -2660,7 +2660,7 @@ void Actor::CalcShocks2(int i, Real difftoBeamL, Real& k, Real& d, Real v)
             logafactor = 1.0f;
             if (ar_beams[i].shortbound != 0.0f)
             {
-                logafactor = ((difftoBeamL - shortboundprelimit) * 5.0f) / (ar_beams[i].shortbound * ar_beams[i].L);
+                logafactor = ((difftoBeamL - shortboundprelimit) * 5.0f) / (ar_beams[i].shortbound * ar_beams_L[i]);
                 logafactor = std::min(logafactor * logafactor, 1.0f);
             }
             k += (k + 100.0f) * shock.sprogout * logafactor;
@@ -2672,14 +2672,14 @@ void Actor::CalcShocks2(int i, Real difftoBeamL, Real& k, Real& d, Real v)
                 d = shock.dampout;
             }
         }
-        if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L || difftoBeamL < -ar_beams[i].shortbound * ar_beams[i].L)
+        if (difftoBeamL > ar_beams[i].longbound * ar_beams_L[i] || difftoBeamL < -ar_beams[i].shortbound * ar_beams_L[i])
         {
             // block reached...hard bump in soft mode with 4x default damping
             k = std::max(k, shock.sbd_spring);
             d = std::max(d, shock.sbd_damp);
         }
     }
-    else if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L || difftoBeamL < -ar_beams[i].shortbound * ar_beams[i].L)
+    else if (difftoBeamL > ar_beams[i].longbound * ar_beams_L[i] || difftoBeamL < -ar_beams[i].shortbound * ar_beams_L[i])
     {
         // hard (normal) shock bump
         k = shock.sbd_spring;
@@ -2691,15 +2691,15 @@ void Actor::CalcShocks3(int i, Real difftoBeamL, Real &k, Real& d, Real v)
 {
     shock_t& shock = ar_shocks[ar_beams[i].bm_shockid];
 
-    if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L)
+    if (difftoBeamL > ar_beams[i].longbound * ar_beams_L[i])
     {
-        float interp_ratio =  difftoBeamL - ar_beams[i].longbound  * ar_beams[i].L;
+        float interp_ratio =  difftoBeamL - ar_beams[i].longbound  * ar_beams_L[i];
         k += (shock.sbd_spring - k) * interp_ratio;
         d += (shock.sbd_damp   - d) * interp_ratio;
     }
-    else if (difftoBeamL < -ar_beams[i].shortbound * ar_beams[i].L)
+    else if (difftoBeamL < -ar_beams[i].shortbound * ar_beams_L[i])
     {
-        float interp_ratio = -difftoBeamL - ar_beams[i].shortbound * ar_beams[i].L;
+        float interp_ratio = -difftoBeamL - ar_beams[i].shortbound * ar_beams_L[i];
         k += (shock.sbd_spring - k) * interp_ratio;
         d += (shock.sbd_damp   - d) * interp_ratio;
     }
@@ -2730,7 +2730,7 @@ void Actor::CalcTriggers(int i, Real difftoBeamL, bool trigger_hooks)
     {
         const float dt = PHYSICS_DT;
 
-        if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L || difftoBeamL < -ar_beams[i].shortbound * ar_beams[i].L) // that has hit boundary
+        if (difftoBeamL > ar_beams[i].longbound * ar_beams_L[i] || difftoBeamL < -ar_beams[i].shortbound * ar_beams_L[i]) // that has hit boundary
         {
             shock.trigger_switch_state -= dt;
             if (shock.trigger_switch_state <= 0.0f) // emergency release for dead-switched trigger
@@ -2806,7 +2806,7 @@ void Actor::CalcTriggers(int i, Real difftoBeamL, bool trigger_hooks)
             }
             else
             { // just a trigger, check high/low boundary and set action
-                if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L) // trigger past longbound
+                if (difftoBeamL > ar_beams[i].longbound * ar_beams_L[i]) // trigger past longbound
                 {
                     if (shock.sk_flags & SHOCK_FLAG_TRG_HOOK_UNLOCK)
                     {
@@ -2915,7 +2915,7 @@ void Actor::CalcTriggers(int i, Real difftoBeamL, bool trigger_hooks)
             {
                 if (ar_beams[i].longbound - ar_beams[i].shortbound > 0.0f)
                 {
-                    float diffPercentage = difftoBeamL / ar_beams[i].L;
+                    float diffPercentage = difftoBeamL / ar_beams_L[i];
                     float triggerValue = (diffPercentage - ar_beams[i].shortbound) / (ar_beams[i].longbound - ar_beams[i].shortbound);
 
                     triggerValue = std::max(0.0f, triggerValue);
@@ -3384,11 +3384,11 @@ void Actor::AddInterActorBeam(beam_t* beam, ActorPtr other, ActorLinkingRequestT
     // We can't assert the beam setup here because ropes do it differently (not actually using inter-beams, just exhibiting the same gamelogic).
     beam->bm_locked_actor = other; // This isn't entirely valid for 'ropes' either, but for compatibility I won't touch it now ~ ohlidalp, 2024
 
-    auto pos = std::find(ar_inter_beams.begin(), ar_inter_beams.end(), beam);
+    auto pos = std::find(ar_inter_beams.begin(), ar_inter_beams.end(), beam->bm_pos);
     ROR_ASSERT(pos == ar_inter_beams.end());
     if (pos == ar_inter_beams.end())
     {
-        ar_inter_beams.push_back(beam);
+        ar_inter_beams.push_back(beam->bm_pos);
     }
 
     const bool linked_before = App::GetGameContext()->GetActorManager()->AreActorsDirectlyLinked(this, other);
@@ -3427,7 +3427,7 @@ void Actor::RemoveInterActorBeam(beam_t* beam, ActorLinkingRequestType type)
     ActorPtr other = beam->bm_locked_actor;
     beam->bm_locked_actor = nullptr;
 
-    auto pos = std::find(ar_inter_beams.begin(), ar_inter_beams.end(), beam);
+    auto pos = std::find(ar_inter_beams.begin(), ar_inter_beams.end(), beam->bm_pos);
     ROR_ASSERT(pos != ar_inter_beams.end());
     if (pos != ar_inter_beams.end())
     {
@@ -3533,7 +3533,7 @@ void Actor::tieToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_t
                 it->ti_locked_actor->ar_ropables[it->ti_locked_ropable_id].attached_ties--;
             }
             // disable the ties beam
-            tiebeam.p2num = NodeNum_t(0);
+            ar_beams_P2[it->ti_beamid] = NodeNum_t(0);
             tiebeam.bm_inter_actor = false;
             tiebeam.bm_disabled = true;
             if (it->ti_locked_actor != this)
@@ -3556,6 +3556,7 @@ void Actor::tieToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_t
             if (!it->ti_tied)
             {
                 beam_t& tiebeam = ar_beams[it->ti_beamid];
+                const NodeNum_t p1num = ar_beams_P1[it->ti_beamid];
 
                 // tie is unlocked and should get locked, search new remote ropable to lock to
                 float mindist = tiebeam.refL;
@@ -3579,11 +3580,11 @@ void Actor::tieToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_t
                             continue;
 
                         // skip if tienode is ropable too (no selflock)
-                        if (this == actor.GetRef() && itr->rb_nodenum == tiebeam.p1num)
+                        if (this == actor.GetRef() && itr->rb_nodenum == p1num)
                             continue;
 
                         // calculate the distance and record the nearest ropable
-                        float dist = (actor->ar_nodes_AbsPosition[tiebeam.p1num] - actor->ar_nodes_AbsPosition[itr->rb_nodenum]).length();
+                        float dist = (actor->ar_nodes_AbsPosition[p1num] - actor->ar_nodes_AbsPosition[itr->rb_nodenum]).length();
                         if (dist < mindist)
                         {
                             mindist = dist;
@@ -3600,10 +3601,10 @@ void Actor::tieToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_t
                     tiebeam.bm_disabled = false;
                     // now trigger the tying action
                     it->ti_locked_actor = nearest_actor;
-                    tiebeam.p2num = nearest_node;
+                    ar_beams_P2[it->ti_beamid] = nearest_node;
                     tiebeam.bm_inter_actor = nearest_actor != this;
                     tiebeam.stress = 0;
-                    tiebeam.L = tiebeam.refL;
+                    ar_beams_L[it->ti_beamid] = tiebeam.refL;
                     it->ti_tied = true;
                     it->ti_tying = true;
                     it->ti_locked_ropable_id = locktedto_id;
@@ -3640,6 +3641,8 @@ void Actor::ropeToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_
         }
 
         beam_t& ropebeam = ar_beams[it->rp_beam];
+        const NodeNum_t p1num = ar_beams_P1[it->rp_beam];
+        const NodeNum_t p2num = ar_beams_P2[it->rp_beam];
 
         if (it->rp_locked == LOCKED || it->rp_locked == PRELOCK) // Do this for both `ROPE_TOGGLE` and `ROPE_RESET`
         {
@@ -3662,7 +3665,7 @@ void Actor::ropeToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_
         {
             //we lock ropes
             // search new remote ropable to lock to
-            float mindist = ropebeam.L;
+            float mindist = ar_beams_L[it->rp_beam];
             ActorPtr nearest_actor = nullptr;
             RopableID_t ropid = ROPABLEID_INVALID;
             // iterate over all actor_slots
@@ -3678,7 +3681,7 @@ void Actor::ropeToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_
                         continue;
 
                     // calculate the distance and record the nearest ropable
-                    float dist = (ar_nodes_AbsPosition[ropebeam.p1num] - actor->ar_nodes_AbsPosition[itr->rb_nodenum]).length();
+                    float dist = (ar_nodes_AbsPosition[p1num] - actor->ar_nodes_AbsPosition[itr->rb_nodenum]).length();
                     if (dist < mindist)
                     {
                         mindist = dist;
@@ -3812,10 +3815,10 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
                     beam_t& hookbeam = ar_beams[it->hk_beam];
                     if (hookbeam.bm_disabled)
                     {
-                        hookbeam.p2num = it->hk_locked_node;
+                        ar_beams_P2[it->hk_beam] = it->hk_locked_node;
                         hookbeam.bm_inter_actor = (it->hk_locked_actor != nullptr);
-                        hookbeam.L = (ar_nodes_AbsPosition[it->hk_hook_node] - ar_nodes_AbsPosition[it->hk_locked_node]).length();
-                        hookbeam.L = ar_nodes_AbsPosition[it->hk_hook_node].distance(
+                        ar_beams_L[it->hk_beam] = (ar_nodes_AbsPosition[it->hk_hook_node] - ar_nodes_AbsPosition[it->hk_locked_node]).length();
+                        ar_beams_L[it->hk_beam] = ar_nodes_AbsPosition[it->hk_hook_node].distance(
                             it->hk_locked_actor->ar_nodes_AbsPosition[it->hk_locked_node]);
                         hookbeam.bm_disabled = false;
                         this->AddInterActorBeam(&hookbeam, it->hk_locked_actor, mode); // OK to invoke here - hookToggle() - processing `MSG_SIM_ACTOR_LINKING_REQUESTED`
@@ -3838,9 +3841,9 @@ void Actor::hookToggle(int group, ActorLinkingRequestType mode, NodeNum_t mousen
             it->hk_locked_node = NODENUM_INVALID;
             it->hk_locked_actor = nullptr;
             //disable hook-assistance beam
-            hookbeam.p2num = NodeNum_t(0);
+            ar_beams_P2[it->hk_beam] = NodeNum_t(0);
             hookbeam.bm_inter_actor = false;
-            hookbeam.L = (ar_nodes_AbsPosition[0] - ar_nodes_AbsPosition[it->hk_hook_node]).length();
+            ar_beams_L[it->hk_beam] = (ar_nodes_AbsPosition[0] - ar_nodes_AbsPosition[it->hk_hook_node]).length();
             hookbeam.bm_disabled = true;
         }
     }
@@ -4860,8 +4863,8 @@ void Actor::WriteDiagnosticDump(std::string const& fileName)
     {
         buf
             << "  "                  << std::setw(4) << i // actual pos in beam buffer
-            << ", node1:"            << std::setw(3) << ((ar_beams[i].p1num) ? ar_nodes_id[ar_nodes[ar_beams[i].p1num].pos] : -1)
-            << ", node2:"            << std::setw(3) << ((ar_beams[i].p2num) ? ar_nodes_id[ar_nodes[ar_beams[i].p2num].pos] : -1)
+            << ", node1:"            << std::setw(3) << ((ar_beams_P1[i]) ? ar_nodes_id[ar_nodes[ar_beams_P1[i]].pos] : -1)
+            << ", node2:"            << std::setw(3) << ((ar_beams_P2[i]) ? ar_nodes_id[ar_nodes[ar_beams_P2[i]].pos] : -1)
             << ", refLen:"           << std::setw(9) << ar_beams[i].refL
             << " (set_beam_defaults/scale)"
             << " spring:"            << std::setw(8) << ar_beams[i].k //param1 default_spring
@@ -4977,7 +4980,7 @@ int Actor::getShockNode1(int shock_number)
 {
     if (shock_number >= 0 && shock_number < static_cast<int>(ar_shocks.size()))
     {
-        return ar_beams[ar_shocks[shock_number].sk_beamid].p1num;
+        return ar_beams_P1[ar_shocks[shock_number].sk_beamid];
     }
     return -1.f;
 }
@@ -4986,7 +4989,7 @@ int Actor::getShockNode2(int shock_number)
 {
     if (shock_number >= 0 && shock_number < static_cast<int>(ar_shocks.size()))
     {
-        return ar_beams[ar_shocks[shock_number].sk_beamid].p2num;
+        return ar_beams_P2[ar_shocks[shock_number].sk_beamid];
     }
     return -1.f;
 }

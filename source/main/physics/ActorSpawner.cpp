@@ -2972,7 +2972,7 @@ void ActorSpawner::ProcessTie(RigDef::Tie & def)
     beam.k = def.beam_defaults->GetScaledSpringiness();
     beam.d = def.beam_defaults->GetScaledDamping();
     beam.bm_type = BEAM_HYDRO;
-    beam.L = def.max_reach_length;
+    m_actor->ar_beams_L[beam_index] = def.max_reach_length;
     beam.refL = def.max_reach_length;
     beam.bounded = ROPE;
     beam.bm_disabled = true;
@@ -3015,8 +3015,8 @@ void ActorSpawner::ProcessRope(RigDef::Rope & def)
     beam.d = def.beam_defaults->GetScaledDamping();
     beam.bounded = ROPE;
     beam.bm_type = BEAM_HYDRO;
-    beam.L = m_actor->ar_nodes_AbsPosition[root_node.pos].distance(m_actor->ar_nodes_AbsPosition[end_node.pos]);
-    beam.refL = beam.L;
+    m_actor->ar_beams_L[beam_index] = m_actor->ar_nodes_AbsPosition[root_node.pos].distance(m_actor->ar_nodes_AbsPosition[end_node.pos]);
+    beam.refL = m_actor->ar_beams_L[beam_index];
 
     this->CreateBeamVisuals(beam, beam_index, true, def.beam_defaults, "tracks/beam");
 
@@ -3177,7 +3177,21 @@ RailGroup *ActorSpawner::CreateRail(std::vector<RigDef::Node::Range> & node_rang
     RailGroup* rg = new RailGroup(m_actor);
     for (unsigned int i = 0; i < node_indices.size() - 1; i++)
     {
-        beam_t *beam = FindBeamInRig(node_indices[i], node_indices[i + 1]);
+        // Find beam between node_indices[i] and node_indices[i + 1] (order doesn't matter)
+        const NodeNum_t n1 = node_indices[i];
+        const NodeNum_t n2 = node_indices[i + 1];
+        beam_t* beam = nullptr;
+        for (BeamID_t j = 0; j < static_cast<BeamID_t>(m_actor->ar_beams.size()); j++)
+        {
+            beam_t& b = m_actor->ar_beams[j];
+            if ((m_actor->ar_beams_P1[j] == n1 && m_actor->ar_beams_P2[j] == n2) ||
+                (m_actor->ar_beams_P1[j] == n2 && m_actor->ar_beams_P2[j] == n1))
+            {
+                beam = &b;
+                break;
+            }
+        }
+
         if (beam == nullptr)
         {
             std::stringstream msg;
@@ -3192,21 +3206,6 @@ RailGroup *ActorSpawner::CreateRail(std::vector<RigDef::Node::Range> & node_rang
     rg->rg_segments_loop = (node_indices.front() == node_indices.back());
 
     return rg; // Transfers memory ownership
-}
-
-beam_t *ActorSpawner::FindBeamInRig(NodeNum_t node_a_index, NodeNum_t node_b_index)
-{
-    for (unsigned int i = 0; i < static_cast<unsigned int>(static_cast<int>(m_actor->ar_beams.size())); i++)
-    {
-        if	(
-                (GetBeam(i).p1num == node_a_index && GetBeam(i).p2num == node_b_index)
-            ||	(GetBeam(i).p2num == node_a_index && GetBeam(i).p1num == node_b_index)
-            )
-        {
-            return & GetBeam(i);
-        }
-    }
-    return nullptr;
 }
 
 void ActorSpawner::ProcessHook(RigDef::Hook & def)
@@ -3891,7 +3890,7 @@ void ActorSpawner::ProcessAnimator(RigDef::Animator & def)
     hydrobeam_t hb;
     hb.hb_beam_index = static_cast<uint16_t>(beam_index);
     hb.hb_speed = def.lenghtening_factor;
-    hb.hb_ref_length = beam.L;
+    hb.hb_ref_length = m_actor->ar_beams_L[beam_index];
     hb.hb_flags = 0;
     hb.hb_anim_flags = anim_flags;
     hb.hb_anim_param = anim_option;
@@ -4019,7 +4018,7 @@ void ActorSpawner::ProcessHydro(RigDef::Hydro & def)
     hb.hb_flags = hydro_flags;
     hb.hb_speed = def.lenghtening_factor;
     hb.hb_beam_index = static_cast<uint16_t>(beam_index);
-    hb.hb_ref_length = beam.L;
+    hb.hb_ref_length = m_actor->ar_beams_L[beam_index];
     hb.hb_anim_flags = 0;
     hb.hb_anim_param = 0.f;
     this->_ProcessKeyInertia(def.inertia, *def.inertia_defaults, hb.hb_inertia, hb.hb_inertia);
@@ -4078,7 +4077,7 @@ void ActorSpawner::ProcessShock3(RigDef::Shock3 & def)
 
     /* Length + pre-compression */
     CalculateBeamLength(beam);
-    beam.L          *= def.precompression;
+    m_actor->ar_beams_L[beam_index]          *= def.precompression;
     beam.refL       *= def.precompression;
 
     if (BITMASK_IS_0(def.options, RigDef::Shock3::OPTION_i_INVISIBLE))
@@ -4167,7 +4166,7 @@ void ActorSpawner::ProcessShock2(RigDef::Shock2 & def)
 
     /* Length + pre-compression */
     CalculateBeamLength(beam);
-    beam.L          *= def.precompression;
+    m_actor->ar_beams_L[beam_index]          *= def.precompression;
     beam.refL       *= def.precompression;
 
     if (BITMASK_IS_0(def.options, RigDef::Shock2::OPTION_i_INVISIBLE))
@@ -4237,7 +4236,7 @@ void ActorSpawner::ProcessShock(RigDef::Shock & def)
 
     /* Length + pre-compression */
     CalculateBeamLength(beam);
-    beam.L          *= def.precompression;
+    m_actor->ar_beams_L[beam_index]          *= def.precompression;
     beam.refL       *= def.precompression;
 
     shock_t & shock  = this->AddShock();
@@ -5800,8 +5799,8 @@ void ActorSpawner::CreateBeamVisuals(beam_t & beam, int beam_index, bool visible
         beamx.rod_diameter = beam_defaults->visual_beam_diameter;
         beam.default_beam_diameter = beam_defaults->visual_beam_diameter; // Hack for ActorExport.cpp
         beamx.rod_beam_index = static_cast<uint16_t>(beam_index);
-        beamx.rod_node1 = beam.p1num;
-        beamx.rod_node2 = beam.p2num;
+        beamx.rod_node1 = m_actor->ar_beams_P1[beam_index];
+        beamx.rod_node2 = m_actor->ar_beams_P2[beam_index];
         beamx.rod_target_actor = m_actor;
         beamx.rod_is_visible = false;
 
@@ -5820,15 +5819,17 @@ void ActorSpawner::CreateBeamVisuals(beam_t & beam, int beam_index, bool visible
 
 void ActorSpawner::CalculateBeamLength(beam_t & beam)
 {
-    float beam_length = (m_actor->ar_nodes_RelPosition[beam.p1num] - m_actor->ar_nodes_RelPosition[beam.p2num]).length();
-    beam.L = beam_length;
-    beam.refL = beam_length;
+    const NodeNum_t p1num = m_actor->ar_beams_P1[beam.bm_pos];
+    const NodeNum_t p2num = m_actor->ar_beams_P2[beam.bm_pos];
+    const float L = (m_actor->ar_nodes_RelPosition[p1num] - m_actor->ar_nodes_RelPosition[p2num]).length();
+    m_actor->ar_beams_L[beam.bm_pos] = L;
+    beam.refL = L;
 }
 
 void ActorSpawner::InitBeam(beam_t & beam, node_t *node_1, node_t *node_2)
 {
-    beam.p1num = node_1->pos;
-    beam.p2num = node_2->pos;
+    m_actor->ar_beams_P1[beam.bm_pos] = node_1->pos;
+    m_actor->ar_beams_P2[beam.bm_pos] = node_2->pos;
 
     /* Length */
     CalculateBeamLength(beam);
@@ -6068,7 +6069,7 @@ void ActorSpawner::AddHook(NodeNum_t nodenum, RigDef::Node& def)
     beam.k = def.beam_defaults->GetScaledSpringiness();
     beam.bounded = ROPE;
     beam.bm_disabled = true;
-    beam.L = HOOK_RANGE_DEFAULT;
+    m_actor->ar_beams_L[beam_index] = HOOK_RANGE_DEFAULT;
     beam.refL = HOOK_RANGE_DEFAULT;
     this->SetBeamDeformationThreshold(beam, def.beam_defaults);
     this->CreateBeamVisuals(beam, beam_index, false, def.beam_defaults);
@@ -6303,7 +6304,16 @@ node_t & ActorSpawner::AddNode(const Ogre::Vector3 position, const std::shared_p
 
 beam_t & ActorSpawner::AddBeam()
 {
-    m_actor->ar_beams.push_back(beam_t(static_cast<BeamID_t>(m_actor->ar_beams.size())));
+    ROR_ASSERT(m_actor->ar_beams_P1.size() == m_actor->ar_beams.size());
+    ROR_ASSERT(m_actor->ar_beams_P2.size() == m_actor->ar_beams.size());
+    ROR_ASSERT(m_actor->ar_beams_L.size() == m_actor->ar_beams.size());
+
+    const BeamID_t beamid = static_cast<BeamID_t>(m_actor->ar_beams.size());
+    m_actor->ar_beams.push_back(beam_t(beamid));
+    // Insert dummy data for `InitBeam()` to fill in (legacy code).
+    m_actor->ar_beams_P1.push_back(NODENUM_INVALID);
+    m_actor->ar_beams_P2.push_back(NODENUM_INVALID);
+    m_actor->ar_beams_L.push_back(-1.f);
     return m_actor->ar_beams.back();
 }
 

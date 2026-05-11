@@ -751,7 +751,7 @@ bool ActorManager::SaveScene(Ogre::String filename)
             j_beam.PushBack(actor->ar_beams[i].maxnegstress, j_doc.GetAllocator());
             j_beam.PushBack(actor->ar_beams[i].minmaxposnegstress, j_doc.GetAllocator());
             j_beam.PushBack(actor->ar_beams[i].strength, j_doc.GetAllocator());
-            j_beam.PushBack(actor->ar_beams[i].L, j_doc.GetAllocator());
+            j_beam.PushBack(actor->ar_beams_L[i], j_doc.GetAllocator());
             j_beam.PushBack(actor->ar_beams[i].bm_broken, j_doc.GetAllocator());
             j_beam.PushBack(actor->ar_beams[i].bm_disabled, j_doc.GetAllocator());
             j_beam.PushBack(actor->ar_beams[i].bm_inter_actor, j_doc.GetAllocator());
@@ -954,7 +954,7 @@ void ActorManager::RestoreSavedState(ActorPtr actor, rapidjson::Value const& j_e
         actor->ar_beams[i].maxnegstress       = data[1].GetFloat();
         actor->ar_beams[i].minmaxposnegstress = data[2].GetFloat();
         actor->ar_beams[i].strength           = data[3].GetFloat();
-        actor->ar_beams[i].L                  = data[4].GetFloat();
+        actor->ar_beams_L[i]                  = data[4].GetFloat();
         actor->ar_beams[i].bm_broken          = data[5].GetBool();
         actor->ar_beams[i].bm_disabled        = data[6].GetBool();
         actor->ar_beams[i].bm_inter_actor     = data[7].GetBool();
@@ -981,10 +981,11 @@ void ActorManager::RestoreSavedState(ActorPtr actor, rapidjson::Value const& j_e
             actor->ar_hooks[i].hk_locked_actor = actors[locked_actor];
             actor->ar_hooks[i].hk_locked_node = static_cast<NodeNum_t>(lock_node);
 
-            beam_t& hookbeam = actor->ar_beams[actor->ar_hooks[i].hk_beam];
+            const BeamID_t beamid = actor->ar_hooks[i].hk_beam;
+            beam_t& hookbeam = actor->ar_beams[beamid];
             if (hookbeam.bm_inter_actor)
             {
-                hookbeam.p2num = actor->ar_hooks[i].hk_locked_node;
+                actor->ar_beams_P2[beamid] = actor->ar_hooks[i].hk_locked_node;
             }
         }
     }
@@ -1020,12 +1021,13 @@ void ActorManager::RestoreSavedState(ActorPtr actor, rapidjson::Value const& j_e
             actor->ar_ties[i].ti_locked_actor = actors[locked_actor];
             actor->ar_ties[i].ti_locked_ropable_id = static_cast<RopableID_t>(ropable);
 
-            beam_t& tiebeam = actor->ar_beams[actor->ar_ties[i].ti_beamid];
+            const BeamID_t beamid = actor->ar_ties[i].ti_beamid;
+            beam_t& tiebeam = actor->ar_beams[beamid];
             if (tiebeam.bm_inter_actor)
             {
                 ActorPtr tied_actor = actor->ar_ties[i].ti_locked_actor;
                 const RopableID_t tied_ropableid = actor->ar_ties[i].ti_locked_ropable_id;
-                tiebeam.p2num = tied_actor->ar_ropables[tied_ropableid].rb_nodenum;
+                actor->ar_beams_P2[beamid] = tied_actor->ar_ropables[tied_ropableid].rb_nodenum;
             }
         }
     }
