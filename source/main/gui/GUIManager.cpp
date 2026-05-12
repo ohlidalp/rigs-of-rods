@@ -188,7 +188,7 @@ void GUIManager::DrawSimulationGui(float dt)
         this->FlexbodyDebug.Draw();
     }
 
-
+    this->ProfUI.DrawProfUI();
 };
 
 void GUIManager::DrawSimGuiBuffered(GfxActor* player_gfx_actor)
