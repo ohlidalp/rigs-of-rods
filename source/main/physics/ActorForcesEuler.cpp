@@ -1209,10 +1209,13 @@ void LogBeamNodes(RoR::Str<L>& msg, beam_t& beam) // Internal helper
 
 void Actor::CalcBeams(bool trigger_hooks)
 {
+    ar_prof.ProfBegin(PROF_CALCBEAMS_TOTAL);
     for (int i = 0; i < ar_num_beams; i++)
     {
         if (!ar_beams[i].bm_disabled && !ar_beams[i].bm_inter_actor)
         {
+//            ar_prof.ProfBegin(PROF_CALCBEAMS_PROLOGUE);
+
             // Calculate beam length
             Vector3 dis = ar_beams[i].p1->RelPosition - ar_beams[i].p2->RelPosition;
 
@@ -1229,7 +1232,9 @@ void Actor::CalcBeams(bool trigger_hooks)
 
             // Calculate beam's rate of change
             float v = (ar_beams[i].p1->Velocity - ar_beams[i].p2->Velocity).dotProduct(dis) * inverted_dislen;
+//            ar_prof.ProfEnd(PROF_CALCBEAMS_PROLOGUE);
 
+//            ar_prof.ProfBegin(PROF_CALCBEAMS_DEFORM);
             if (ar_beams[i].bounded == SHOCK1)
             {
                 float interp_ratio = 0.0f;
@@ -1456,14 +1461,18 @@ void Actor::CalcBeams(bool trigger_hooks)
                     }
                 }
             }
+//            ar_prof.ProfEnd(PROF_CALCBEAMS_DEFORM);
 
+//            ar_prof.ProfBegin(PROF_CALCBEAMS_EPILOGUE);
             // At last update the beam forces
             Vector3 f = dis;
             f *= (slen * inverted_dislen);
             ar_beams[i].p1->Forces += f;
             ar_beams[i].p2->Forces -= f;
+//            ar_prof.ProfEnd(PROF_CALCBEAMS_EPILOGUE);
         }
     }
+    ar_prof.ProfEnd(PROF_CALCBEAMS_TOTAL);
 }
 
 void Actor::CalcBeamsInterActor()

@@ -50,6 +50,7 @@
 #include "OutGauge.h"
 #include "OverlayWrapper.h"
 #include "PlatformUtils.h"
+#include "Prof.h"
 #include "RoRVersion.h"
 #include "ScriptEngine.h"
 #include "Skidmark.h"
@@ -77,6 +78,8 @@ int main(int argc, char *argv[])
 #ifdef USE_CURL
     curl_global_init(CURL_GLOBAL_ALL); // MUST init before any threads are started
 #endif
+
+    Prof::ProfGlobalTimerInit();
 
 #ifndef _DEBUG
     try
@@ -2087,10 +2090,38 @@ int main(int argc, char *argv[])
             if (App::app_state->getEnum<AppState>() == AppState::SIMULATION)
             {
                 App::GetGuiManager()->DrawSimulationGui(dt);
+
+                // -----Prof-----
                 for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
                 {
                     actor->GetGfxActor()->UpdateDebugView();
+                    if (ImGui::Begin("Prof"))
+                    {
+                        ImGui::TextDisabled("%s",actor->ar_filename.c_str());
+                        ImGui::End();
+                    }
+                    actor->ar_prof.ProfDraw();
+                    actor->ar_prof.ProfClear();
                 }
+                if (ImGui::Begin("Prof"))
+                {
+                    if (ImGui::Button("log"))
+                    {
+                        LOG("-----Prof-----");
+                        for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
+                        {
+                            LOG(actor->ar_filename);
+                            actor->ar_prof.ProfLog();
+                        }
+                        LOG("-----END Prof-----");
+                    }
+                    ImGui::End();
+                }
+                for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
+                {
+                    actor->ar_prof.ProfClear();
+                }
+
                 if (App::GetGameContext()->GetPlayerActor())
                 {
                     App::GetGuiManager()->VehicleInfoTPanel.UpdateStats(dt, App::GetGameContext()->GetPlayerActor());

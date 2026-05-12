@@ -2558,7 +2558,11 @@ void Actor::CalcCabCollisions()
     }
     if (m_intra_point_col_detector != nullptr)
     {
+        ar_prof.ProfBegin(PROF_INTRACOL_UPDATE);
         m_intra_point_col_detector->UpdateIntraPoint();
+        ar_prof.ProfEnd(PROF_INTRACOL_UPDATE);
+
+        ar_prof.ProfBegin(PROF_INTRACOL_RESOLVE);
         ResolveIntraActorCollisions(PHYSICS_DT,
             *m_intra_point_col_detector,
             ar_num_collcabs,
@@ -2568,6 +2572,7 @@ void Actor::CalcCabCollisions()
             ar_nodes,
             ar_collision_range,
             *ar_submesh_ground_model);
+        ar_prof.ProfEnd(PROF_INTRACOL_RESOLVE);
     }
 }
 
@@ -4467,6 +4472,7 @@ Actor::Actor(
     , m_used_actor_entry(rq.asr_cache_entry)
     , m_used_skin_entry(rq.asr_skin_entry)
     , m_working_tuneup_def(rq.asr_working_tuneup)
+    , ar_prof(actor_id)
 
     // Public bit flags
     , ar_update_physics(false)
