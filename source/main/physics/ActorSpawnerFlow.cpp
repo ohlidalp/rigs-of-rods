@@ -155,12 +155,9 @@ void ActorSpawner::ProcessNewActor(ActorPtr actor, ActorSpawnRequest rq, RigDef:
         AddExhaust(m_actor->ar_exhaust_pos_node, m_actor->ar_exhaust_dir_node);
     }
 
-    // ---------------------------- Node generating sections ----------------------------
-
-    PROCESS_ELEMENT(RigDef::Keyword::CINECAM, cinecam, ProcessCinecam);
-
     // ---------------------------- Wheels (also generate nodes) ----------------------------
 
+    m_actor->ar_beam_ranges_by_origin.wheelbeams_start = m_actor->ar_num_beams;
     PROCESS_ELEMENT(RigDef::Keyword::WHEELS, wheels, ProcessWheel);
     PROCESS_ELEMENT(RigDef::Keyword::WHEELS2, wheels2, ProcessWheel2);
     PROCESS_ELEMENT(RigDef::Keyword::MESHWHEELS, meshwheels, ProcessMeshWheel);
@@ -171,17 +168,32 @@ void ActorSpawner::ProcessNewActor(ActorPtr actor, ActorSpawnRequest rq, RigDef:
 
     PROCESS_ELEMENT(RigDef::Keyword::WHEELDETACHERS, wheeldetachers, ProcessWheelDetacher);
 
+    // ---------------------------- Node generating sections ----------------------------
+
+    m_actor->ar_beam_ranges_by_origin.unboundedbeams_start = m_actor->ar_num_beams; // Cinecam beams are quite ordinary
+    PROCESS_ELEMENT(RigDef::Keyword::CINECAM, cinecam, ProcessCinecam);
+
     // ---------------------------- User-defined beams ----------------------------
     //              (may reference any generated/user-defined node)
 
-    PROCESS_ELEMENT(RigDef::Keyword::BEAMS, beams, ProcessBeam);
+    PROCESS_ELEMENT(RigDef::Keyword::BEAMS, beams, _ProcessBeamIfUnbounded); // partial processing of 'beams' for performance
+    m_actor->ar_beam_ranges_by_origin.shock1beams_start = m_actor->ar_num_beams;
     PROCESS_ELEMENT(RigDef::Keyword::SHOCKS, shocks, ProcessShock);
+    m_actor->ar_beam_ranges_by_origin.shock2beams_start = m_actor->ar_num_beams;
     PROCESS_ELEMENT(RigDef::Keyword::SHOCKS2, shocks2, ProcessShock2);
+    m_actor->ar_beam_ranges_by_origin.shock3beams_start = m_actor->ar_num_beams;
     PROCESS_ELEMENT(RigDef::Keyword::SHOCKS3, shocks3, ProcessShock3);
+    m_actor->ar_beam_ranges_by_origin.commandbeams_start = m_actor->ar_num_beams;
     PROCESS_ELEMENT(RigDef::Keyword::COMMANDS2, commands2, ProcessCommand); // 'commands' are auto-imported as 'commands2'.
+    m_actor->ar_beam_ranges_by_origin.hydrobeams_start = m_actor->ar_num_beams;
     PROCESS_ELEMENT(RigDef::Keyword::HYDROS, hydros, ProcessHydro);
+    m_actor->ar_beam_ranges_by_origin.triggerbeams_start = m_actor->ar_num_beams;
     PROCESS_ELEMENT(RigDef::Keyword::TRIGGERS, triggers, ProcessTrigger);
+    m_actor->ar_beam_ranges_by_origin.ropebeams_start = m_actor->ar_num_beams;
     PROCESS_ELEMENT(RigDef::Keyword::ROPES, ropes, ProcessRope);
+    PROCESS_ELEMENT(RigDef::Keyword::BEAMS, beams, _ProcessBeamIfRope);
+    m_actor->ar_beam_ranges_by_origin.supportbeams_start = m_actor->ar_num_beams;
+    PROCESS_ELEMENT(RigDef::Keyword::BEAMS, beams, _ProcessBeamIfSupport);
 
     // ---------------------------- Other ----------------------------
 

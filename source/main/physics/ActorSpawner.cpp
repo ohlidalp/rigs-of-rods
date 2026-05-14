@@ -7519,3 +7519,30 @@ void ActorSpawner::AssignManagedMaterialTexture(Ogre::TextureUnitState* tus, con
     {
     }
 }
+
+void ActorSpawner::_ProcessBeamIfUnbounded(RigDef::Beam & def) // Skips beams with flags 'r' or 's'
+{
+    if (BITMASK_IS_1(def.options, RigDef::Beam::OPTION_r_ROPE) || BITMASK_IS_1(def.options, RigDef::Beam::OPTION_s_SUPPORT))
+    {
+        return;
+    }
+
+    this->ProcessBeam(def);
+}
+
+void ActorSpawner::_ProcessBeamIfRope(RigDef::Beam& def) // Skips beams without flag 'r'
+{
+    if (BITMASK_IS_1(def.options, RigDef::Beam::OPTION_r_ROPE))
+    {
+        this->ProcessBeam(def);
+    }
+}
+
+void ActorSpawner::_ProcessBeamIfSupport(RigDef::Beam& def) // Skips beams without flag 's'
+{
+    if (BITMASK_IS_1(def.options, RigDef::Beam::OPTION_s_SUPPORT))
+    {
+        this->ProcessBeam(def);
+    }
+}
+

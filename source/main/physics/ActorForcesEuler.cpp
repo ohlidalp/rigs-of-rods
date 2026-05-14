@@ -60,7 +60,9 @@ void Actor::CalcForcesEulerCompute(bool doUpdate, int num_steps)
     this->CalcTies();
     this->CalcTruckEngine(doUpdate); // must be done after the commands / engine triggers are updated
     this->CalcMouse();
+    ar_prof.ProfBegin(PROF_CALCBEAMS_TOTAL);
     this->CalcBeams(doUpdate);
+    ar_prof.ProfEnd(PROF_CALCBEAMS_TOTAL);
     this->CalcCabCollisions();
     this->updateSlideNodeForces(PHYSICS_DT); // must be done after the contacters are updated
     this->CalcForceFeedback(doUpdate);
@@ -1199,6 +1201,21 @@ bool Actor::CalcForcesEulerPrepare(bool doUpdate)
     return true;
 }
 
+/*
+===================================================================================================
+                                             BEAMS
+
+    There's quite a bit duplicate code, but performance requires it.
+    Each type of beam has it's own mini-loop, see `struct BeamRangesByOrigin`.
+    CONTENTS:
+     1. Helpers: LogBeamNodes() and CheckBeamDeformationAndBreaking().
+     2. Common processing: CalcBeamsCommon***() ~ Prologue, Stress and Epilogue.
+     3. Individual beam types: CalcBeams_***() ~ in order of appearence in the ar_beams array.
+     4. Finally, the classic CalcBeams() ~ now calling the per-type functions in order.
+
+===================================================================================================
+*/
+
 
 template <size_t L>
 void LogBeamNodes(RoR::Str<L>& msg, beam_t& beam) // Internal helper
@@ -1206,7 +1223,7 @@ void LogBeamNodes(RoR::Str<L>& msg, beam_t& beam) // Internal helper
     msg << fmt::format("It was between nodes {} and {}.", beam.p1num, beam.p2num);
 }
 
-void CheckBeamDeformationAndBreaking(Actor* actor, int i, float k, float slen, float len, float difftoBeamL)
+void CheckBeamDeformation(Actor* actor, const int i, const float k, float& slen, float& len, const float difftoBeamL)
 {
     if (actor->ar_beams[i].bm_type == BEAM_NORMAL && actor->ar_beams[i].bounded != SHOCK1 && k != 0.0f)
     {
@@ -1263,7 +1280,10 @@ void CheckBeamDeformationAndBreaking(Actor* actor, int i, float k, float slen, f
             }
         }
     }
+}
 
+void CheckBeamBreaking(Actor* actor, const int i, const float k, float& slen, const float len, const float difftoBeamL)
+{
     // Test if the beam should break
     if (len > actor->ar_beams[i].strength)
     {
@@ -1344,7 +1364,7 @@ void CheckBeamDeformationAndBreaking(Actor* actor, int i, float k, float slen, f
     }
 }
 
-inline void CalcBeamsPrologue(Actor* actor, int i, Vector3& dis, float& dislen, float& inverted_dislen, float& difftoBeamL, float& k, float& d, float& v)
+inline void CalcBeamsCommonPrologue(Actor* actor, int i, Vector3& dis, float& dislen, float& inverted_dislen, float& difftoBeamL, float& k, float& d, float& v)
 {
     // Calculate beam length
     dis = actor->ar_nodes_hot[actor->ar_beams[i].p1num].RelPosition - actor->ar_nodes_hot[actor->ar_beams[i].p2num].RelPosition;
@@ -1359,17 +1379,15 @@ inline void CalcBeamsPrologue(Actor* actor, int i, Vector3& dis, float& dislen, 
     v = (actor->ar_nodes_hot[actor->ar_beams[i].p1num].Velocity - actor->ar_nodes_hot[actor->ar_beams[i].p2num].Velocity).dotProduct(dis) * inverted_dislen;
 }
 
-inline void CalcBeamsEpilogue(Actor* actor, int i, float k, float d, float v, float difftoBeamL, float inverted_dislen)
+inline float CalcBeamCommonStress(Actor* actor, int i, float k, float d, float v, float difftoBeamL)
 {
-    float slen = -k * difftoBeamL - d * v;
+    const float slen = -k * difftoBeamL - d * v;
     actor->ar_beams[i].stress = slen;
+    return slen;
+}
 
-    // Fast test for deformation
-    float len = std::abs(slen);
-    if (len > actor->ar_beams[i].minmaxposnegstress)
-    {
-        CheckBeamDeformationAndBreaking(actor, i, k, slen, len, difftoBeamL);
-    }
+inline void CalcBeamsCommonEpilogue(Actor* actor, int i, float k, float d, float v, float difftoBeamL, float slen, float inverted_dislen)
+{
     // At last update the beam forces
     Vector3 f = actor->ar_nodes_hot[actor->ar_beams[i].p1num].RelPosition - actor->ar_nodes_hot[actor->ar_beams[i].p2num].RelPosition;
     f *= (slen * inverted_dislen);
@@ -1377,87 +1395,20 @@ inline void CalcBeamsEpilogue(Actor* actor, int i, float k, float d, float v, fl
     actor->ar_nodes_hot[actor->ar_beams[i].p2num].Forces -= f;
 }
 
-void Actor::CalcBeams(bool trigger_hooks)
+void CalcBeams_hook(Actor* actor, const int start, const int end)
 {
-    ar_prof.ProfBegin(PROF_CALCBEAMS_TOTAL);
-    for (int i = 0; i < ar_num_beams; i++)
+    // bounded=ROPE, type=BEAM_HYDRO ~ most vehicles don't have one, there is never more than one really
+    // -------------------------------------------------------------------------------------------------
+    for (int i = start; i < end ; i++)
     {
-        if (ar_beams[i].bm_disabled || ar_beams[i].bm_inter_actor)
+        if (actor->ar_beams[i].bm_disabled || actor->ar_beams[i].bm_inter_actor)
             continue;
 
         Vector3 dis;
         float dislen, inverted_dislen, difftoBeamL, k, d, v;
-        CalcBeamsPrologue(this, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
+        CalcBeamsCommonPrologue(actor, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
 
-        if (ar_beams[i].bounded == SHOCK1)
-        {
-            float interp_ratio = 0.0f;
-
-            // Following code interpolates between defined beam parameters and default beam parameters
-            if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L)
-                interp_ratio = difftoBeamL - ar_beams[i].longbound * ar_beams[i].L;
-            else if (difftoBeamL < -ar_beams[i].shortbound * ar_beams[i].L)
-                interp_ratio = -difftoBeamL - ar_beams[i].shortbound * ar_beams[i].L;
-
-            if (interp_ratio != 0.0f)
-            {
-                // Hard (normal) shock bump
-                float tspring = DEFAULT_SPRING;
-                float tdamp = DEFAULT_DAMP;
-
-                // Skip camera, wheels or any other shocks which are not generated in a shocks or shocks2 section
-                if (ar_beams[i].bm_type == BEAM_HYDRO)
-                {
-                    tspring = ar_beams[i].shock->sbd_spring;
-                    tdamp = ar_beams[i].shock->sbd_damp;
-                }
-
-                k += (tspring - k) * interp_ratio;
-                d += (tdamp - d) * interp_ratio;
-            }
-        }
-        else if (ar_beams[i].bounded == TRIGGER)
-        {
-            this->CalcTriggers(i, difftoBeamL, trigger_hooks);
-        }
-        else if (ar_beams[i].bounded == SHOCK2)
-        {
-            this->CalcShocks2(i, difftoBeamL, k, d, v);
-        }
-        else if (ar_beams[i].bounded == SHOCK3)
-        {
-            this->CalcShocks3(i, difftoBeamL, k, d, v);
-        }
-        else if (ar_beams[i].bounded == SUPPORTBEAM)
-        {
-            if (difftoBeamL > 0.0f)
-            {
-                k = 0.0f;
-                d *= 0.1f;
-                float break_limit = SUPPORT_BEAM_LIMIT_DEFAULT;
-                if (ar_beams[i].longbound > 0.0f)
-                {
-                    // This is a supportbeam with a user set break limit, get the user set limit
-                    break_limit = ar_beams[i].longbound;
-                }
-
-                // If support beam is extended the originallength * break_limit, break and disable it
-                if (difftoBeamL > ar_beams[i].L * break_limit)
-                {
-                    ar_beams[i].bm_broken = true;
-                    ar_beams[i].bm_disabled = true;
-                    if (ar_beam_break_debug_enabled)
-                    {
-                        RoR::Str<300> msg;
-                        msg << "[RoR|Diag] XXX Support-Beam " << i << " limit extended and broke. "
-                            << "Length: " << difftoBeamL << " / max. Length: " << (ar_beams[i].L*break_limit) << ". ";
-                        LogBeamNodes(msg, ar_beams[i]);
-                        App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE, msg.ToCStr());
-                    }
-                }
-            }
-        }
-        else if (ar_beams[i].bounded == ROPE)
+        //if (bounded == ROPE) ~ always true
         {
             if (difftoBeamL < 0.0f)
             {
@@ -1466,17 +1417,411 @@ void Actor::CalcBeams(bool trigger_hooks)
             }
         }
 
-        if (trigger_hooks && ar_beams[i].bounded && ar_beams[i].bm_type == BEAM_HYDRO)
+        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+
+        // Fast test for deformation
+        float len = std::abs(slen);
+        if (len > actor->ar_beams[i].minmaxposnegstress)
         {
-            ar_beams[i].debug_k = k * std::abs(difftoBeamL);
-            ar_beams[i].debug_d = d * std::abs(v);
-            ar_beams[i].debug_v = std::abs(v);
+            // beams of type=BEAM_HYDRO don't deform
+            CheckBeamBreaking(actor, i, k, slen, len, difftoBeamL);
         }
 
-        CalcBeamsEpilogue(this, i, k,d,v, difftoBeamL, inverted_dislen);
+        CalcBeamsCommonEpilogue(actor, i, k,d,v, difftoBeamL, slen, inverted_dislen);
     }
+}
 
-    ar_prof.ProfEnd(PROF_CALCBEAMS_TOTAL);
+void CalcBeams_wheel(Actor* actor, const int start, const int end)
+{
+    // bounded=SHOCK1 or NOSHOCK depending on `shortbound` param, type=BEAM_NORMAL
+    // ---------------------------------------------------------------------------
+    for (int i = start; i < end ; i++)
+    {
+        if (actor->ar_beams[i].bm_disabled || actor->ar_beams[i].bm_inter_actor)
+            continue;
+
+        Vector3 dis;
+        float dislen, inverted_dislen, difftoBeamL, k, d, v;
+        CalcBeamsCommonPrologue(actor, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
+
+        if (actor->ar_beams[i].bounded == SHOCK1)
+        {
+            float interp_ratio = 0.0f;
+
+            // Following code interpolates between defined beam parameters and default beam parameters
+            if (difftoBeamL > actor->ar_beams[i].longbound * actor->ar_beams[i].L)
+                interp_ratio = difftoBeamL - actor->ar_beams[i].longbound * actor->ar_beams[i].L;
+            else if (difftoBeamL < -actor->ar_beams[i].shortbound * actor->ar_beams[i].L)
+                interp_ratio = -difftoBeamL - actor->ar_beams[i].shortbound * actor->ar_beams[i].L;
+
+            if (interp_ratio != 0.0f)
+            {
+                // Hard (normal) shock bump
+                float tspring = DEFAULT_SPRING;
+                float tdamp = DEFAULT_DAMP;
+
+                k += (tspring - k) * interp_ratio;
+                d += (tdamp - d) * interp_ratio;
+            }
+        }
+
+        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+
+        // Fast test for deformation
+        float len = std::abs(slen);
+        if (len > actor->ar_beams[i].minmaxposnegstress)
+        {
+            // beams of type=BEAM_NORMAL && bounded=SHOCK1 don't deform
+            CheckBeamBreaking(actor, i, k, slen, len, difftoBeamL);
+        }
+
+        CalcBeamsCommonEpilogue(actor, i, k,d,v, difftoBeamL, slen, inverted_dislen);
+    }
+}
+
+void CalcBeams_unbounded(Actor* actor, const int start, const int end)
+{
+    // bounded=NOSHOCK (0), type=BEAM_NORMAL ~ most beams are unbounded normal beams
+    // -----------------------------------------------------------------------------
+    for (int i = start; i < end ; i++)
+    {
+        if (actor->ar_beams[i].bm_disabled || actor->ar_beams[i].bm_inter_actor)
+            continue;
+
+        Vector3 dis;
+        float dislen, inverted_dislen, difftoBeamL, k, d, v;
+        CalcBeamsCommonPrologue(actor, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
+
+        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+
+        // Fast test for deformation
+        float len = std::abs(slen);
+        if (len > actor->ar_beams[i].minmaxposnegstress)
+        {
+            CheckBeamDeformation(actor, i, k, slen, len, difftoBeamL);
+            CheckBeamBreaking(actor, i, k, slen, len, difftoBeamL);
+        }
+
+        CalcBeamsCommonEpilogue(actor, i, k,d,v, difftoBeamL, slen, inverted_dislen);
+    }
+}
+
+void CalcBeams_shock1(Actor* actor, const int start, const int end)
+{
+    // bounded=SHOCK1, type=BEAM_HYDRO
+    // ------------------------------------------------------
+    for (int i = start; i < end ; i++)
+    {
+        if (actor->ar_beams[i].bm_disabled || actor->ar_beams[i].bm_inter_actor)
+            continue;
+
+        Vector3 dis;
+        float dislen, inverted_dislen, difftoBeamL, k, d, v;
+        CalcBeamsCommonPrologue(actor, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
+
+        //if (bounded == SHOCK1) ~ always true
+        {
+            float interp_ratio = 0.0f;
+
+            // Following code interpolates between defined beam parameters and default beam parameters
+            if (difftoBeamL > actor->ar_beams[i].longbound * actor->ar_beams[i].L)
+                interp_ratio = difftoBeamL - actor->ar_beams[i].longbound * actor->ar_beams[i].L;
+            else if (difftoBeamL < -actor->ar_beams[i].shortbound * actor->ar_beams[i].L)
+                interp_ratio = -difftoBeamL - actor->ar_beams[i].shortbound * actor->ar_beams[i].L;
+
+            if (interp_ratio != 0.0f)
+            {
+                // Hard (normal) shock bump
+                float tspring = DEFAULT_SPRING;
+                float tdamp = DEFAULT_DAMP;
+
+                // Skip camera, wheels or any other shocks which are not generated in a shocks or shocks2 section
+                //if (type == BEAM_HYDRO) ~ always true
+                {
+                    tspring = actor->ar_beams[i].shock->sbd_spring;
+                    tdamp = actor->ar_beams[i].shock->sbd_damp;
+                }
+
+                k += (tspring - k) * interp_ratio;
+                d += (tdamp - d) * interp_ratio;
+            }
+        }
+
+        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+
+        // Fast test for deformation
+        float len = std::abs(slen);
+        if (len > actor->ar_beams[i].minmaxposnegstress)
+        {
+            // beams of type=BEAM_HYDRO don't deform
+            CheckBeamBreaking(actor, i, k, slen, len, difftoBeamL);
+        }
+
+        CalcBeamsCommonEpilogue(actor, i, k,d,v, difftoBeamL, slen, inverted_dislen);
+    }
+}
+
+void CalcBeams_shock2(Actor* actor, const int start, const int end)
+{
+    // bounded=SHOCK2, type=BEAM_HYDRO
+    // ------------------------------------------------------
+    for (int i = start; i < end ; i++)
+    {
+        if (actor->ar_beams[i].bm_disabled || actor->ar_beams[i].bm_inter_actor)
+            continue;
+
+        Vector3 dis;
+        float dislen, inverted_dislen, difftoBeamL, k, d, v;
+        CalcBeamsCommonPrologue(actor, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
+
+        //if (bounded == SHOCK2) ~ always true
+        {
+            actor->CalcShocks2(i, difftoBeamL, k, d, v);
+        }
+
+        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+
+        // Fast test for deformation
+        float len = std::abs(slen);
+        if (len > actor->ar_beams[i].minmaxposnegstress)
+        {
+            // beams of type=BEAM_HYDRO don't deform
+            CheckBeamBreaking(actor, i, k, slen, len, difftoBeamL);
+        }
+
+        CalcBeamsCommonEpilogue(actor, i, k,d,v, difftoBeamL, slen, inverted_dislen);
+    }
+}
+
+
+void CalcBeams_shock3(Actor* actor, const int start, const int end)
+{
+    // bounded=SHOCK3, type=BEAM_HYDRO
+    // ------------------------------------------------------
+    for (int i = start; i < end ; i++)
+    {
+        if (actor->ar_beams[i].bm_disabled || actor->ar_beams[i].bm_inter_actor)
+            continue;
+
+        Vector3 dis;
+        float dislen, inverted_dislen, difftoBeamL, k, d, v;
+        CalcBeamsCommonPrologue(actor, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
+
+        //if (bounded == SHOCK3) ~ always true
+        {
+            actor->CalcShocks3(i, difftoBeamL, k, d, v);
+        }
+
+        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+
+        // Fast test for deformation
+        float len = std::abs(slen);
+        if (len > actor->ar_beams[i].minmaxposnegstress)
+        {
+            // beams of type=BEAM_HYDRO don't deform
+            CheckBeamBreaking(actor, i, k, slen, len, difftoBeamL);
+        }
+
+        CalcBeamsCommonEpilogue(actor, i, k,d,v, difftoBeamL, slen, inverted_dislen);
+    }
+}
+
+void CalcBeams_command(Actor* actor, const int start, const int end)
+{
+    // bounded=NOSHOCK (or ROPE with option 'r'), type=BEAM_HYDRO
+    // ------------------------------------------------------
+    for (int i = start; i < end ; i++)
+    {
+        if (actor->ar_beams[i].bm_disabled || actor->ar_beams[i].bm_inter_actor)
+            continue;
+
+        Vector3 dis;
+        float dislen, inverted_dislen, difftoBeamL, k, d, v;
+        CalcBeamsCommonPrologue(actor, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
+
+        if (actor->ar_beams[i].bounded == ROPE)
+        {
+            if (difftoBeamL < 0.0f)
+            {
+                k = 0.0f;
+                d *= 0.1f;
+            }
+        }
+
+        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+
+        // Fast test for deformation
+        float len = std::abs(slen);
+        if (len > actor->ar_beams[i].minmaxposnegstress)
+        {
+            // beams of type=BEAM_HYDRO don't deform
+            CheckBeamBreaking(actor, i, k, slen, len, difftoBeamL);
+        }
+
+        CalcBeamsCommonEpilogue(actor, i, k,d,v, difftoBeamL, slen, inverted_dislen);
+    }
+}
+
+void CalcBeams_hydro(Actor* actor, const int start, const int end)
+{
+    // bounded=NOSHOCK, type=BEAM_HYDRO
+    // ------------------------------------------------------
+    for (int i = start; i < end ; i++)
+    {
+        if (actor->ar_beams[i].bm_disabled || actor->ar_beams[i].bm_inter_actor)
+            continue;
+
+        Vector3 dis;
+        float dislen, inverted_dislen, difftoBeamL, k, d, v;
+        CalcBeamsCommonPrologue(actor, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
+
+        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+
+        // Fast test for deformation
+        float len = std::abs(slen);
+        if (len > actor->ar_beams[i].minmaxposnegstress)
+        {
+            // beams of type=BEAM_HYDRO don't deform
+            CheckBeamBreaking(actor, i, k, slen, len, difftoBeamL);
+        }
+
+        CalcBeamsCommonEpilogue(actor, i, k,d,v, difftoBeamL, slen, inverted_dislen);
+    }
+}
+
+void CalcBeams_trigger(Actor* actor, const int start, const int end, const bool doUpdate)
+{
+    // bounded=TRIGGER, type=BEAM_HYDRO
+    // ------------------------------------------------------
+    for (int i = start; i < end ; i++)
+    {
+        if (actor->ar_beams[i].bm_disabled || actor->ar_beams[i].bm_inter_actor)
+            continue;
+
+        Vector3 dis;
+        float dislen, inverted_dislen, difftoBeamL, k, d, v;
+        CalcBeamsCommonPrologue(actor, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
+
+        //if (bounded == TRIGGER) ~ always true
+        {
+            actor->CalcTriggers(i, difftoBeamL, doUpdate);
+        }
+
+        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+
+        // Fast test for deformation
+        float len = std::abs(slen);
+        if (len > actor->ar_beams[i].minmaxposnegstress)
+        {
+            // beams of type=BEAM_HYDRO don't deform
+            CheckBeamBreaking(actor, i, k, slen, len, difftoBeamL);
+        }
+
+        CalcBeamsCommonEpilogue(actor, i, k,d,v, difftoBeamL, slen, inverted_dislen);
+    }
+}
+
+void CalcBeams_rope(Actor* actor, const int start, const int end)
+{
+    // bounded=ROPE, type=BEAM_HYDRO (from section 'ropes') or BEAM_NORMAL (from section 'beams' with option 'r')
+    // -------------------------------------------------------------------------------------------------
+    for (int i = start; i < end ; i++)
+    {
+        if (actor->ar_beams[i].bm_disabled || actor->ar_beams[i].bm_inter_actor)
+            continue;
+
+        Vector3 dis;
+        float dislen, inverted_dislen, difftoBeamL, k, d, v;
+        CalcBeamsCommonPrologue(actor, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
+
+        //if (bounded == ROPE) ~ always true
+        {
+            if (difftoBeamL < 0.0f)
+            {
+                k = 0.0f;
+                d *= 0.1f;
+            }
+        }
+
+        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+
+        // Fast test for deformation
+        float len = std::abs(slen);
+        if (len > actor->ar_beams[i].minmaxposnegstress)
+        {
+            CheckBeamDeformation(actor, i, k, slen, len, difftoBeamL);
+            CheckBeamBreaking(actor, i, k, slen, len, difftoBeamL);
+        }
+
+        CalcBeamsCommonEpilogue(actor, i, k,d,v, difftoBeamL, slen, inverted_dislen);
+    }
+}
+
+void CalcBeams_support(Actor* actor, const int start, const int end)
+{
+    // bounded=SUPPORTBEAM, type=BEAM_NORMAL
+    // -------------------------------------------------------------------------------------------------
+    for (int i = start; i < end ; i++)
+    {
+        if (actor->ar_beams[i].bm_disabled || actor->ar_beams[i].bm_inter_actor)
+            continue;
+
+        Vector3 dis;
+        float dislen, inverted_dislen, difftoBeamL, k, d, v;
+        CalcBeamsCommonPrologue(actor, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
+
+        //if (bounded == SUPPORTBEAM) ~ always true
+        {
+            if (difftoBeamL > 0.0f)
+            {
+                k = 0.0f;
+                d *= 0.1f;
+                float break_limit = SUPPORT_BEAM_LIMIT_DEFAULT;
+                if (actor->ar_beams[i].longbound > 0.0f)
+                {
+                    // This is a supportbeam with a user set break limit, get the user set limit
+                    break_limit = actor->ar_beams[i].longbound;
+                }
+
+                // If support beam is extended the originallength * break_limit, break and disable it
+                if (difftoBeamL > actor->ar_beams[i].L * break_limit)
+                {
+                    actor->ar_beams[i].bm_broken = true;
+                    actor->ar_beams[i].bm_disabled = true;
+                    if (actor->ar_beam_break_debug_enabled)
+                    {
+                        RoR::Str<300> msg;
+                        msg << "[RoR|Diag] XXX Support-Beam " << i << " limit extended and broke. "
+                            << "Length: " << difftoBeamL << " / max. Length: " << (actor->ar_beams[i].L*break_limit) << ". ";
+                        LogBeamNodes(msg, actor->ar_beams[i]);
+                        App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE, msg.ToCStr());
+                    }
+                }
+            }
+        }
+
+        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+
+        // Supportbeams don't deform or break
+
+        CalcBeamsCommonEpilogue(actor, i, k,d,v, difftoBeamL, slen, inverted_dislen);
+    }
+}
+
+void Actor::CalcBeams(bool doUpdate)
+{
+    // Calls are _IN ORDER_ of appearence in the `ar_beams` array, see `struct BeamRangesByOrigin`
+    CalcBeams_hook(this, 0, ar_beam_ranges_by_origin.wheelbeams_start);
+    CalcBeams_wheel(this, ar_beam_ranges_by_origin.wheelbeams_start, ar_beam_ranges_by_origin.unboundedbeams_start);
+    CalcBeams_unbounded(this, ar_beam_ranges_by_origin.unboundedbeams_start, ar_beam_ranges_by_origin.shock1beams_start);
+    CalcBeams_shock1(this, ar_beam_ranges_by_origin.shock1beams_start, ar_beam_ranges_by_origin.shock2beams_start);
+    CalcBeams_shock2(this, ar_beam_ranges_by_origin.shock2beams_start, ar_beam_ranges_by_origin.shock3beams_start);
+    CalcBeams_shock3(this, ar_beam_ranges_by_origin.shock3beams_start, ar_beam_ranges_by_origin.commandbeams_start);
+    CalcBeams_command(this, ar_beam_ranges_by_origin.commandbeams_start, ar_beam_ranges_by_origin.hydrobeams_start);
+    CalcBeams_hydro(this, ar_beam_ranges_by_origin.hydrobeams_start, ar_beam_ranges_by_origin.triggerbeams_start);
+    CalcBeams_trigger(this, ar_beam_ranges_by_origin.triggerbeams_start, ar_beam_ranges_by_origin.ropebeams_start, doUpdate);
+    CalcBeams_rope(this, ar_beam_ranges_by_origin.ropebeams_start, ar_beam_ranges_by_origin.supportbeams_start);
+    CalcBeams_support(this, ar_beam_ranges_by_origin.supportbeams_start, ar_num_beams);
 }
 
 void Actor::CalcBeamsInterActor()
