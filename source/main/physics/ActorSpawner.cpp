@@ -3064,8 +3064,8 @@ void ActorSpawner::ProcessRailGroup(RigDef::RailGroup & def)
 
 void ActorSpawner::ProcessSlidenode(RigDef::SlideNode & def)
 {
-    node_t & node = m_actor->ar_nodes[GetNodeIndexOrThrow(def.slide_node)];
-    SlideNode slide_node(& node, nullptr);
+    const NodeNum_t slide_node_index = this->ResolveNodeRef(def.slide_node);
+    SlideNode slide_node(m_actor.GetRef(), slide_node_index, nullptr);
 
     // Optional args
     if (def._spring_rate_set)      { slide_node.SetSpringRate(def.spring_rate); }
@@ -3200,7 +3200,7 @@ RailGroup *ActorSpawner::CreateRail(std::vector<RigDef::Node::Range> & node_rang
     this->CollectNodesFromRanges(node_ranges, node_indices);
 
     // Build the rail
-    RailGroup* rg = new RailGroup();
+    RailGroup* rg = new RailGroup(m_actor.GetRef());
     for (unsigned int i = 0; i < node_indices.size() - 1; i++)
     {
         beam_t *beam = FindBeamInRig(node_indices[i], node_indices[i + 1]);
@@ -3212,7 +3212,7 @@ RailGroup *ActorSpawner::CreateRail(std::vector<RigDef::Node::Range> & node_rang
             delete rg;
             return nullptr;
         }
-        rg->rg_segments.emplace_back(beam);
+        rg->rg_segments.emplace_back(m_actor.GetRef(), beam);
     }
 
     // Link middle segments

@@ -39,7 +39,7 @@ namespace RoR {
 /// A single beam in a chain
 struct RailSegment
 {
-    RailSegment(beam_t* beam): rs_prev(nullptr), rs_next(nullptr), rs_beam(beam) {}
+    RailSegment(Actor* actor, beam_t* beam): rs_actor(actor), rs_prev(nullptr), rs_next(nullptr), rs_beam(beam) {}
 
     /// Check if the slidenode should skip to a neighbour rail segment
     RailSegment* CheckCurSlideSegment(Ogre::Vector3 const& point );
@@ -47,18 +47,20 @@ struct RailSegment
     RailSegment*   rs_prev;
     RailSegment*   rs_next;
     beam_t*        rs_beam;
+    Actor*         rs_actor;
 };
 
 /// A series of RailSegment-s for SlideNode to slide along. Can be closed in a loop.
 struct RailGroup
 {
-    RailGroup(): rg_id(-1) {}
+    RailGroup(Actor* actor): rg_id(-1), rg_actor(actor) {}
 
     /// Search for closest rail segment (the one with closest node in it) in the entire RailGroup
     RailSegment* FindClosestSegment(Ogre::Vector3 const& point );
 
     std::vector<RailSegment> rg_segments;
     int                      rg_id; //!< Spawn context - matching separately defined rails with slidenodes.
+    Actor*                   rg_actor;
 };
 
 class SlideNode
@@ -66,10 +68,10 @@ class SlideNode
 public:
     /// @param sliding_node valid pointer to the node acting as a slide node
     /// @param rail initial RailGroup to slide on, or NULL.
-    SlideNode(node_t* sliding_node, RailGroup* rail);
+    SlideNode(Actor* actor, NodeNum_t sliding_node, RailGroup* rail);
 
     /// Returns the node index of the slide node
-    int GetSlideNodeId();
+    NodeNum_t GetSlideNodeId() const { return m_sliding_node; }
 
     /// Updates the corrective forces and applies these forces to the beam
     /// @param dt delta time in seconds
@@ -111,7 +113,8 @@ private:
     /// Calculate forces between the ideal and actual position of the sliding node.
     Ogre::Vector3 CalcCorrectiveForces();
 
-    node_t*        m_sliding_node;        //!< Pointer to node that is sliding
+    Actor*         m_actor;
+    NodeNum_t      m_sliding_node;        //!< Pointer to node that is sliding
     beam_t*        m_sliding_beam;        //!< Pointer to current beam sliding on
     RailGroup*     m_initial_railgroup;   //!< Initial Rail group on spawn
     RailGroup*     m_cur_railgroup;       //!< Current Rail group, used for attachments
@@ -149,21 +152,21 @@ public:
      * @param point
      * @return value is always positive, if group is null return infinity.
      */
-    static Ogre::Real getLenTo( const RailGroup* group, const Ogre::Vector3& point );
+    static Ogre::Real getLenTo(Actor* actor, const RailGroup* group, const Ogre::Vector3& point );
 
     /**
      * @param rail
      * @param point
      * @return value is always positive, if rail is null return infinity.
      */
-    static Ogre::Real getLenTo( const RailSegment* rail, const Ogre::Vector3& point );
+    static Ogre::Real getLenTo(Actor* actor, const RailSegment* rail, const Ogre::Vector3& point );
 
     /**
      * @param beam
      * @param point
      * @return value is always positive, if beam is null return infinity
      */
-    static Ogre::Real getLenTo( const beam_t* beam, const Ogre::Vector3& point );
+    static Ogre::Real getLenTo(Actor* actor, const beam_t* beam,  const Ogre::Vector3& point );
 
 
     /**

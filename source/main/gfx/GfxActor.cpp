@@ -1453,21 +1453,21 @@ void RoR::GfxActor::UpdateDebugView()
     {
         // Slide nodes
         const node_t* nodes = m_actor->ar_nodes;
-        std::set<int> node_ids;
+        std::set<NodeNum_t> node_ids;
         for (auto railgroup : m_actor->m_railgroups)
         {
             for (auto railsegment : railgroup->rg_segments)
             {
-                Ogre::Vector3 pos1 = world2screen.Convert(railsegment.rs_beam->p1->AbsPosition);
-                Ogre::Vector3 pos2 = world2screen.Convert(railsegment.rs_beam->p2->AbsPosition);
+                Ogre::Vector3 pos1 = world2screen.Convert(m_actor->ar_nodes[railsegment.rs_beam->p1num].AbsPosition);
+                Ogre::Vector3 pos2 = world2screen.Convert(m_actor->ar_nodes[railsegment.rs_beam->p2num].AbsPosition);
 
                 if (pos1.z < 0.f)
                 {
-                    node_ids.insert(railsegment.rs_beam->p1->pos);
+                    node_ids.insert(railsegment.rs_beam->p1num);
                 }
                 if (pos2.z < 0.f)
                 {
-                    node_ids.insert(railsegment.rs_beam->p2->pos);
+                    node_ids.insert(railsegment.rs_beam->p2num);
                 }
                 if ((pos1.z < 0.f) && (pos2.z < 0.f))
                 {
