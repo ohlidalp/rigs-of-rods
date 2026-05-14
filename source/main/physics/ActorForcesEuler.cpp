@@ -1206,270 +1206,274 @@ void LogBeamNodes(RoR::Str<L>& msg, beam_t& beam) // Internal helper
     msg << fmt::format("It was between nodes {} and {}.", beam.p1num, beam.p2num);
 }
 
+void CheckBeamDeformationAndBreaking(Actor* actor, int i, float k, float slen, float len, float difftoBeamL)
+{
+    if (actor->ar_beams[i].bm_type == BEAM_NORMAL && actor->ar_beams[i].bounded != SHOCK1 && k != 0.0f)
+    {
+        // Actual deformation tests
+        if (slen > actor->ar_beams[i].maxposstress && difftoBeamL < 0.0f) // compression
+        {
+            Real yield_length = actor->ar_beams[i].maxposstress / k;
+            Real deform = difftoBeamL + yield_length * (1.0f - actor->ar_beams[i].plastic_coef);
+            Real Lold = actor->ar_beams[i].L;
+            actor->ar_beams[i].L += deform;
+            actor->ar_beams[i].L = std::max(MIN_BEAM_LENGTH, actor->ar_beams[i].L);
+            slen = slen - (slen - actor->ar_beams[i].maxposstress) * 0.5f;
+            len = slen;
+            if (actor->ar_beams[i].L > 0.0f && Lold > actor->ar_beams[i].L)
+            {
+                actor->ar_beams[i].maxposstress *= Lold / actor->ar_beams[i].L;
+                actor->ar_beams[i].minmaxposnegstress = std::min(actor->ar_beams[i].maxposstress, -actor->ar_beams[i].maxnegstress);
+                actor->ar_beams[i].minmaxposnegstress = std::min(actor->ar_beams[i].minmaxposnegstress, actor->ar_beams[i].strength);
+            }
+            // For the compression case we do not remove any of the beam's
+            // strength for structure stability reasons
+            //actor->ar_beams[i].strength += deform * k * 0.5f;
+            if (actor->ar_beam_deform_debug_enabled)
+            {
+                RoR::Str<300> msg;
+                msg << "[RoR|Diag] YYY Beam " << i << " just deformed with extension force "
+                    << len << " / " << actor->ar_beams[i].strength << ". ";
+                LogBeamNodes(msg, actor->ar_beams[i]);
+                RoR::Log(msg.ToCStr());
+            }
+        }
+        else if (slen < actor->ar_beams[i].maxnegstress && difftoBeamL > 0.0f) // expansion
+        {
+            Real yield_length = actor->ar_beams[i].maxnegstress / k;
+            Real deform = difftoBeamL + yield_length * (1.0f - actor->ar_beams[i].plastic_coef);
+            Real Lold = actor->ar_beams[i].L;
+            actor->ar_beams[i].L += deform;
+            slen = slen - (slen - actor->ar_beams[i].maxnegstress) * 0.5f;
+            len = -slen;
+            if (Lold > 0.0f && actor->ar_beams[i].L > Lold)
+            {
+                actor->ar_beams[i].maxnegstress *= actor->ar_beams[i].L / Lold;
+                actor->ar_beams[i].minmaxposnegstress = std::min(actor->ar_beams[i].maxposstress, -actor->ar_beams[i].maxnegstress);
+                actor->ar_beams[i].minmaxposnegstress = std::min(actor->ar_beams[i].minmaxposnegstress, actor->ar_beams[i].strength);
+            }
+            actor->ar_beams[i].strength -= deform * k;
+            if (actor->ar_beam_deform_debug_enabled)
+            {
+                RoR::Str<300> msg;
+                msg << "[RoR|Diag] YYY Beam " << i << " just deformed with extension force "
+                    << len << " / " << actor->ar_beams[i].strength << ". ";
+                LogBeamNodes(msg, actor->ar_beams[i]);
+                RoR::Log(msg.ToCStr());
+            }
+        }
+    }
+
+    // Test if the beam should break
+    if (len > actor->ar_beams[i].strength)
+    {
+        // Sound effect.
+        // Sound volume depends on springs stored energy
+        SOUND_MODULATE(actor->ar_instance_id, SS_MOD_BREAK, 0.5 * k * difftoBeamL * difftoBeamL);
+        SOUND_PLAY_ONCE(actor->ar_instance_id, SS_TRIG_BREAK);
+
+        //Break the beam only when it is not connected to a node
+        //which is a part of a collision triangle and has 2 "live" beams or less
+        //connected to it.
+        if (!((actor->ar_nodes[actor->ar_beams[i].p1num].nd_cab_node && actor->GetNumActiveConnectedBeams(actor->ar_beams[i].p1num) < 3) || (actor->ar_nodes[actor->ar_beams[i].p2num].nd_cab_node && actor->GetNumActiveConnectedBeams(actor->ar_beams[i].p2num) < 3)))
+        {
+            slen = 0.0f;
+            actor->ar_beams[i].bm_broken = true;
+            actor->ar_beams[i].bm_disabled = true;
+
+            if (actor->ar_beam_break_debug_enabled)
+            {
+                RoR::Str<200> msg;
+                msg << "[RoR|Diag] XXX Beam " << i << " just broke with force " << len << " / " << actor->ar_beams[i].strength << ". ";
+                LogBeamNodes(msg, actor->ar_beams[i]);
+                App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE, msg.ToCStr());
+            }
+
+            // detachergroup check: beam[i] is already broken, check detacher group# == 0/default skip the check ( performance bypass for beams with default setting )
+            // only perform this check if this is a master detacher beams (positive detacher group id > 0)
+            if (actor->ar_beams[i].detacher_group > 0)
+            {
+                // cycle once through the other beams
+                for (int j = 0; j < actor->ar_num_beams; j++)
+                {
+                    // beam[i] detacher group# == checked beams detacher group# -> delete & disable checked beam
+                    // do this with all master(positive id) and minor(negative id) beams of this detacher group
+                    if (abs(actor->ar_beams[j].detacher_group) == actor->ar_beams[i].detacher_group)
+                    {
+                        actor->ar_beams[j].bm_broken = true;
+                        actor->ar_beams[j].bm_disabled = true;
+                        if (actor->ar_beam_break_debug_enabled)
+                        {
+                            App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE,
+                                "Deleting Detacher BeamID: " + TOSTRING(j) + ", Detacher Group: " + TOSTRING(actor->ar_beams[i].detacher_group)+ ", actor ID: " + TOSTRING(actor->ar_instance_id));
+                        }
+                    }
+                }
+                // cycle once through all wheeldetachers
+                for (wheeldetacher_t const& wheeldetacher: actor->ar_wheeldetachers)
+                {
+                    if (wheeldetacher.wd_detacher_group == actor->ar_beams[i].detacher_group)
+                    {
+                        actor->ar_wheels[wheeldetacher.wd_wheel_id].wh_is_detached = true;
+                        if (actor->ar_beam_break_debug_enabled)
+                        {
+                            App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE,
+                                "Detaching wheel ID: " + TOSTRING(wheeldetacher.wd_wheel_id) + ", Detacher Group: " + TOSTRING(actor->ar_beams[i].detacher_group)+ ", actor ID: " + TOSTRING(actor->ar_instance_id));
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            actor->ar_beams[i].strength = 2.0f * actor->ar_beams[i].minmaxposnegstress;
+        }
+
+        // something broke, check buoyant hull
+        for (int mk = 0; mk < actor->ar_num_buoycabs; mk++)
+        {
+            int tmpv = actor->ar_buoycabs[mk] * 3;
+            if (actor->ar_buoycab_types[mk] == Buoyance::BUOY_DRAGONLY)
+                continue;
+            if ((actor->ar_beams[i].p1num == actor->ar_cabs[tmpv] || actor->ar_beams[i].p1num == actor->ar_cabs[tmpv + 1] || actor->ar_beams[i].p1num == actor->ar_cabs[tmpv + 2]) &&
+                (actor->ar_beams[i].p2num == actor->ar_cabs[tmpv] || actor->ar_beams[i].p2num == actor->ar_cabs[tmpv + 1] || actor->ar_beams[i].p2num == actor->ar_cabs[tmpv + 2]))
+            {
+                actor->m_buoyance->sink = true;
+            }
+        }
+    }
+}
+
+inline void CalcBeamsPrologue(Actor* actor, int i, Vector3& dis, float& dislen, float& inverted_dislen, float& difftoBeamL, float& k, float& d, float& v)
+{
+    // Calculate beam length
+    dis = actor->ar_nodes_hot[actor->ar_beams[i].p1num].RelPosition - actor->ar_nodes_hot[actor->ar_beams[i].p2num].RelPosition;
+    dislen = dis.squaredLength();
+    inverted_dislen = fast_invSqrt(dislen);
+    dislen *= inverted_dislen;
+    // Calculate beam's deviation from normal
+    difftoBeamL = dislen - actor->ar_beams[i].L;
+    k = actor->ar_beams[i].k;
+    d = actor->ar_beams[i].d;
+    // Calculate beam's rate of change
+    v = (actor->ar_nodes_hot[actor->ar_beams[i].p1num].Velocity - actor->ar_nodes_hot[actor->ar_beams[i].p2num].Velocity).dotProduct(dis) * inverted_dislen;
+}
+
+inline void CalcBeamsEpilogue(Actor* actor, int i, float k, float d, float v, float difftoBeamL, float inverted_dislen)
+{
+    float slen = -k * difftoBeamL - d * v;
+    actor->ar_beams[i].stress = slen;
+
+    // Fast test for deformation
+    float len = std::abs(slen);
+    if (len > actor->ar_beams[i].minmaxposnegstress)
+    {
+        CheckBeamDeformationAndBreaking(actor, i, k, slen, len, difftoBeamL);
+    }
+    // At last update the beam forces
+    Vector3 f = actor->ar_nodes_hot[actor->ar_beams[i].p1num].RelPosition - actor->ar_nodes_hot[actor->ar_beams[i].p2num].RelPosition;
+    f *= (slen * inverted_dislen);
+    actor->ar_nodes_hot[actor->ar_beams[i].p1num].Forces += f;
+    actor->ar_nodes_hot[actor->ar_beams[i].p2num].Forces -= f;
+}
+
 void Actor::CalcBeams(bool trigger_hooks)
 {
     ar_prof.ProfBegin(PROF_CALCBEAMS_TOTAL);
     for (int i = 0; i < ar_num_beams; i++)
     {
-        if (!ar_beams[i].bm_disabled && !ar_beams[i].bm_inter_actor)
+        if (ar_beams[i].bm_disabled || ar_beams[i].bm_inter_actor)
+            continue;
+
+        Vector3 dis;
+        float dislen, inverted_dislen, difftoBeamL, k, d, v;
+        CalcBeamsPrologue(this, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
+
+        if (ar_beams[i].bounded == SHOCK1)
         {
-//            ar_prof.ProfBegin(PROF_CALCBEAMS_PROLOGUE);
+            float interp_ratio = 0.0f;
 
-            // Calculate beam length
-            Vector3 dis = ar_nodes_hot[ar_beams[i].p1num].RelPosition - ar_nodes_hot[ar_beams[i].p2num].RelPosition;
+            // Following code interpolates between defined beam parameters and default beam parameters
+            if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L)
+                interp_ratio = difftoBeamL - ar_beams[i].longbound * ar_beams[i].L;
+            else if (difftoBeamL < -ar_beams[i].shortbound * ar_beams[i].L)
+                interp_ratio = -difftoBeamL - ar_beams[i].shortbound * ar_beams[i].L;
 
-            Real dislen = dis.squaredLength();
-            Real inverted_dislen = fast_invSqrt(dislen);
-
-            dislen *= inverted_dislen;
-
-            // Calculate beam's deviation from normal
-            Real difftoBeamL = dislen - ar_beams[i].L;
-
-            Real k = ar_beams[i].k;
-            Real d = ar_beams[i].d;
-
-            // Calculate beam's rate of change
-            float v = (ar_nodes_hot[ar_beams[i].p1num].Velocity - ar_nodes_hot[ar_beams[i].p2num].Velocity).dotProduct(dis) * inverted_dislen;
-//            ar_prof.ProfEnd(PROF_CALCBEAMS_PROLOGUE);
-
-//            ar_prof.ProfBegin(PROF_CALCBEAMS_DEFORM);
-            if (ar_beams[i].bounded == SHOCK1)
+            if (interp_ratio != 0.0f)
             {
-                float interp_ratio = 0.0f;
+                // Hard (normal) shock bump
+                float tspring = DEFAULT_SPRING;
+                float tdamp = DEFAULT_DAMP;
 
-                // Following code interpolates between defined beam parameters and default beam parameters
-                if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L)
-                    interp_ratio = difftoBeamL - ar_beams[i].longbound * ar_beams[i].L;
-                else if (difftoBeamL < -ar_beams[i].shortbound * ar_beams[i].L)
-                    interp_ratio = -difftoBeamL - ar_beams[i].shortbound * ar_beams[i].L;
-
-                if (interp_ratio != 0.0f)
+                // Skip camera, wheels or any other shocks which are not generated in a shocks or shocks2 section
+                if (ar_beams[i].bm_type == BEAM_HYDRO)
                 {
-                    // Hard (normal) shock bump
-                    float tspring = DEFAULT_SPRING;
-                    float tdamp = DEFAULT_DAMP;
-
-                    // Skip camera, wheels or any other shocks which are not generated in a shocks or shocks2 section
-                    if (ar_beams[i].bm_type == BEAM_HYDRO)
-                    {
-                        tspring = ar_beams[i].shock->sbd_spring;
-                        tdamp = ar_beams[i].shock->sbd_damp;
-                    }
-
-                    k += (tspring - k) * interp_ratio;
-                    d += (tdamp - d) * interp_ratio;
-                }
-            }
-            else if (ar_beams[i].bounded == TRIGGER)
-            {
-                this->CalcTriggers(i, difftoBeamL, trigger_hooks);
-            }
-            else if (ar_beams[i].bounded == SHOCK2)
-            {
-                this->CalcShocks2(i, difftoBeamL, k, d, v);
-            }
-            else if (ar_beams[i].bounded == SHOCK3)
-            {
-                this->CalcShocks3(i, difftoBeamL, k, d, v);
-            }
-            else if (ar_beams[i].bounded == SUPPORTBEAM)
-            {
-                if (difftoBeamL > 0.0f)
-                {
-                    k = 0.0f;
-                    d *= 0.1f;
-                    float break_limit = SUPPORT_BEAM_LIMIT_DEFAULT;
-                    if (ar_beams[i].longbound > 0.0f)
-                    {
-                        // This is a supportbeam with a user set break limit, get the user set limit
-                        break_limit = ar_beams[i].longbound;
-                    }
-
-                    // If support beam is extended the originallength * break_limit, break and disable it
-                    if (difftoBeamL > ar_beams[i].L * break_limit)
-                    {
-                        ar_beams[i].bm_broken = true;
-                        ar_beams[i].bm_disabled = true;
-                        if (m_beam_break_debug_enabled)
-                        {
-                            RoR::Str<300> msg;
-                            msg << "[RoR|Diag] XXX Support-Beam " << i << " limit extended and broke. "
-                                << "Length: " << difftoBeamL << " / max. Length: " << (ar_beams[i].L*break_limit) << ". ";
-                            LogBeamNodes(msg, ar_beams[i]);
-                            App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE, msg.ToCStr());
-                        }
-                    }
-                }
-            }
-            else if (ar_beams[i].bounded == ROPE)
-            {
-                if (difftoBeamL < 0.0f)
-                {
-                    k = 0.0f;
-                    d *= 0.1f;
-                }
-            }
-
-            if (trigger_hooks && ar_beams[i].bounded && ar_beams[i].bm_type == BEAM_HYDRO)
-            {
-                ar_beams[i].debug_k = k * std::abs(difftoBeamL);
-                ar_beams[i].debug_d = d * std::abs(v);
-                ar_beams[i].debug_v = std::abs(v);
-            }
-
-            float slen = -k * difftoBeamL - d * v;
-            ar_beams[i].stress = slen;
-
-            // Fast test for deformation
-            float len = std::abs(slen);
-            if (len > ar_beams[i].minmaxposnegstress)
-            {
-                if (ar_beams[i].bm_type == BEAM_NORMAL && ar_beams[i].bounded != SHOCK1 && k != 0.0f)
-                {
-                    // Actual deformation tests
-                    if (slen > ar_beams[i].maxposstress && difftoBeamL < 0.0f) // compression
-                    {
-                        Real yield_length = ar_beams[i].maxposstress / k;
-                        Real deform = difftoBeamL + yield_length * (1.0f - ar_beams[i].plastic_coef);
-                        Real Lold = ar_beams[i].L;
-                        ar_beams[i].L += deform;
-                        ar_beams[i].L = std::max(MIN_BEAM_LENGTH, ar_beams[i].L);
-                        slen = slen - (slen - ar_beams[i].maxposstress) * 0.5f;
-                        len = slen;
-                        if (ar_beams[i].L > 0.0f && Lold > ar_beams[i].L)
-                        {
-                            ar_beams[i].maxposstress *= Lold / ar_beams[i].L;
-                            ar_beams[i].minmaxposnegstress = std::min(ar_beams[i].maxposstress, -ar_beams[i].maxnegstress);
-                            ar_beams[i].minmaxposnegstress = std::min(ar_beams[i].minmaxposnegstress, ar_beams[i].strength);
-                        }
-                        // For the compression case we do not remove any of the beam's
-                        // strength for structure stability reasons
-                        //ar_beams[i].strength += deform * k * 0.5f;
-                        if (m_beam_deform_debug_enabled)
-                        {
-                            RoR::Str<300> msg;
-                            msg << "[RoR|Diag] YYY Beam " << i << " just deformed with extension force "
-                                << len << " / " << ar_beams[i].strength << ". ";
-                            LogBeamNodes(msg, ar_beams[i]);
-                            RoR::Log(msg.ToCStr());
-                        }
-                    }
-                    else if (slen < ar_beams[i].maxnegstress && difftoBeamL > 0.0f) // expansion
-                    {
-                        Real yield_length = ar_beams[i].maxnegstress / k;
-                        Real deform = difftoBeamL + yield_length * (1.0f - ar_beams[i].plastic_coef);
-                        Real Lold = ar_beams[i].L;
-                        ar_beams[i].L += deform;
-                        slen = slen - (slen - ar_beams[i].maxnegstress) * 0.5f;
-                        len = -slen;
-                        if (Lold > 0.0f && ar_beams[i].L > Lold)
-                        {
-                            ar_beams[i].maxnegstress *= ar_beams[i].L / Lold;
-                            ar_beams[i].minmaxposnegstress = std::min(ar_beams[i].maxposstress, -ar_beams[i].maxnegstress);
-                            ar_beams[i].minmaxposnegstress = std::min(ar_beams[i].minmaxposnegstress, ar_beams[i].strength);
-                        }
-                        ar_beams[i].strength -= deform * k;
-                        if (m_beam_deform_debug_enabled)
-                        {
-                            RoR::Str<300> msg;
-                            msg << "[RoR|Diag] YYY Beam " << i << " just deformed with extension force "
-                                << len << " / " << ar_beams[i].strength << ". ";
-                            LogBeamNodes(msg, ar_beams[i]);
-                            RoR::Log(msg.ToCStr());
-                        }
-                    }
+                    tspring = ar_beams[i].shock->sbd_spring;
+                    tdamp = ar_beams[i].shock->sbd_damp;
                 }
 
-                // Test if the beam should break
-                if (len > ar_beams[i].strength)
-                {
-                    // Sound effect.
-                    // Sound volume depends on springs stored energy
-                    SOUND_MODULATE(ar_instance_id, SS_MOD_BREAK, 0.5 * k * difftoBeamL * difftoBeamL);
-                    SOUND_PLAY_ONCE(ar_instance_id, SS_TRIG_BREAK);
-
-                    //Break the beam only when it is not connected to a node
-                    //which is a part of a collision triangle and has 2 "live" beams or less
-                    //connected to it.
-                    if (!((ar_nodes[ar_beams[i].p1num].nd_cab_node && GetNumActiveConnectedBeams(ar_nodes[ar_beams[i].p1num].pos) < 3) || (ar_nodes[ar_beams[i].p2num].nd_cab_node && GetNumActiveConnectedBeams(ar_nodes[ar_beams[i].p2num].pos) < 3)))
-                    {
-                        slen = 0.0f;
-                        ar_beams[i].bm_broken = true;
-                        ar_beams[i].bm_disabled = true;
-
-                        if (m_beam_break_debug_enabled)
-                        {
-                            RoR::Str<200> msg;
-                            msg << "[RoR|Diag] XXX Beam " << i << " just broke with force " << len << " / " << ar_beams[i].strength << ". ";
-                            LogBeamNodes(msg, ar_beams[i]);
-                            App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE, msg.ToCStr());
-                        }
-
-                        // detachergroup check: beam[i] is already broken, check detacher group# == 0/default skip the check ( performance bypass for beams with default setting )
-                        // only perform this check if this is a master detacher beams (positive detacher group id > 0)
-                        if (ar_beams[i].detacher_group > 0)
-                        {
-                            // cycle once through the other beams
-                            for (int j = 0; j < ar_num_beams; j++)
-                            {
-                                // beam[i] detacher group# == checked beams detacher group# -> delete & disable checked beam
-                                // do this with all master(positive id) and minor(negative id) beams of this detacher group
-                                if (abs(ar_beams[j].detacher_group) == ar_beams[i].detacher_group)
-                                {
-                                    ar_beams[j].bm_broken = true;
-                                    ar_beams[j].bm_disabled = true;
-                                    if (m_beam_break_debug_enabled)
-                                    {
-                                        App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE,
-                                            "Deleting Detacher BeamID: " + TOSTRING(j) + ", Detacher Group: " + TOSTRING(ar_beams[i].detacher_group)+ ", actor ID: " + TOSTRING(ar_instance_id));
-                                    }
-                                }
-                            }
-                            // cycle once through all wheeldetachers
-                            for (wheeldetacher_t const& wheeldetacher: ar_wheeldetachers)
-                            {
-                                if (wheeldetacher.wd_detacher_group == ar_beams[i].detacher_group)
-                                {
-                                    ar_wheels[wheeldetacher.wd_wheel_id].wh_is_detached = true;
-                                    if (m_beam_break_debug_enabled)
-                                    {
-                                        App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE,
-                                            "Detaching wheel ID: " + TOSTRING(wheeldetacher.wd_wheel_id) + ", Detacher Group: " + TOSTRING(ar_beams[i].detacher_group)+ ", actor ID: " + TOSTRING(ar_instance_id));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        ar_beams[i].strength = 2.0f * ar_beams[i].minmaxposnegstress;
-                    }
-
-                    // something broke, check buoyant hull
-                    for (int mk = 0; mk < ar_num_buoycabs; mk++)
-                    {
-                        int tmpv = ar_buoycabs[mk] * 3;
-                        if (ar_buoycab_types[mk] == Buoyance::BUOY_DRAGONLY)
-                            continue;
-                        if ((ar_beams[i].p1num == ar_cabs[tmpv] || ar_beams[i].p1num == ar_cabs[tmpv + 1] || ar_beams[i].p1num == ar_cabs[tmpv + 2]) &&
-                            (ar_beams[i].p2num == ar_cabs[tmpv] || ar_beams[i].p2num == ar_cabs[tmpv + 1] || ar_beams[i].p2num == ar_cabs[tmpv + 2]))
-                        {
-                            m_buoyance->sink = true;
-                        }
-                    }
-                }
+                k += (tspring - k) * interp_ratio;
+                d += (tdamp - d) * interp_ratio;
             }
-//            ar_prof.ProfEnd(PROF_CALCBEAMS_DEFORM);
-
-//            ar_prof.ProfBegin(PROF_CALCBEAMS_EPILOGUE);
-            // At last update the beam forces
-            Vector3 f = dis;
-            f *= (slen * inverted_dislen);
-            ar_nodes_hot[ar_beams[i].p1num].Forces += f;
-            ar_nodes_hot[ar_beams[i].p2num].Forces -= f;
-//            ar_prof.ProfEnd(PROF_CALCBEAMS_EPILOGUE);
         }
+        else if (ar_beams[i].bounded == TRIGGER)
+        {
+            this->CalcTriggers(i, difftoBeamL, trigger_hooks);
+        }
+        else if (ar_beams[i].bounded == SHOCK2)
+        {
+            this->CalcShocks2(i, difftoBeamL, k, d, v);
+        }
+        else if (ar_beams[i].bounded == SHOCK3)
+        {
+            this->CalcShocks3(i, difftoBeamL, k, d, v);
+        }
+        else if (ar_beams[i].bounded == SUPPORTBEAM)
+        {
+            if (difftoBeamL > 0.0f)
+            {
+                k = 0.0f;
+                d *= 0.1f;
+                float break_limit = SUPPORT_BEAM_LIMIT_DEFAULT;
+                if (ar_beams[i].longbound > 0.0f)
+                {
+                    // This is a supportbeam with a user set break limit, get the user set limit
+                    break_limit = ar_beams[i].longbound;
+                }
+
+                // If support beam is extended the originallength * break_limit, break and disable it
+                if (difftoBeamL > ar_beams[i].L * break_limit)
+                {
+                    ar_beams[i].bm_broken = true;
+                    ar_beams[i].bm_disabled = true;
+                    if (ar_beam_break_debug_enabled)
+                    {
+                        RoR::Str<300> msg;
+                        msg << "[RoR|Diag] XXX Support-Beam " << i << " limit extended and broke. "
+                            << "Length: " << difftoBeamL << " / max. Length: " << (ar_beams[i].L*break_limit) << ". ";
+                        LogBeamNodes(msg, ar_beams[i]);
+                        App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE, msg.ToCStr());
+                    }
+                }
+            }
+        }
+        else if (ar_beams[i].bounded == ROPE)
+        {
+            if (difftoBeamL < 0.0f)
+            {
+                k = 0.0f;
+                d *= 0.1f;
+            }
+        }
+
+        if (trigger_hooks && ar_beams[i].bounded && ar_beams[i].bm_type == BEAM_HYDRO)
+        {
+            ar_beams[i].debug_k = k * std::abs(difftoBeamL);
+            ar_beams[i].debug_d = d * std::abs(v);
+            ar_beams[i].debug_v = std::abs(v);
+        }
+
+        CalcBeamsEpilogue(this, i, k,d,v, difftoBeamL, inverted_dislen);
     }
 
     ar_prof.ProfEnd(PROF_CALCBEAMS_TOTAL);
@@ -1539,7 +1543,7 @@ void Actor::CalcBeamsInterActor()
                         // For the compression case we do not remove any of the beam's
                         // strength for structure stability reasons
                         //ar_inter_beams[i]->strength += deform * k * 0.5f;
-                        if (m_beam_deform_debug_enabled)
+                        if (ar_beam_deform_debug_enabled)
                         {
                             RoR::Str<300> msg;
                             msg << "[RoR|Diag] YYY Beam " << i << " just deformed with extension force "
@@ -1563,7 +1567,7 @@ void Actor::CalcBeamsInterActor()
                             ar_inter_beams[i]->minmaxposnegstress = std::min(ar_inter_beams[i]->minmaxposnegstress, ar_inter_beams[i]->strength);
                         }
                         ar_inter_beams[i]->strength -= deform * k;
-                        if (m_beam_deform_debug_enabled)
+                        if (ar_beam_deform_debug_enabled)
                         {
                             RoR::Str<300> msg;
                             msg << "[RoR|Diag] YYY Beam " << i << " just deformed with extension force "
@@ -1587,7 +1591,7 @@ void Actor::CalcBeamsInterActor()
                     ar_inter_beams[i]->bm_broken = true;
                     ar_inter_beams[i]->bm_disabled = true;
 
-                    if (m_beam_break_debug_enabled)
+                    if (ar_beam_break_debug_enabled)
                     {
                         RoR::Str<200> msg;
                         msg << "Beam " << i << " just broke with force " << len << " / " << ar_inter_beams[i]->strength << ". ";

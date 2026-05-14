@@ -560,6 +560,9 @@ public:
     bool ar_toggle_ropes:1;     //!< Sim state
     bool ar_toggle_ties:1;      //!< Sim state
     bool ar_cparticles_active:1;//!< Gfx state
+    bool ar_beam_deform_debug_enabled:1; //!< Logging state
+    
+    bool ar_beam_break_debug_enabled:1;  //!< Logging state
 
 private:
 
@@ -703,8 +706,7 @@ private:
     bool m_water_contact_old:1;    //!< Scripting state
     bool m_has_command_beams:1;    //!< Physics attr;
     bool m_preloaded_with_terrain:1;        //!< Spawn context (TODO: remove!)
-    bool m_beam_break_debug_enabled:1;  //!< Logging state
-    bool m_beam_deform_debug_enabled:1; //!< Logging state
+    
     bool m_trigger_debug_enabled:1;     //!< Logging state
     bool m_disable_default_sounds:1;    //!< Spawner context; TODO: remove
     bool m_disable_smoke:1;             //!< Stops/starts smoke particles (i.e. exhausts, turbojets).
