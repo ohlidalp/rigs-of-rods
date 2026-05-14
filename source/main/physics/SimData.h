@@ -306,8 +306,8 @@ struct beam_t
     beam_t();
     ~beam_t();
 
-    node_t*         p1 = nullptr;
-    node_t*         p2 = nullptr;
+    NodeNum_t       p1num = NODENUM_INVALID;
+    NodeNum_t       p2num = NODENUM_INVALID;
     float           k = 0.f;                     //!< tensile spring
     float           d = 0.f;                     //!< damping factor
     float           L = 0.f;                     //!< length

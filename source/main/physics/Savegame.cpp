@@ -982,7 +982,7 @@ void ActorManager::RestoreSavedState(ActorPtr actor, rapidjson::Value const& j_e
             actor->ar_hooks[i].hk_locked_node = static_cast<NodeNum_t>(lock_node);
             if (actor->ar_hooks[i].hk_beam->bm_inter_actor)
             {
-                actor->ar_hooks[i].hk_beam->p2 = &actor->ar_nodes[actor->ar_hooks[i].hk_locked_node];
+                actor->ar_hooks[i].hk_beam->p2num = actor->ar_hooks[i].hk_locked_node;
             }
         }
     }
@@ -1020,7 +1020,7 @@ void ActorManager::RestoreSavedState(ActorPtr actor, rapidjson::Value const& j_e
             if (actor->ar_ties[i].ti_beam->bm_inter_actor)
             {
                 NodeNum_t tied_nodenum = actor->ar_ties[i].ti_locked_ropable->rb_nodenum;
-                actor->ar_ties[i].ti_beam->p2 = &actor->ar_nodes[tied_nodenum];
+                actor->ar_ties[i].ti_beam->p2num = tied_nodenum;
             }
         }
     }

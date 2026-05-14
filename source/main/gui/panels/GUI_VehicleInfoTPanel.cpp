@@ -870,8 +870,10 @@ void VehicleInfoTPanel::DrawVehicleCommandHighlights(RoR::GfxActor* actorx)
     for (const commandbeam_t& cmdbeam: actorx->GetActor()->ar_command_key[m_hovered_commandkey].beams)
     {
         const beam_t& beam = actorx->GetActor()->ar_beams[cmdbeam.cmb_beam_index];
+        const node_t& node1 = actorx->GetActor()->ar_nodes[beam.p1num];
+        const node_t& node2 = actorx->GetActor()->ar_nodes[beam.p2num];
         ImVec2 p1_pos, p2_pos;
-        if (GetScreenPosFromWorldPos(beam.p1->AbsPosition, p1_pos) && GetScreenPosFromWorldPos(beam.p2->AbsPosition, p2_pos))
+        if (GetScreenPosFromWorldPos(node1.AbsPosition, p1_pos) && GetScreenPosFromWorldPos(node2.AbsPosition, p2_pos))
         {
             draw_list->AddLine(p1_pos, p2_pos, ImColor(m_cmdbeam_highlight_color), m_cmdbeam_highlight_thickness);
         }    
