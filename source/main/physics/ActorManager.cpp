@@ -118,7 +118,7 @@ ActorPtr ActorManager::CreateNewActor(ActorSpawnRequest rq, RigDef::DocumentPtr 
     for (int i = 0; i < actor->ar_num_nodes; i++)
     {
         actor->ar_nodes[i].AbsPosition = rq.asr_position + rq.asr_rotation * (actor->ar_nodes[i].AbsPosition - rq.asr_position);
-        actor->ar_nodes[i].RelPosition = actor->ar_nodes[i].AbsPosition - actor->ar_origin;
+        actor->ar_nodes_hot[i].RelPosition = actor->ar_nodes[i].AbsPosition - actor->ar_origin;
     };
 
     /* Place correctly */
@@ -1318,7 +1318,7 @@ void ActorManager::UpdatePhysicsSimulation()
             actor->m_avg_node_velocity  = actor->m_avg_node_position - actor->m_avg_node_position_prev;
             actor->m_avg_node_velocity /= (m_physics_steps * PHYSICS_DT);
             actor->m_avg_node_position_prev = actor->m_avg_node_position;
-            actor->ar_top_speed = std::max(actor->ar_top_speed, actor->ar_nodes[0].Velocity.length());
+            actor->ar_top_speed = std::max(actor->ar_top_speed, actor->ar_nodes_hot[0].Velocity.length());
         }
     }
 }
@@ -1628,13 +1628,13 @@ void ActorManager::CalcFreeForces()
         switch (freeforce.ffc_type)
         {
             case FreeForceType::CONSTANT:
-                freeforce.ffc_base_actor->ar_nodes[freeforce.ffc_base_node].Forces += freeforce.ffc_force_magnitude * freeforce.ffc_force_const_direction;
+                freeforce.ffc_base_actor->ar_nodes_hot[freeforce.ffc_base_node].Forces += freeforce.ffc_force_magnitude * freeforce.ffc_force_const_direction;
                 break;
             
             case FreeForceType::TOWARDS_COORDS:
                 {
                     const Vector3 force_direction = (freeforce.ffc_target_coords - freeforce.ffc_base_actor->ar_nodes[freeforce.ffc_base_node].AbsPosition).normalisedCopy();
-                    freeforce.ffc_base_actor->ar_nodes[freeforce.ffc_base_node].Forces += freeforce.ffc_force_magnitude * force_direction;
+                    freeforce.ffc_base_actor->ar_nodes_hot[freeforce.ffc_base_node].Forces += freeforce.ffc_force_magnitude * force_direction;
                 }
                 break;
 
@@ -1647,7 +1647,7 @@ void ActorManager::CalcFreeForces()
                     ROR_ASSERT(freeforce.ffc_target_node <= freeforce.ffc_target_actor->ar_num_nodes);
 
                     const Vector3 force_direction = (freeforce.ffc_target_actor->ar_nodes[freeforce.ffc_target_node].AbsPosition - freeforce.ffc_base_actor->ar_nodes[freeforce.ffc_base_node].AbsPosition).normalisedCopy();
-                    freeforce.ffc_base_actor->ar_nodes[freeforce.ffc_base_node].Forces += freeforce.ffc_force_magnitude * force_direction;
+                    freeforce.ffc_base_actor->ar_nodes_hot[freeforce.ffc_base_node].Forces += freeforce.ffc_force_magnitude * force_direction;
                 }
                 break;
 
@@ -1663,9 +1663,9 @@ void ActorManager::CalcFreeForces()
                 // ---- BEGIN COPYPASTE of `Actor::CalcBeamsInterActor()` ----
 
                 // Calculate beam length
-                node_t* p1 = &freeforce.ffc_base_actor->ar_nodes[freeforce.ffc_base_node];
-                node_t* p2 = &freeforce.ffc_target_actor->ar_nodes[freeforce.ffc_target_node];
-                const Vector3 dis = p1->AbsPosition - p2->AbsPosition;
+                node_hot_t* p1 = &freeforce.ffc_base_actor->ar_nodes_hot[freeforce.ffc_base_node];
+                node_hot_t* p2 = &freeforce.ffc_target_actor->ar_nodes_hot[freeforce.ffc_target_node];
+                const Vector3 dis = (p1->RelPosition + freeforce.ffc_base_actor->ar_origin) - (p2->RelPosition + freeforce.ffc_target_actor->ar_origin);
 
                 Real dislen = dis.squaredLength();
                 const Real inverted_dislen = fast_invSqrt(dislen);

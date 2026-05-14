@@ -64,7 +64,7 @@ Turbojet::Turbojet(ActorPtr actor, NodeNum_t tnodefront, NodeNum_t tnodeback, No
     m_radius = def.back_diameter / 2.f;
     m_area = 2 * 3.14159 * m_radius * 0.6 * m_radius * 0.6;
     m_exhaust_velocity = 0;
-    m_axis = m_actor->ar_nodes[m_node_front].RelPosition - m_actor->ar_nodes[m_node_back].RelPosition;
+    m_axis = m_actor->ar_nodes_hot[m_node_front].RelPosition - m_actor->ar_nodes_hot[m_node_back].RelPosition;
     m_reflen = m_axis.length();
     m_axis = m_axis / m_reflen;
     reset();
@@ -231,7 +231,7 @@ void Turbojet::updateForces(float dt, int doUpdate)
         SOUND_MODULATE(m_actor, m_sound_mod, m_rpm_percent);
     }
     m_timer += dt;
-    m_axis = m_actor->ar_nodes[m_node_front].RelPosition - m_actor->ar_nodes[m_node_back].RelPosition;
+    m_axis = m_actor->ar_nodes_hot[m_node_front].RelPosition - m_actor->ar_nodes_hot[m_node_back].RelPosition;
     float axlen = m_axis.length();
     m_axis = m_axis / axlen; //normalize
     if (fabs(m_reflen - axlen) > 0.1)
@@ -276,9 +276,9 @@ void Turbojet::updateForces(float dt, int doUpdate)
         SOUND_STOP(m_actor, m_sound_ab);
 
     if (m_reverse)
-        m_actor->ar_nodes[m_node_back].Forces -= (enginethrust * 1000.0) * m_axis;
+        m_actor->ar_nodes_hot[m_node_back].Forces -= (enginethrust * 1000.0) * m_axis;
     else
-        m_actor->ar_nodes[m_node_back].Forces += (enginethrust * 1000.0) * m_axis;
+        m_actor->ar_nodes_hot[m_node_back].Forces += (enginethrust * 1000.0) * m_axis;
 
     m_exhaust_velocity = enginethrust * 5.6 / m_area;
 }

@@ -728,9 +728,9 @@ bool ActorManager::SaveScene(Ogre::String filename)
             j_node.PushBack(actor->ar_nodes[i].AbsPosition.z, j_doc.GetAllocator());
 
             // Velocity
-            j_node.PushBack(actor->ar_nodes[i].Velocity.x, j_doc.GetAllocator());
-            j_node.PushBack(actor->ar_nodes[i].Velocity.y, j_doc.GetAllocator());
-            j_node.PushBack(actor->ar_nodes[i].Velocity.z, j_doc.GetAllocator());
+            j_node.PushBack(actor->ar_nodes_hot[i].Velocity.x, j_doc.GetAllocator());
+            j_node.PushBack(actor->ar_nodes_hot[i].Velocity.y, j_doc.GetAllocator());
+            j_node.PushBack(actor->ar_nodes_hot[i].Velocity.z, j_doc.GetAllocator());
 
             // Initial Position
             j_node.PushBack(actor->ar_initial_node_positions[i].x, j_doc.GetAllocator());
@@ -939,8 +939,8 @@ void ActorManager::RestoreSavedState(ActorPtr actor, rapidjson::Value const& j_e
     {
         auto data = nodes[i].GetArray();
         actor->ar_nodes[i].AbsPosition      = Vector3(data[0].GetFloat(), data[1].GetFloat(), data[2].GetFloat());
-        actor->ar_nodes[i].RelPosition      = actor->ar_nodes[i].AbsPosition - actor->ar_origin;
-        actor->ar_nodes[i].Velocity         = Vector3(data[3].GetFloat(), data[4].GetFloat(), data[5].GetFloat());
+        actor->ar_nodes_hot[i].RelPosition      = actor->ar_nodes[i].AbsPosition - actor->ar_origin;
+        actor->ar_nodes_hot[i].Velocity         = Vector3(data[3].GetFloat(), data[4].GetFloat(), data[5].GetFloat());
         actor->ar_initial_node_positions[i] = Vector3(data[6].GetFloat(), data[7].GetFloat(), data[8].GetFloat());
     }
 

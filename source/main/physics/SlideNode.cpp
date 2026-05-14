@@ -106,10 +106,10 @@ void SlideNode::UpdateForces(float dt)
         sn_slide_broken = true;
     }
 
-    m_actor->ar_nodes[m_sliding_node].Forces += -perpForces;
+    m_actor->ar_nodes_hot[m_sliding_node].Forces += -perpForces;
 
-    m_actor->ar_nodes[m_sliding_beam->p1num].Forces += perpForces * (1 - m_node_forces_ratio);
-    m_actor->ar_nodes[m_sliding_beam->p2num].Forces += perpForces * m_node_forces_ratio;
+    m_actor->ar_nodes_hot[m_sliding_beam->p1num].Forces += perpForces * (1 - m_node_forces_ratio);
+    m_actor->ar_nodes_hot[m_sliding_beam->p2num].Forces += perpForces * m_node_forces_ratio;
 }
 
 RailSegment* RailGroup::FindClosestSegment(const Ogre::Vector3& point)

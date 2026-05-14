@@ -255,6 +255,15 @@ enum class AeroEngineType : int
 // --------------------------------
 // Soft body physics
 
+/// Physics: A vertex in the softbody structure - hot data of `CalcBeams()`
+struct node_hot_t
+{
+    Ogre::Vector3   RelPosition{Ogre::Vector3::ZERO}; //!< relative to `Actor::ar_origin` (shaky)
+    Ogre::Vector3   Velocity{Ogre::Vector3::ZERO};
+    Ogre::Vector3   Forces{Ogre::Vector3::ZERO};
+    // ~~ 36 bytes ~~
+};
+
 /// Physics: A vertex in the softbody structure
 struct node_t
 {
@@ -263,10 +272,7 @@ struct node_t
     node_t()               { memset(this, 0, sizeof(node_t)); nd_coll_bbox_id = INVALID_BBOX; }
     node_t(size_t _pos)    { memset(this, 0, sizeof(node_t)); nd_coll_bbox_id = INVALID_BBOX; pos = static_cast<short>(_pos); }
 
-    Ogre::Vector3   RelPosition;             //!< relative to the local physics origin (one origin per actor) (shaky)
     Ogre::Vector3   AbsPosition;             //!< absolute position in the world (shaky)
-    Ogre::Vector3   Velocity;
-    Ogre::Vector3   Forces;
 
     Ogre::Real      mass;
     Ogre::Real      buoyancy;

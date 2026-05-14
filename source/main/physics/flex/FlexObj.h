@@ -62,7 +62,7 @@ public:
 
     FlexObj(
         RoR::GfxActor* gfx_actor,
-        node_t* all_nodes, // For initial setup only, pointer is not stored
+        node_hot_t* all_nodes, // For initial setup only, pointer is not stored
         std::vector<CabTexcoord>& texcoords,
         int numtriangles,
         int* triangles,

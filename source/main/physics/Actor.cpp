@@ -336,14 +336,14 @@ void Actor::scaleTruck(float value)
     }
     // scale nodes
     Vector3 refpos = ar_nodes[0].AbsPosition;
-    Vector3 relpos = ar_nodes[0].RelPosition;
+    Vector3 relpos = ar_nodes_hot[0].RelPosition;
     for (int i = 1; i < ar_num_nodes; i++)
     {
         ar_initial_node_positions[i] = refpos + (ar_initial_node_positions[i] - refpos) * value;
         ar_nodes[i].AbsPosition = refpos + (ar_nodes[i].AbsPosition - refpos) * value;
-        ar_nodes[i].RelPosition = relpos + (ar_nodes[i].RelPosition - relpos) * value;
-        ar_nodes[i].Velocity *= value;
-        ar_nodes[i].Forces *= value;
+        ar_nodes_hot[i].RelPosition = relpos + (ar_nodes_hot[i].RelPosition - relpos) * value;
+        ar_nodes_hot[i].Velocity *= value;
+        ar_nodes_hot[i].Forces *= value;
         ar_nodes[i].mass *= value;
     }
     updateSlideNodePositions();
@@ -546,20 +546,20 @@ void Actor::calcNetwork()
 
         // linear interpolation
         ar_nodes[i].AbsPosition = p1 + tratio * (p2 - p1);
-        ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
-        ar_nodes[i].Velocity    = (p2 - p1) * 1000.0f / (float)(oob2->time - oob1->time);
+        ar_nodes_hot[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+        ar_nodes_hot[i].Velocity    = (p2 - p1) * 1000.0f / (float)(oob2->time - oob1->time);
     }
 
     for (int i = 0; i < ar_num_wheels; i++)
     {
         float rp = net_rp1[i] + tratio * (net_rp2[i] - net_rp1[i]);
-        node_t& axisnode0 = ar_nodes[ar_wheels[i].wh_axis_node0num];
-        node_t& axisnode1 = ar_nodes[ar_wheels[i].wh_axis_node1num];
+        node_hot_t& axisnode0 = ar_nodes_hot[ar_wheels[i].wh_axis_node0num];
+        node_hot_t& axisnode1 = ar_nodes_hot[ar_wheels[i].wh_axis_node1num];
         //compute ideal positions
         Vector3 axis = axisnode1.RelPosition - axisnode0.RelPosition;
         axis.normalise();
-        Plane pplan = Plane(axis, axisnode0.AbsPosition);
-        Vector3 ortho = -pplan.projectVector(ar_nodes[ar_wheels[i].wh_near_attach_nodenum].AbsPosition) - axisnode0.AbsPosition;
+        Plane pplan = Plane(axis, axisnode0.RelPosition + ar_origin);
+        Vector3 ortho = -pplan.projectVector(ar_nodes[ar_wheels[i].wh_near_attach_nodenum].AbsPosition) - (axisnode0.RelPosition + ar_origin);
         Vector3 ray = ortho.crossProduct(axis);
         ray.normalise();
         ray *= ar_wheels[i].wh_radius;
@@ -568,14 +568,14 @@ void Actor::calcNetwork()
         {
             Vector3 uray = Quaternion(Radian(rp - drp * j), axis) * ray;
 
-            node_t& tirenode0 = ar_nodes[ar_wheels[i].wh_tire_nodes[j * 2 + 0]];
-            node_t& tirenode1 = ar_nodes[ar_wheels[i].wh_tire_nodes[j * 2 + 1]];
+            const NodeNum_t tirenode0 = ar_wheels[i].wh_tire_nodes[j * 2 + 0];
+            const NodeNum_t tirenode1 = ar_wheels[i].wh_tire_nodes[j * 2 + 1];
 
-            tirenode0.AbsPosition = axisnode0.AbsPosition + uray;
-            tirenode0.RelPosition = tirenode0.AbsPosition - ar_origin;
+            ar_nodes[tirenode0].AbsPosition = axisnode0.RelPosition + ar_origin + uray;
+            ar_nodes_hot[tirenode0].RelPosition = axisnode0.RelPosition + uray;
 
-            tirenode1.AbsPosition = axisnode1.AbsPosition + uray;
-            tirenode1.RelPosition = tirenode1.AbsPosition - ar_origin;
+            ar_nodes[tirenode1].AbsPosition = axisnode1.RelPosition + ar_origin + uray;
+            ar_nodes_hot[tirenode1].RelPosition = axisnode1.RelPosition + uray;
         }
         ray.normalise();
         ray *= ar_wheels[i].wh_rim_radius;
@@ -583,14 +583,14 @@ void Actor::calcNetwork()
         {
             Vector3 uray = Quaternion(Radian(rp - drp * j), axis) * ray;
 
-            node_t& rimnode0 = ar_nodes[ar_wheels[i].wh_rim_nodes[j * 2 + 0]];
-            node_t& rimnode1 = ar_nodes[ar_wheels[i].wh_rim_nodes[j * 2 + 1]];
+            const NodeNum_t rimnode0 = ar_wheels[i].wh_rim_nodes[j * 2 + 0];
+            const NodeNum_t rimnode1 = ar_wheels[i].wh_rim_nodes[j * 2 + 1];
 
-            rimnode0.AbsPosition = axisnode0.AbsPosition + uray;
-            rimnode0.RelPosition = rimnode0.AbsPosition - ar_origin;
+            ar_nodes[rimnode0].AbsPosition = axisnode0.RelPosition + ar_origin + uray;
+            ar_nodes_hot[rimnode0].RelPosition = axisnode0.RelPosition + uray;
 
-            rimnode1.AbsPosition = axisnode1.AbsPosition + uray;
-            rimnode1.RelPosition = rimnode1.AbsPosition - ar_origin;
+            ar_nodes[rimnode1].AbsPosition = axisnode1.RelPosition + ar_origin + uray;
+            ar_nodes_hot[rimnode1].RelPosition = axisnode1.RelPosition + uray;
         }
     }
     this->UpdateBoundingBoxes();
@@ -1224,17 +1224,17 @@ void Actor::UpdateBoundingBoxes()
     // To avoid performance choking by overstretched bounding box (happens when vehicle drops some nodes),
     // we set a maximum distance limit from the main camera.
     const float CABNODE_MAX_CAMDIST = 15.f;
-    const Ogre::Vector3 mainCamPos = ar_nodes[ar_main_camera_node_pos].RelPosition;
+    const Ogre::Vector3 mainCamPos = ar_nodes_hot[ar_main_camera_node_pos].RelPosition;
 
     // Update
     for (int i = 0; i < ar_num_nodes; i++)
     {
-        Vector3 vel = ar_nodes[i].Velocity;
+        Vector3 vel = ar_nodes_hot[i].Velocity;
         Vector3 pos = ar_nodes[i].AbsPosition;
         int16_t cid = ar_nodes[i].nd_coll_bbox_id;
 
         ar_bounding_box.merge(pos);                                  // Current box
-        if (mainCamPos.squaredDistance(ar_nodes[i].RelPosition) < (CABNODE_MAX_CAMDIST*CABNODE_MAX_CAMDIST))
+        if (mainCamPos.squaredDistance(ar_nodes_hot[i].RelPosition) < (CABNODE_MAX_CAMDIST*CABNODE_MAX_CAMDIST))
         {
             ar_evboxes_bounding_box.merge(pos);
         }
@@ -1260,13 +1260,13 @@ void Actor::UpdateBoundingBoxes()
 
 void Actor::UpdatePhysicsOrigin()
 {
-    if (ar_nodes[0].RelPosition.squaredLength() > 10000.0)
+    if (ar_nodes_hot[0].RelPosition.squaredLength() > 10000.0)
     {
-        Vector3 offset = ar_nodes[0].RelPosition;
+        Vector3 offset = ar_nodes_hot[0].RelPosition;
         ar_origin += offset;
         for (int i = 0; i < ar_num_nodes; i++)
         {
-            ar_nodes[i].RelPosition -= offset;
+            ar_nodes_hot[i].RelPosition -= offset;
         }
     }
 }
@@ -1286,7 +1286,7 @@ void Actor::ResetAngle(float rot)
         ar_nodes[i].AbsPosition -= origin;
         ar_nodes[i].AbsPosition = matrix * ar_nodes[i].AbsPosition;
         ar_nodes[i].AbsPosition += origin;
-        ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - this->ar_origin;
+        ar_nodes_hot[i].RelPosition = ar_nodes[i].AbsPosition - this->ar_origin;
     }
 
     this->UpdateBoundingBoxes();
@@ -1308,7 +1308,7 @@ void Actor::resetPosition(float px, float pz, bool setInitPosition, float miny)
     for (int i = 0; i < ar_num_nodes; i++)
     {
         ar_nodes[i].AbsPosition += offset;
-        ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+        ar_nodes_hot[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
     }
 
     // vertical displacement
@@ -1327,7 +1327,7 @@ void Actor::resetPosition(float px, float pz, bool setInitPosition, float miny)
     for (int i = 0; i < ar_num_nodes; i++)
     {
         ar_nodes[i].AbsPosition.y += vertical_offset;
-        ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+        ar_nodes_hot[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
     }
 
     // mesh displacement
@@ -1353,7 +1353,7 @@ void Actor::resetPosition(float px, float pz, bool setInitPosition, float miny)
     for (int i = 0; i < ar_num_nodes; i++)
     {
         ar_nodes[i].AbsPosition.y += mesh_offset;
-        ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+        ar_nodes_hot[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
     }
 
     resetPosition(Vector3::ZERO, setInitPosition);
@@ -1368,7 +1368,7 @@ void Actor::resetPosition(Ogre::Vector3 translation, bool setInitPosition)
         for (int i = 0; i < ar_num_nodes; i++)
         {
             ar_nodes[i].AbsPosition += offset;
-            ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+            ar_nodes_hot[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
         }
     }
 
@@ -1394,9 +1394,9 @@ void Actor::softRespawn(Ogre::Vector3 spawnpos, Ogre::Quaternion spawnrot)
     for (NodeNum_t i = 0; i < ar_num_nodes; i++)
     {
         ar_nodes[i].AbsPosition = spawnpos + ar_nodes_spawn_offsets[i];
-        ar_nodes[i].RelPosition = ar_nodes_spawn_offsets[i];
-        ar_nodes[i].Forces = Ogre::Vector3::ZERO;
-        ar_nodes[i].Velocity = Ogre::Vector3::ZERO;
+        ar_nodes_hot[i].RelPosition = ar_nodes_spawn_offsets[i];
+        ar_nodes_hot[i].Forces = Ogre::Vector3::ZERO;
+        ar_nodes_hot[i].Velocity = Ogre::Vector3::ZERO;
     }
 
     // Apply spawn position & spawn rotation
@@ -1404,7 +1404,7 @@ void Actor::softRespawn(Ogre::Vector3 spawnpos, Ogre::Quaternion spawnrot)
     for (NodeNum_t i = 0; i < ar_num_nodes; i++)
     {
         ar_nodes[i].AbsPosition = spawnpos + spawnrot * (ar_nodes[i].AbsPosition - spawnpos);
-        ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+        ar_nodes_hot[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
     };
 }
 
@@ -1698,9 +1698,9 @@ void Actor::SyncReset(bool reset_position)
     for (int i = 0; i < ar_num_nodes; i++)
     {
         ar_nodes[i].AbsPosition = ar_initial_node_positions[i];
-        ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
-        ar_nodes[i].Velocity = Vector3::ZERO;
-        ar_nodes[i].Forces = Vector3::ZERO;
+        ar_nodes_hot[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+        ar_nodes_hot[i].Velocity = Vector3::ZERO;
+        ar_nodes_hot[i].Forces = Vector3::ZERO;
     }
 
     for (int i = 0; i < ar_num_beams; i++)
@@ -1919,14 +1919,14 @@ void Actor::searchBeamDefaults()
         this->CalcForcesEulerCompute(false, ar_nb_measure_steps);
         for (int i = 0; i < ar_num_nodes; i++)
         {
-            float v = ar_nodes[i].Velocity.length();
+            float v = ar_nodes_hot[i].Velocity.length();
             sum_movement += v / (float)ar_nb_measure_steps;
             movement = std::max(movement, v);
         }
         for (int i = 0; i < ar_num_beams; i++)
         {
-            Vector3 dis = (ar_nodes[ar_beams[i].p1num].RelPosition - ar_nodes[ar_beams[i].p2num].RelPosition).normalisedCopy();
-            float v = (ar_nodes[ar_beams[i].p1num].Velocity - ar_nodes[ar_beams[i].p2num].Velocity).dotProduct(dis);
+            Vector3 dis = (ar_nodes_hot[ar_beams[i].p1num].RelPosition - ar_nodes_hot[ar_beams[i].p2num].RelPosition).normalisedCopy();
+            float v = (ar_nodes_hot[ar_beams[i].p1num].Velocity - ar_nodes_hot[ar_beams[i].p2num].Velocity).dotProduct(dis);
             sum_velocity += std::abs(v) / (float)ar_nb_measure_steps;
             velocity = std::max(velocity, std::abs(v));
             sum_stress += std::abs(ar_beams[i].stress) / (float)ar_nb_measure_steps;
@@ -1980,9 +1980,9 @@ void Actor::HandleInputEvents(float dt)
             ar_nodes[i].AbsPosition -= m_rotation_request_center;
             ar_nodes[i].AbsPosition = rot * ar_nodes[i].AbsPosition;
             ar_nodes[i].AbsPosition += m_rotation_request_center;
-            ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
-            ar_nodes[i].Velocity = rot * ar_nodes[i].Velocity;
-            ar_nodes[i].Forces = rot * ar_nodes[i].Forces;
+            ar_nodes_hot[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+            ar_nodes_hot[i].Velocity = rot * ar_nodes_hot[i].Velocity;
+            ar_nodes_hot[i].Forces = rot * ar_nodes_hot[i].Forces;
         }
 
         m_rotation_request = 0.0f;
@@ -1995,7 +1995,7 @@ void Actor::HandleInputEvents(float dt)
         for (int i = 0; i < ar_num_nodes; i++)
         {
             ar_nodes[i].AbsPosition += m_translation_request;
-            ar_nodes[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
+            ar_nodes_hot[i].RelPosition = ar_nodes[i].AbsPosition - ar_origin;
         }
 
         m_translation_request = Vector3::ZERO;
@@ -2439,7 +2439,7 @@ void Actor::CalcAnimators(hydrobeam_t const& hydrobeam, float &cstate, int &div)
     // airspeed indicator
     if (hydrobeam.hb_anim_flags & ANIM_FLAG_AIRSPEED)
     {
-        float ground_speed_kt = ar_nodes[0].Velocity.length() * 1.9438;
+        float ground_speed_kt = ar_nodes_hot[0].Velocity.length() * 1.9438;
         float altitude = ar_nodes[0].AbsPosition.y;
         float sea_level_pressure = 101325; //in Pa
         float airpressure = sea_level_pressure * pow(1.0 - 0.0065 * altitude / 288.15, 5.24947); //in Pa
@@ -2452,7 +2452,7 @@ void Actor::CalcAnimators(hydrobeam_t const& hydrobeam, float &cstate, int &div)
     // vvi indicator
     if (hydrobeam.hb_anim_flags & ANIM_FLAG_VVI)
     {
-        float vvi = ar_nodes[0].Velocity.y * 196.85;
+        float vvi = ar_nodes_hot[0].Velocity.y * 196.85;
         // limit vvi scale to +/- 6m/s
         cstate -= vvi / 6000.0f;
         if (cstate >= 1.0f)
@@ -2502,7 +2502,7 @@ void Actor::CalcAnimators(hydrobeam_t const& hydrobeam, float &cstate, int &div)
         float aoa = 0;
         if (ar_num_wings > 4)
             aoa = (ar_wings[4].fa->aoa) / 25.0f;
-        if ((ar_nodes[0].Velocity.length() * 1.9438) < 10.0f)
+        if ((ar_nodes_hot[0].Velocity.length() * 1.9438) < 10.0f)
             aoa = 0;
         cstate -= aoa;
         if (cstate <= -1.0f)
@@ -3290,10 +3290,10 @@ void Actor::updateSoundSources()
     {
         // TODO: Investigate segfaults after terrain reloads ~ ulteq 11/2018
         ar_soundsources[i].ssi->setPosition(ar_nodes[ar_soundsources[i].nodenum].AbsPosition);
-        ar_soundsources[i].ssi->setVelocity(ar_nodes[ar_soundsources[i].nodenum].Velocity);
+        ar_soundsources[i].ssi->setVelocity(ar_nodes_hot[ar_soundsources[i].nodenum].Velocity);
     }
     //also this, so it is updated always, and for any vehicle
-    SOUND_MODULATE(ar_instance_id, SS_MOD_AIRSPEED, ar_nodes[0].Velocity.length() * 1.9438);
+    SOUND_MODULATE(ar_instance_id, SS_MOD_AIRSPEED, ar_nodes_hot[0].Velocity.length() * 1.9438);
     SOUND_MODULATE(ar_instance_id, SS_MOD_WHEELSPEED, ar_wheel_speed * 3.6);
 #endif //OPENAL
 }
@@ -4043,10 +4043,10 @@ void Actor::updateDashBoards(float dt)
     Vector3 cam_roll = this->GetCameraRoll();
 
     // speedo
-    float velocity = ar_nodes[0].Velocity.length();
+    float velocity = ar_nodes_hot[0].Velocity.length();
     if (cam_dir != Vector3::ZERO)
     {
-        velocity = cam_dir.dotProduct(ar_nodes[0].Velocity);
+        velocity = cam_dir.dotProduct(ar_nodes_hot[0].Velocity);
     }
 
     // KPH
@@ -4159,7 +4159,7 @@ void Actor::updateDashBoards(float dt)
 
         // water speed
         Vector3 hdir = this->GetCameraDir();
-        float knots = hdir.dotProduct(ar_nodes[ar_main_camera_node_pos].Velocity) * 1.9438f; // 1.943 = m/s in knots/s
+        float knots = hdir.dotProduct(ar_nodes_hot[ar_main_camera_node_pos].Velocity) * 1.9438f; // 1.943 = m/s in knots/s
         ar_dashboard->setFloat(DD_WATER_SPEED, knots);
     }
 
@@ -4195,7 +4195,7 @@ void Actor::updateDashBoards(float dt)
     {
         //airspeed
         {
-            float ground_speed_kt = ar_nodes[0].Velocity.length() * 1.9438f; // 1.943 = m/s in knots/s
+            float ground_speed_kt = ar_nodes_hot[0].Velocity.length() * 1.9438f; // 1.943 = m/s in knots/s
 
             //tropospheric model valid up to 11.000m (33.000ft)
             float altitude = ar_nodes[0].AbsPosition.y;
@@ -4290,12 +4290,12 @@ void Actor::updateDashBoards(float dt)
 #if 0
     // ADI - attitude director indicator
     //roll
-	Vector3 rollv=curr_truck->ar_nodes[curr_truck->ar_camera_node_pos[0]].RelPosition-curr_truck->ar_nodes[curr_truck->ar_camera_node_roll[0]].RelPosition;
+	Vector3 rollv=curr_truck->ar_nodes_hot[curr_truck->ar_camera_node_pos[0]].RelPosition-curr_truck->ar_nodes_hot[curr_truck->ar_camera_node_roll[0]].RelPosition;
 	rollv.normalise();
 	float rollangle=asin(rollv.dotProduct(Vector3::UNIT_Y));
 
     //pitch
-	Vector3 dirv=curr_truck->ar_nodes[curr_truck->ar_camera_node_pos[0]].RelPosition-curr_truck->ar_nodes[curr_truck->ar_camera_node_dir[0]].RelPosition;
+	Vector3 dirv=curr_truck->ar_nodes_hot[curr_truck->ar_camera_node_pos[0]].RelPosition-curr_truck->ar_nodes_hot[curr_truck->ar_camera_node_dir[0]].RelPosition;
 	dirv.normalise();
 	float pitchangle=asin(dirv.dotProduct(Vector3::UNIT_Y));
 	Vector3 upv=dirv.crossProduct(-rollv);
@@ -4305,7 +4305,7 @@ void Actor::updateDashBoards(float dt)
 	RoR::App::GetOverlayWrapper()->aditapetexture->setTextureRotate(Radian(-rollangle));
 
     // HSI - Horizontal Situation Indicator
-	Vector3 idir=curr_truck->ar_nodes[curr_truck->ar_camera_node_pos[0]].RelPosition-curr_truck->ar_nodes[curr_truck->ar_camera_node_dir[0]].RelPosition;
+	Vector3 idir=curr_truck->ar_nodes_hot[curr_truck->ar_camera_node_pos[0]].RelPosition-curr_truck->ar_nodes_hot[curr_truck->ar_camera_node_dir[0]].RelPosition;
     //			idir.normalise();
 	float dirangle=atan2(idir.dotProduct(Vector3::UNIT_X), idir.dotProduct(-Vector3::UNIT_Z));
 	RoR::App::GetOverlayWrapper()->hsirosetexture->setTextureRotate(Radian(dirangle));
@@ -4324,7 +4324,7 @@ void Actor::updateDashBoards(float dt)
 	}
 
     // VVI - Vertical Velocity Indicator
-	float vvi=curr_truck->ar_nodes[0].Velocity.y*196.85;
+	float vvi=curr_truck->ar_nodes_hot[0].Velocity.y*196.85;
 	if (vvi<1000.0 && vvi>-1000.0) angle=vvi*0.047;
 	if (vvi>1000.0 && vvi<6000.0) angle=47.0+(vvi-1000.0)*0.01175;
 	if (vvi>6000.0) angle=105.75;
@@ -4748,7 +4748,7 @@ Vector3 Actor::getNodeVelocity(int nodeNumber)
 {
     if (nodeNumber >= 0 && nodeNumber < ar_num_nodes)
     {
-        return ar_nodes[nodeNumber].Velocity;
+        return ar_nodes_hot[nodeNumber].Velocity;
     }
     else
     {
@@ -4760,7 +4760,7 @@ Vector3 Actor::getNodeForces(int nodeNumber)
 {
     if (nodeNumber >= 0 && nodeNumber < ar_num_nodes)
     {
-        return ar_nodes[nodeNumber].Forces;
+        return ar_nodes_hot[nodeNumber].Forces;
     }
     else
     {

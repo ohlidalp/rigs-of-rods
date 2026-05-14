@@ -179,12 +179,12 @@ void Airbrake::applyForce()
     float airpressure = sea_level_pressure * pow(1.0 - 0.0065 * altitude / 288.15, 5.24947); //in Pa
     float airdensity = airpressure * 0.0000120896;//1.225 at sea level
 
-    Vector3 wind = -m_actor->ar_nodes[noderef].Velocity;
+    Vector3 wind = -m_actor->ar_nodes_hot[noderef].Velocity;
     float wspeed = wind.length();
 
     Vector3 drag = (1.2 * area * sin(fabs(ratio * maxangle / 57.3)) * 0.5 * airdensity * wspeed / 4.0) * wind;
-    m_actor->ar_nodes[noderef].Forces += drag;
-    m_actor->ar_nodes[nodex].Forces += drag;
-    m_actor->ar_nodes[nodey].Forces += drag;
-    m_actor->ar_nodes[nodea].Forces += drag;
+    m_actor->ar_nodes_hot[noderef].Forces += drag;
+    m_actor->ar_nodes_hot[nodex].Forces += drag;
+    m_actor->ar_nodes_hot[nodey].Forces += drag;
+    m_actor->ar_nodes_hot[nodea].Forces += drag;
 }

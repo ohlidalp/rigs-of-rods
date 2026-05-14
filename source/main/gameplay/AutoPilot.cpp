@@ -81,7 +81,7 @@ void Autopilot::setInertialReferences(NodeNum_t refl, NodeNum_t refr, NodeNum_t 
     ref_r = refr;
     ref_b = refb;
     ref_c = refc; // ar_camera_node_pos(0)
-    ref_span = (m_actor->ar_nodes[refl].RelPosition - m_actor->ar_nodes[ref_r].RelPosition).length();
+    ref_span = (m_actor->ar_nodes_hot[refl].RelPosition - m_actor->ar_nodes_hot[ref_r].RelPosition).length();
 }
 
 float Autopilot::getAilerons()
@@ -89,7 +89,7 @@ float Autopilot::getAilerons()
     float val = 0;
     if (ref_l && ref_r)
     {
-        float rat = (m_actor->ar_nodes[ref_r].RelPosition.y - m_actor->ar_nodes[ref_l].RelPosition.y) / ref_span;
+        float rat = (m_actor->ar_nodes_hot[ref_r].RelPosition.y - m_actor->ar_nodes_hot[ref_l].RelPosition.y) / ref_span;
         float bank = 90.0;
         if (rat >= 1.0)
             bank = 90.0;
@@ -107,7 +107,7 @@ float Autopilot::getAilerons()
         }
         if (mode_heading == HEADING_FIXED)
         {
-            Vector3 vel = (m_actor->ar_nodes[ref_l].Velocity + m_actor->ar_nodes[ref_r].Velocity) / 2.0;
+            Vector3 vel = (m_actor->ar_nodes_hot[ref_l].Velocity + m_actor->ar_nodes_hot[ref_r].Velocity) / 2.0;
             float curdir = atan2(vel.x, -vel.z) * 57.295779513082;
             float want_bank = curdir - (float)heading;
             if (want_bank < -180.0)
@@ -135,7 +135,7 @@ float Autopilot::getAilerons()
             if (offcourse_tolerance > 60.0)
                 offcourse_tolerance = 60.0;
             float intercept_heading = m_ils_runway_heading + error_heading * offcourse_tolerance;
-            Vector3 vel = (m_actor->ar_nodes[ref_l].Velocity + m_actor->ar_nodes[ref_r].Velocity) / 2.0;
+            Vector3 vel = (m_actor->ar_nodes_hot[ref_l].Velocity + m_actor->ar_nodes_hot[ref_r].Velocity) / 2.0;
             float curdir = atan2(vel.x, -vel.z) * 57.295779513082;
             float want_bank = curdir - intercept_heading;
             if (want_bank < -180.0)
@@ -162,8 +162,8 @@ float Autopilot::getElevator()
     if (ref_l && ref_r && ref_b)
     {
         float wanted_vs = (float)vs / 196.87;
-        float current_vs = (m_actor->ar_nodes[ref_l].Velocity.y + m_actor->ar_nodes[ref_r].Velocity.y) / 2.0;
-        float pitch_var = current_vs - m_actor->ar_nodes[ref_b].Velocity.y;
+        float current_vs = (m_actor->ar_nodes_hot[ref_l].Velocity.y + m_actor->ar_nodes_hot[ref_r].Velocity.y) / 2.0;
+        float pitch_var = current_vs - m_actor->ar_nodes_hot[ref_b].Velocity.y;
         if (mode_alt == ALT_VS)
         {
             if (mode_heading == HEADING_NAV)
@@ -233,7 +233,7 @@ float Autopilot::getThrottle(float thrtl, float dt)
         float airpressure = sea_level_pressure * pow(1.0 - 0.0065 * altitude / 288.15, 5.24947); //in Pa
         float airdensity = airpressure * 0.0000120896;//1.225 at sea level
 
-        float gspd = 1.94384449 * ((m_actor->ar_nodes[ref_l].Velocity + m_actor->ar_nodes[ref_r].Velocity) / 2.0).length();
+        float gspd = 1.94384449 * ((m_actor->ar_nodes_hot[ref_l].Velocity + m_actor->ar_nodes_hot[ref_r].Velocity) / 2.0).length();
 
         float spd = gspd * sqrt(airdensity / 1.225); //KIAS
 
@@ -327,7 +327,7 @@ void Autopilot::gpws_update(float spawnheight)
             groundalt = App::GetGameContext()->GetTerrain()->getWater()->GetStaticWaterHeight();
         float height = (m_actor->ar_nodes[ref_c].AbsPosition.y - groundalt - spawnheight) * 3.28083f; //in feet!
         //skip height warning sounds when the plane is slower then ~10 knots
-        if ((m_actor->ar_nodes[ref_c].Velocity.length() * 1.9685f) > 10.0f)
+        if ((m_actor->ar_nodes_hot[ref_c].Velocity.length() * 1.9685f) > 10.0f)
         {
             if (height < 10 && last_gpws_height > 10)
                 SOUND_PLAY_ONCE(m_actor, SS_TRIG_GPWS_10);
@@ -348,7 +348,7 @@ void Autopilot::gpws_update(float spawnheight)
         // height to meters
         height *= 0.3048;
         // get the y-velocity in meters/s
-        float yVel = m_actor->ar_nodes[ref_c].Velocity.y * 1.9685f;
+        float yVel = m_actor->ar_nodes_hot[ref_c].Velocity.y * 1.9685f;
         // will trigger the pullup sound when vvi is high (avoid pullup warning when landing normal) and groundcontact will be in less then 10 seconds
         if (yVel * 10.0f < -height && yVel < -10.0f)
             SOUND_PLAY_ONCE(m_actor, SS_TRIG_GPWS_PULLUP);

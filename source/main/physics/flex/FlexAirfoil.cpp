@@ -287,7 +287,7 @@ FlexAirfoil::FlexAirfoil(Ogre::String const & name, ActorPtr actor, NodeNum_t pn
     cdnfaces[4]=29;
     cdnfaces[5]=28;
 
-    node_t* nodes = m_actor->ar_nodes;
+    node_hot_t* nodes = m_actor->ar_nodes_hot;
 
     float tsref=2.0*(nodes[nfrd].RelPosition-nodes[nfld].RelPosition).crossProduct(nodes[nbld].RelPosition-nodes[nfld].RelPosition).length();
     sref=2.0*(nodes[nfrd].RelPosition-nodes[nfld].RelPosition).crossProduct(nodes[nbrd].RelPosition-nodes[nfrd].RelPosition).length();
@@ -595,7 +595,7 @@ void FlexAirfoil::updateForces()
     if (!airfoil) return;
     if (broken) return;
 
-    node_t* nodes = m_actor->ar_nodes;
+    node_hot_t* nodes = m_actor->ar_nodes_hot;
 
     //evaluate wind direction
     Vector3 wind=-(nodes[nfld].Velocity+nodes[nfrd].Velocity)/2.0;
@@ -636,7 +636,7 @@ void FlexAirfoil::updateForces()
 
 
     //tropospheric model valid up to 11.000m (33.000ft)
-    float altitude=nodes[nfld].AbsPosition.y;
+    float altitude=nodes[nfld].RelPosition.y + m_actor->ar_origin.y;
     float sea_level_pressure=101325; //in Pa
     float airpressure=sea_level_pressure*approx_pow(1.0-0.0065*altitude/288.15, 5.24947); //in Pa
     float airdensity=airpressure*0.0000120896;//1.225 at sea level

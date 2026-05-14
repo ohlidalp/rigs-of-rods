@@ -29,7 +29,7 @@
 using namespace Ogre;
 using namespace RoR;
 
-FlexObj::FlexObj(RoR::GfxActor* gfx_actor, node_t* all_nodes, std::vector<CabTexcoord>& texcoords, int numtriangles, 
+FlexObj::FlexObj(RoR::GfxActor* gfx_actor, node_hot_t* all_nodes, std::vector<CabTexcoord>& texcoords, int numtriangles, 
                  int* triangles, std::vector<CabSubmesh>& submesh_defs, 
                  char* texname, const char* name, char* backtexname, char* transtexname):
     m_gfx_actor(gfx_actor)

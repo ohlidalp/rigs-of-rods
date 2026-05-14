@@ -59,14 +59,14 @@ void Screwprop::updateForces(int update)
     float depth = App::GetGameContext()->GetTerrain()->getWater()->CalcWavesHeight(m_actor->ar_nodes[noderef].AbsPosition) - m_actor->ar_nodes[noderef].AbsPosition.y;
     if (depth < 0)
         return; //out of water!
-    Vector3 dir = m_actor->ar_nodes[nodeback].RelPosition - m_actor->ar_nodes[noderef].RelPosition;
-    Vector3 rudaxis = m_actor->ar_nodes[noderef].RelPosition - m_actor->ar_nodes[nodeup].RelPosition;
+    Vector3 dir = m_actor->ar_nodes_hot[nodeback].RelPosition - m_actor->ar_nodes_hot[noderef].RelPosition;
+    Vector3 rudaxis = m_actor->ar_nodes_hot[noderef].RelPosition - m_actor->ar_nodes_hot[nodeup].RelPosition;
     dir.normalise();
     if (reverse)
         dir = -dir;
     rudaxis.normalise();
     dir = (throtle * fullpower) * (Quaternion(Degree(rudder), rudaxis) * dir);
-    m_actor->ar_nodes[noderef].Forces += dir;
+    m_actor->ar_nodes_hot[noderef].Forces += dir;
 
     if (update && splashp && throtle > 0.1)
     {

@@ -120,10 +120,10 @@ void ResolveCollisionForces(
 {
     //OLD: const auto velocity = hitnode.Velocity - (na.Velocity * alpha + nb.Velocity * beta + no.Velocity * gamma);
     const Ogre::Vector3 velocity
-        = hit_actor->ar_nodes[hit_node].Velocity - (
-            local_actor->ar_nodes[na].Velocity * alpha,
-            local_actor->ar_nodes[nb].Velocity * beta,
-            local_actor->ar_nodes[no].Velocity * gamma);
+        = hit_actor->ar_nodes_hot[hit_node].Velocity - (
+            local_actor->ar_nodes_hot[na].Velocity * alpha,
+            local_actor->ar_nodes_hot[nb].Velocity * beta,
+            local_actor->ar_nodes_hot[no].Velocity * gamma);
 
     //OLD: const float tr_mass = na.mass * alpha + nb.mass * beta + no.mass * gamma;
     const float tr_mass
@@ -136,10 +136,10 @@ void ResolveCollisionForces(
 
     const Ogre::Vector3 forcevec = primitiveCollision(hit_actor, hit_node, velocity, mass, normal, dt, &submesh_ground_model, penetration_depth);
 
-    hit_actor->ar_nodes[hit_node].Forces += forcevec;
-    local_actor->ar_nodes[na].Forces -= forcevec * alpha;
-    local_actor->ar_nodes[nb].Forces -= forcevec * beta;
-    local_actor->ar_nodes[no].Forces -= forcevec * gamma;
+    hit_actor->ar_nodes_hot[hit_node].Forces += forcevec;
+    local_actor->ar_nodes_hot[na].Forces -= forcevec * alpha;
+    local_actor->ar_nodes_hot[nb].Forces -= forcevec * beta;
+    local_actor->ar_nodes_hot[no].Forces -= forcevec * gamma;
 }
 
 

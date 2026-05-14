@@ -77,7 +77,7 @@ void Actor::CalcForceFeedback(bool doUpdate)
 
         if (ar_current_cinecam != CINECAMERAID_INVALID)
         {
-            m_force_sensors.accu_body_forces += ar_nodes[ar_camera_node_pos[ar_current_cinecam]].Forces;
+            m_force_sensors.accu_body_forces += ar_nodes_hot[ar_camera_node_pos[ar_current_cinecam]].Forces;
         }
 
         for (hydrobeam_t& hydrobeam: ar_hydros)
@@ -96,7 +96,7 @@ void Actor::CalcMouse()
     if (m_mouse_grab_node != NODENUM_INVALID)
     {
         Vector3 dir = m_mouse_grab_pos - ar_nodes[m_mouse_grab_node].AbsPosition;
-        ar_nodes[m_mouse_grab_node].Forces += m_mouse_grab_move_force * dir;
+        ar_nodes_hot[m_mouse_grab_node].Forces += m_mouse_grab_move_force * dir;
     }
 }
 
@@ -126,8 +126,8 @@ void Actor::CalcFuseDrag()
 {
     if (m_fusealge_airfoil && m_fusealge_width > 0.0f)
     {
-        node_t& nodefront = ar_nodes[m_fusealge_front];
-        node_t& nodeback = ar_nodes[m_fusealge_back];
+        node_hot_t& nodefront = ar_nodes_hot[m_fusealge_front];
+        node_hot_t& nodeback = ar_nodes_hot[m_fusealge_back];
 
         Vector3 wind = -nodefront.Velocity;
         float wspeed = wind.length();
@@ -141,7 +141,7 @@ void Actor::CalcFuseDrag()
         m_fusealge_airfoil->getparams(aoa, 1.0, 0.0, &cz, &cx, &cm);
 
         //tropospheric model valid up to 11.000m (33.000ft)
-        float altitude = nodefront.AbsPosition.y;
+        float altitude = nodefront.RelPosition.y + ar_origin.y;
         float sea_level_pressure = 101325; //in Pa
         float airpressure = sea_level_pressure * approx_pow(1.0 - 0.0065 * altitude / 288.1, 5.24947); //in Pa
         float airdensity = airpressure * 0.0000120896f;//1.225 at sea level
@@ -177,12 +177,12 @@ void Actor::CalcBuoyance(bool doUpdate)
             // Refresh cached node from current simulation state
             NodeNum_t nodenum = m_buoyance->buoy_cached_nodes[i].nodenum;
             m_buoyance->buoy_cached_nodes[i].AbsPosition = ar_nodes[nodenum].AbsPosition;
-            m_buoyance->buoy_cached_nodes[i].Velocity    = ar_nodes[nodenum].Velocity;
+            m_buoyance->buoy_cached_nodes[i].Velocity    = ar_nodes_hot[nodenum].Velocity;
             m_buoyance->buoy_cached_nodes[i].Forces      = Ogre::Vector3::ZERO;
 
             // Projected node: advance position by N steps
-            m_buoyance->buoy_projected_nodes[i].AbsPosition = ar_nodes[nodenum].AbsPosition + ar_nodes[nodenum].Velocity * timeshift_sec;
-            m_buoyance->buoy_projected_nodes[i].Velocity = ar_nodes[nodenum].Velocity;
+            m_buoyance->buoy_projected_nodes[i].AbsPosition = ar_nodes[nodenum].AbsPosition + ar_nodes_hot[nodenum].Velocity * timeshift_sec;
+            m_buoyance->buoy_projected_nodes[i].Velocity = ar_nodes_hot[nodenum].Velocity;
             m_buoyance->buoy_projected_nodes[i].Forces   = Ogre::Vector3::ZERO;
         }
 
@@ -207,7 +207,7 @@ void Actor::CalcBuoyance(bool doUpdate)
         // Apply forces to nodes.
         for (const BuoyCachedNode& bcn: m_buoyance->buoy_cached_nodes)
         {
-            ar_nodes[bcn.nodenum].Forces += bcn.Forces;
+            ar_nodes_hot[bcn.nodenum].Forces += bcn.Forces;
         }
 
         m_buoyance->buoy_last_sample_steps = m_buoyance->buoy_total_steps;
@@ -224,7 +224,7 @@ void Actor::CalcBuoyance(bool doUpdate)
             const Ogre::Vector3& force_a = m_buoyance->buoy_cached_nodes[i].Forces;
             const Ogre::Vector3& force_b = m_buoyance->buoy_projected_nodes[i].Forces;
             Ogre::Vector3 interp_force = force_a * (1.0f - interp_ratio) + force_b * interp_ratio;
-            ar_nodes[nodenum].Forces += interp_force;
+            ar_nodes_hot[nodenum].Forces += interp_force;
         }
     }
 
@@ -370,7 +370,7 @@ void Actor::CalcWheels(bool doUpdate, int num_steps)
         if (ar_wheels[i].wh_is_detached)
             continue;
 
-        float relspeed = ar_nodes[0].Velocity.dotProduct(getDirection());
+        float relspeed = ar_nodes_hot[0].Velocity.dotProduct(getDirection());
         float curspeed = fabs(relspeed);
         float wheel_slip = fabs(ar_wheels[i].wh_speed - relspeed) / std::max(1.0f, curspeed);
 
@@ -444,10 +444,10 @@ void Actor::CalcWheels(bool doUpdate, int num_steps)
 
         ar_wheels[i].debug_torque += ar_wheels[i].wh_torque / (float)num_steps;
 
-        node_t& axisnode0 = ar_nodes[ar_wheels[i].wh_axis_node0num];
-        node_t& axisnode1 = ar_nodes[ar_wheels[i].wh_axis_node1num];
-        node_t& armnode = ar_nodes[ar_wheels[i].wh_arm_nodenum];
-        node_t& nearnode = ar_nodes[ar_wheels[i].wh_near_attach_nodenum];
+        node_hot_t& axisnode0 = ar_nodes_hot[ar_wheels[i].wh_axis_node0num];
+        node_hot_t& axisnode1 = ar_nodes_hot[ar_wheels[i].wh_axis_node1num];
+        node_hot_t& armnode = ar_nodes_hot[ar_wheels[i].wh_arm_nodenum];
+        node_hot_t& nearnode = ar_nodes_hot[ar_wheels[i].wh_near_attach_nodenum];
 
         // application to wheel
         Vector3 axis = (axisnode1.RelPosition - axisnode0.RelPosition).normalisedCopy();
@@ -461,8 +461,8 @@ void Actor::CalcWheels(bool doUpdate, int num_steps)
         Vector3 force = Vector3::ZERO;
         for (size_t j = 0; j < ar_wheels[i].wh_tire_nodes.size(); j++)
         {
-            node_t* outer_node = &ar_nodes[ar_wheels[i].wh_tire_nodes[j]];
-            node_t* inner_node = (j % 2) ? (&ar_nodes[ar_wheels[i].wh_axis_node1num]) : (&ar_nodes[ar_wheels[i].wh_axis_node0num]);
+            node_hot_t* outer_node = &ar_nodes_hot[ar_wheels[i].wh_tire_nodes[j]];
+            node_hot_t* inner_node = (j % 2) ? (&ar_nodes_hot[ar_wheels[i].wh_axis_node1num]) : (&ar_nodes_hot[ar_wheels[i].wh_axis_node0num]);
 
             Vector3 radius = outer_node->RelPosition - inner_node->RelPosition;
             float inverted_rlen = 1.0f / radius.length();
@@ -473,7 +473,7 @@ void Actor::CalcWheels(bool doUpdate, int num_steps)
             }
 
             Vector3 dir = axis.crossProduct(radius) * inverted_rlen;
-            (&ar_nodes[ar_wheels[i].wh_tire_nodes[j]])->Forces += dir * axis_precalc * inverted_rlen;
+            (&ar_nodes_hot[ar_wheels[i].wh_tire_nodes[j]])->Forces += dir * axis_precalc * inverted_rlen;
             ar_wheels[i].wh_speed += (outer_node->Velocity - inner_node->Velocity).dotProduct(dir);
 
             if ((&ar_nodes[ar_wheels[i].wh_tire_nodes[j]])->nd_has_ground_contact || (&ar_nodes[ar_wheels[i].wh_tire_nodes[j]])->nd_has_mesh_contact)
@@ -1086,8 +1086,8 @@ void Actor::CalcCommands(bool doUpdate)
         for (int i = 0; i < ar_num_rotators; i++)
         {
             // compute rotation axis
-            Vector3 ax1 = ar_nodes[ar_rotators[i].axis1].RelPosition;
-            Vector3 ax2 = ar_nodes[ar_rotators[i].axis2].RelPosition;
+            Vector3 ax1 = ar_nodes_hot[ar_rotators[i].axis1].RelPosition;
+            Vector3 ax2 = ar_nodes_hot[ar_rotators[i].axis2].RelPosition;
             Vector3 axis = ax1 - ax2;
             axis.normalise();
             // find the reference plane
@@ -1097,8 +1097,8 @@ void Actor::CalcCommands(bool doUpdate)
             for (int k = 0; k < 2; k++)
             {
                 // find the reference vectors
-                Vector3 ref1 = pl.projectVector(ax1 - ar_nodes[ar_rotators[i].nodes1[k]].RelPosition);
-                Vector3 ref2 = pl.projectVector(ax2 - ar_nodes[ar_rotators[i].nodes2[k]].RelPosition);
+                Vector3 ref1 = pl.projectVector(ax1 - ar_nodes_hot[ar_rotators[i].nodes1[k]].RelPosition);
+                Vector3 ref2 = pl.projectVector(ax2 - ar_nodes_hot[ar_rotators[i].nodes2[k]].RelPosition);
                 float ref1len = ref1.normalise();
                 float ref2len = ref2.normalise();
                 // theory vector
@@ -1117,11 +1117,11 @@ void Actor::CalcCommands(bool doUpdate)
                 if (ref2len <= ar_rotators[i].tolerance)
                     ref2len = 0.0f;
 
-                ar_nodes[ar_rotators[i].nodes1[k    ]].Forces += (aerror * ref1len * rigidity) * dir1;
-                ar_nodes[ar_rotators[i].nodes2[k    ]].Forces -= (aerror * ref2len * rigidity) * dir2;
+                ar_nodes_hot[ar_rotators[i].nodes1[k    ]].Forces += (aerror * ref1len * rigidity) * dir1;
+                ar_nodes_hot[ar_rotators[i].nodes2[k    ]].Forces -= (aerror * ref2len * rigidity) * dir2;
                 // symmetric
-                ar_nodes[ar_rotators[i].nodes1[k + 2]].Forces -= (aerror * ref1len * rigidity) * dir1;
-                ar_nodes[ar_rotators[i].nodes2[k + 2]].Forces += (aerror * ref2len * rigidity) * dir2;
+                ar_nodes_hot[ar_rotators[i].nodes1[k + 2]].Forces -= (aerror * ref1len * rigidity) * dir1;
+                ar_nodes_hot[ar_rotators[i].nodes2[k + 2]].Forces += (aerror * ref2len * rigidity) * dir2;
             }
         }
     }
@@ -1216,7 +1216,7 @@ void Actor::CalcBeams(bool trigger_hooks)
 //            ar_prof.ProfBegin(PROF_CALCBEAMS_PROLOGUE);
 
             // Calculate beam length
-            Vector3 dis = ar_nodes[ar_beams[i].p1num].RelPosition - ar_nodes[ar_beams[i].p2num].RelPosition;
+            Vector3 dis = ar_nodes_hot[ar_beams[i].p1num].RelPosition - ar_nodes_hot[ar_beams[i].p2num].RelPosition;
 
             Real dislen = dis.squaredLength();
             Real inverted_dislen = fast_invSqrt(dislen);
@@ -1230,7 +1230,7 @@ void Actor::CalcBeams(bool trigger_hooks)
             Real d = ar_beams[i].d;
 
             // Calculate beam's rate of change
-            float v = (ar_nodes[ar_beams[i].p1num].Velocity - ar_nodes[ar_beams[i].p2num].Velocity).dotProduct(dis) * inverted_dislen;
+            float v = (ar_nodes_hot[ar_beams[i].p1num].Velocity - ar_nodes_hot[ar_beams[i].p2num].Velocity).dotProduct(dis) * inverted_dislen;
 //            ar_prof.ProfEnd(PROF_CALCBEAMS_PROLOGUE);
 
 //            ar_prof.ProfBegin(PROF_CALCBEAMS_DEFORM);
@@ -1466,8 +1466,8 @@ void Actor::CalcBeams(bool trigger_hooks)
             // At last update the beam forces
             Vector3 f = dis;
             f *= (slen * inverted_dislen);
-            ar_nodes[ar_beams[i].p1num].Forces += f;
-            ar_nodes[ar_beams[i].p2num].Forces -= f;
+            ar_nodes_hot[ar_beams[i].p1num].Forces += f;
+            ar_nodes_hot[ar_beams[i].p2num].Forces -= f;
 //            ar_prof.ProfEnd(PROF_CALCBEAMS_EPILOGUE);
         }
     }
@@ -1481,11 +1481,15 @@ void Actor::CalcBeamsInterActor()
     {
         if (!ar_inter_beams[i]->bm_disabled && ar_inter_beams[i]->bm_inter_actor)
         {
-            node_t& node_p1 = ar_nodes[ar_inter_beams[i]->p1num];
-            node_t& node_p2 = ar_inter_beams[i]->bm_locked_actor->ar_nodes[ar_inter_beams[i]->p2num];
+            const NodeNum_t p1num = ar_inter_beams[i]->p1num;
+            node_hot_t& node_p1 = ar_nodes_hot[p1num];
+            const Ogre::Vector3& pos_p1 = node_p1.RelPosition + ar_origin;
+            const NodeNum_t p2num = ar_inter_beams[i]->p2num;
+            node_hot_t& node_p2 = ar_inter_beams[i]->bm_locked_actor->ar_nodes_hot[p2num];
+            const Ogre::Vector3& pos_p2 = node_p2.RelPosition + ar_inter_beams[i]->bm_locked_actor->ar_origin;
 
             // Calculate beam length
-            Vector3 dis = node_p1.AbsPosition - node_p2.AbsPosition;
+            Vector3 dis = pos_p1 - pos_p2;
 
             Real dislen = dis.squaredLength();
             Real inverted_dislen = fast_invSqrt(dislen);
@@ -1578,26 +1582,17 @@ void Actor::CalcBeamsInterActor()
                     SOUND_MODULATE(ar_instance_id, SS_MOD_BREAK, 0.5 * k * difftoBeamL * difftoBeamL);
                     SOUND_PLAY_ONCE(ar_instance_id, SS_TRIG_BREAK);
 
-                    //Break the beam only when it is not connected to a node
-                    //which is a part of a collision triangle and has 2 "live" beams or less
-                    //connected to it.
-                    if (!((node_p1.nd_cab_node && GetNumActiveConnectedBeams(node_p1.pos) < 3) || (node_p2.nd_cab_node && GetNumActiveConnectedBeams(node_p2.pos) < 3)))
-                    {
-                        slen = 0.0f;
-                        ar_inter_beams[i]->bm_broken = true;
-                        ar_inter_beams[i]->bm_disabled = true;
+                    // NOTE: cabnode check omitted, as inter-actor beams can't be.
+                    slen = 0.0f;
+                    ar_inter_beams[i]->bm_broken = true;
+                    ar_inter_beams[i]->bm_disabled = true;
 
-                        if (m_beam_break_debug_enabled)
-                        {
-                            RoR::Str<200> msg;
-                            msg << "Beam " << i << " just broke with force " << len << " / " << ar_inter_beams[i]->strength << ". ";
-                            LogBeamNodes(msg, (*ar_inter_beams[i]));
-                            App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE, msg.ToCStr());
-                        }
-                    }
-                    else
+                    if (m_beam_break_debug_enabled)
                     {
-                        ar_inter_beams[i]->strength = 2.0f * ar_inter_beams[i]->minmaxposnegstress;
+                        RoR::Str<200> msg;
+                        msg << "Beam " << i << " just broke with force " << len << " / " << ar_inter_beams[i]->strength << ". ";
+                        LogBeamNodes(msg, (*ar_inter_beams[i]));
+                        App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE, msg.ToCStr());
                     }
                 }
             }
@@ -1632,31 +1627,31 @@ void Actor::CalcNodes()
                 // Reverts: commit/d11a88142f737528638bd357c38d717c85cebba6#diff-4003254e55aec2c60d21228f375f2a2dL1153
                 // Fixes: Gavril Omega Six sliding on ground on the simple2 spawn
                 // ar_nodes[i].AbsPosition - oripos is always zero ... dark floating point magic
-                ar_nodes[i].RelPosition += ar_nodes[i].AbsPosition - oripos;
+                ar_nodes_hot[i].RelPosition += ar_nodes[i].AbsPosition - oripos;
             }
         }
 
         if (i == ar_main_camera_node_pos)
         {
             // record g forces on cameras
-            m_camera_gforces_accu += ar_nodes[i].Forces / ar_nodes[i].mass;
+            m_camera_gforces_accu += ar_nodes_hot[i].Forces / ar_nodes[i].mass;
         }
 
         // integration
         if (!ar_nodes[i].nd_immovable)
         {
-            ar_nodes[i].Velocity += ar_nodes[i].Forces / ar_nodes[i].mass * PHYSICS_DT;
-            ar_nodes[i].RelPosition += ar_nodes[i].Velocity * PHYSICS_DT;
+            ar_nodes_hot[i].Velocity += ar_nodes_hot[i].Forces / ar_nodes[i].mass * PHYSICS_DT;
+            ar_nodes_hot[i].RelPosition += ar_nodes_hot[i].Velocity * PHYSICS_DT;
             ar_nodes[i].AbsPosition = ar_origin;
-            ar_nodes[i].AbsPosition += ar_nodes[i].RelPosition;
+            ar_nodes[i].AbsPosition += ar_nodes_hot[i].RelPosition;
         }
 
         // prepare next loop (optimisation)
         // we start forces from zero
         // start with gravity
-        ar_nodes[i].Forces = Vector3(0, ar_nodes[i].mass * gravity, 0);
+        ar_nodes_hot[i].Forces = Vector3(0, ar_nodes[i].mass * gravity, 0);
 
-        Real approx_speed = approx_sqrt(ar_nodes[i].Velocity.squaredLength());
+        Real approx_speed = approx_sqrt(ar_nodes_hot[i].Velocity.squaredLength());
 
         // anti-explsion guard (mach 20)
         if (approx_speed > 6860 && !m_ongoing_reset)
@@ -1671,17 +1666,17 @@ void Actor::CalcNodes()
         if (m_fusealge_airfoil)
         {
             // aerodynamics on steroids!
-            ar_nodes[i].Forces += ar_fusedrag;
+            ar_nodes_hot[i].Forces += ar_fusedrag;
         }
         else if (!ar_disable_aerodyn_turbulent_drag)
         {
             // add viscous drag (turbulent model)
             Real defdragxspeed = DEFAULT_DRAG * approx_speed;
-            Vector3 drag = -defdragxspeed * ar_nodes[i].Velocity;
+            Vector3 drag = -defdragxspeed * ar_nodes_hot[i].Velocity;
             // plus: turbulences
             Real maxtur = defdragxspeed * approx_speed * 0.005f;
             drag += maxtur * Vector3(frand_11(), frand_11(), frand_11());
-            ar_nodes[i].Forces += drag;
+            ar_nodes_hot[i].Forces += drag;
         }
 
         if (water)
@@ -1693,9 +1688,9 @@ void Actor::CalcNodes()
                 if (ar_num_buoycabs == 0)
                 {
                     // water drag (turbulent)
-                    ar_nodes[i].Forces -= (DEFAULT_WATERDRAG * approx_speed) * ar_nodes[i].Velocity;
+                    ar_nodes_hot[i].Forces -= (DEFAULT_WATERDRAG * approx_speed) * ar_nodes_hot[i].Velocity;
                     // basic buoyance
-                    ar_nodes[i].Forces += ar_nodes[i].buoyancy * Vector3::UNIT_Y;
+                    ar_nodes_hot[i].Forces += ar_nodes[i].buoyancy * Vector3::UNIT_Y;
                 }
                 // engine stall
                 if (i == ar_cinecam_node[0] && ar_engine)
@@ -1854,11 +1849,12 @@ void Actor::CalcRopes()
     {
         if (r.rp_locked == LOCKED && r.rp_locked_ropable)
         {
-            node_t& locked_node = r.rp_locked_actor->ar_nodes[r.rp_locked_ropable->rb_nodenum];
-            node_t& rope_node = ar_nodes[r.rp_beam->p2num];
+            node_hot_t& locked_node = r.rp_locked_actor->ar_nodes_hot[r.rp_locked_ropable->rb_nodenum];
+            const Ogre::Vector3 locked_node_abs_pos = locked_node.RelPosition + r.rp_locked_actor->ar_origin;
+            node_hot_t& rope_node = ar_nodes_hot[r.rp_beam->p2num];
 
-            rope_node.AbsPosition = locked_node.AbsPosition;
-            rope_node.RelPosition = locked_node.AbsPosition - ar_origin;
+            ar_nodes[r.rp_beam->p2num].AbsPosition = locked_node_abs_pos;
+            rope_node.RelPosition = locked_node_abs_pos - ar_origin;
             rope_node.Velocity    = locked_node.Velocity;
             locked_node.Forces    += rope_node.Forces;
             rope_node.Forces      = Vector3::ZERO;

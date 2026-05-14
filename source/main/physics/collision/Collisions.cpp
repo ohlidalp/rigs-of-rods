@@ -1036,7 +1036,7 @@ bool Collisions::nodeCollision(Actor* const actor, const NodeNum_t node, float d
                             if (cbox->refined) normal = cbox->rot * normal;
 
                             // collision boxes are always out of concrete as it seems
-                            actor->ar_nodes[node].Forces += primitiveCollision(actor, node, actor->ar_nodes[node].Velocity, actor->ar_nodes[node].mass, normal, dt, defaultgm);
+                            actor->ar_nodes_hot[node].Forces += primitiveCollision(actor, node, actor->ar_nodes_hot[node].Velocity, actor->ar_nodes[node].mass, normal, dt, defaultgm);
                             actor->ar_nodes[node].nd_last_collision_gm = defaultgm;
                         }
                     }
@@ -1070,7 +1070,7 @@ bool Collisions::nodeCollision(Actor* const actor, const NodeNum_t node, float d
                         if (cbox->refined) normal = cbox->rot * normal;
 
                         // collision boxes are always out of concrete as it seems
-                        actor->ar_nodes[node].Forces += primitiveCollision(actor, node, actor->ar_nodes[node].Velocity, actor->ar_nodes[node].mass, normal, dt, defaultgm);
+                        actor->ar_nodes_hot[node].Forces += primitiveCollision(actor, node, actor->ar_nodes_hot[node].Velocity, actor->ar_nodes[node].mass, normal, dt, defaultgm);
                         actor->ar_nodes[node].nd_last_collision_gm = defaultgm;
                     }
                 }
@@ -1111,7 +1111,7 @@ bool Collisions::nodeCollision(Actor* const actor, const NodeNum_t node, float d
         // we need the normal
         // resume repere for the normal
         Vector3 normal = minctri->reverse * Vector3::UNIT_Z;
-        actor->ar_nodes[node].Forces += primitiveCollision(actor, node, actor->ar_nodes[node].Velocity, actor->ar_nodes[node].mass, normal, dt, minctri->gm);
+        actor->ar_nodes_hot[node].Forces += primitiveCollision(actor, node, actor->ar_nodes_hot[node].Velocity, actor->ar_nodes[node].mass, normal, dt, minctri->gm);
         actor->ar_nodes[node].nd_last_collision_gm = minctri->gm;
     }
 
@@ -1251,7 +1251,7 @@ bool Collisions::groundCollision(Actor* actor, const NodeNum_t node, float dt)
         // when landuse fails or we don't have it, use the default value
         if (!ogm) ogm = defaultgroundgm;
         Ogre::Vector3 normal = App::GetGameContext()->GetTerrain()->GetNormalAt(actor->ar_nodes[node].AbsPosition.x, v, actor->ar_nodes[node].AbsPosition.z);
-        actor->ar_nodes[node].Forces += primitiveCollision(actor, node, actor->ar_nodes[node].Velocity, actor->ar_nodes[node].mass, normal, dt, ogm, v - actor->ar_nodes[node].AbsPosition.y);
+        actor->ar_nodes_hot[node].Forces += primitiveCollision(actor, node, actor->ar_nodes_hot[node].Velocity, actor->ar_nodes[node].mass, normal, dt, ogm, v - actor->ar_nodes[node].AbsPosition.y);
         actor->ar_nodes[node].nd_last_collision_gm = ogm;
         return true;
     }
@@ -1262,7 +1262,7 @@ Vector3 RoR::primitiveCollision(Actor* actor, const NodeNum_t node, Ogre::Vector
 {
     Vector3 force = Vector3::ZERO;
     float Vnormal = velocity.dotProduct(normal);
-    float Fnormal = actor->ar_nodes[node].Forces.dotProduct(normal);
+    float Fnormal = actor->ar_nodes_hot[node].Forces.dotProduct(normal);
 
     // if we are inside the fluid (solid ground is below us)
     if (gm->solid_ground_level != 0.0f && penetration >= 0)
@@ -1314,7 +1314,7 @@ Vector3 RoR::primitiveCollision(Actor* actor, const NodeNum_t node, Ogre::Vector
         }
         if (Freaction > 0)
         {
-            Vector3 slipf = actor->ar_nodes[node].Forces - Fnormal * normal;
+            Vector3 slipf = actor->ar_nodes_hot[node].Forces - Fnormal * normal;
             Vector3 slip = velocity - Vnormal * normal;
             float slipv = slip.normalise();
             // If the velocity that we slip is lower than adhesion velocity and

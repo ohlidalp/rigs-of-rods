@@ -57,7 +57,7 @@ void PointColDetector::UpdateInterPoint(bool ignorestate)
             collision_partners.push_back(actor);
             bool is_linked = std::find(m_actor->ar_linked_actors.begin(), m_actor->ar_linked_actors.end(), actor) != m_actor->ar_linked_actors.end();
             contacters_size += is_linked ? actor->ar_num_contacters : actor->ar_num_contactable_nodes;
-            if (m_actor->ar_nodes[0].Velocity.squaredDistance(actor->ar_nodes[0].Velocity) > 16)
+            if (m_actor->ar_nodes_hot[0].Velocity.squaredDistance(actor->ar_nodes_hot[0].Velocity) > 16)
             {
                 for (int i = 0; i < m_actor->ar_num_collcabs; i++)
                 {

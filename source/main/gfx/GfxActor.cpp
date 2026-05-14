@@ -622,11 +622,11 @@ void RoR::GfxActor::UpdateParticles(float dt)
                 {
                     if (m_particles_drip != nullptr)
                     {
-                        m_particles_drip->allocDrip(n.AbsPosition, n.Velocity, nfx.nx_wet_time_sec); // Dripping water particles
+                        m_particles_drip->allocDrip(n.AbsPosition, m_actor->ar_nodes_hot[n.pos].Velocity, nfx.nx_wet_time_sec); // Dripping water particles
                     }
                     if (nfx.nx_is_hot && m_particles_dust != nullptr)
                     {
-                        m_particles_dust->allocVapour(n.AbsPosition, n.Velocity, nfx.nx_wet_time_sec); // Water vapour particles
+                        m_particles_dust->allocVapour(n.AbsPosition, m_actor->ar_nodes_hot[n.pos].Velocity, nfx.nx_wet_time_sec); // Water vapour particles
                     }
                 }
             }
@@ -635,15 +635,15 @@ void RoR::GfxActor::UpdateParticles(float dt)
         // Water splash and ripple
         if (n.nd_under_water && !nfx.nx_no_particles)
         {
-            if ((water_height - n.AbsPosition.y < 0.2f) && (n.Velocity.squaredLength() > 4.f))
+            if ((water_height - n.AbsPosition.y < 0.2f) && (m_actor->ar_nodes_hot[n.pos].Velocity.squaredLength() > 4.f))
             {
                 if (m_particles_splash)
                 {
-                    m_particles_splash->allocSplash(n.AbsPosition, n.Velocity);
+                    m_particles_splash->allocSplash(n.AbsPosition, m_actor->ar_nodes_hot[n.pos].Velocity);
                 }
                 if (m_particles_ripple)
                 {
-                    m_particles_ripple->allocRipple(n.AbsPosition, n.Velocity);     
+                    m_particles_ripple->allocRipple(n.AbsPosition, m_actor->ar_nodes_hot[n.pos].Velocity);     
                 }
             }
         }
@@ -656,14 +656,14 @@ void RoR::GfxActor::UpdateParticles(float dt)
             case Collisions::FX_DUSTY:
                 if (m_particles_dust != nullptr)
                 {
-                    m_particles_dust->malloc(n.AbsPosition, n.Velocity / 2.0, n.nd_last_collision_gm->fx_colour);
+                    m_particles_dust->malloc(n.AbsPosition, m_actor->ar_nodes_hot[n.pos].Velocity / 2.0, n.nd_last_collision_gm->fx_colour);
                 }
                 break;
 
             case Collisions::FX_CLUMPY:
-                if (m_particles_clump != nullptr && n.Velocity.squaredLength() > 1.f)
+                if (m_particles_clump != nullptr && m_actor->ar_nodes_hot[n.pos].Velocity.squaredLength() > 1.f)
                 {
-                    m_particles_clump->allocClump(n.AbsPosition, n.Velocity / 2.0, n.nd_last_collision_gm->fx_colour);
+                    m_particles_clump->allocClump(n.AbsPosition, m_actor->ar_nodes_hot[n.pos].Velocity / 2.0, n.nd_last_collision_gm->fx_colour);
                 }
                 break;
 
@@ -681,7 +681,7 @@ void RoR::GfxActor::UpdateParticles(float dt)
                     }
                     if (m_particles_dust != nullptr && n.nd_avg_collision_slip > SMOKE_THRESHOLD)
                     {
-                        m_particles_dust->allocSmoke(n.AbsPosition, n.Velocity);
+                        m_particles_dust->allocSmoke(n.AbsPosition, m_actor->ar_nodes_hot[n.pos].Velocity);
                     }
                 }
                 else if (!nfx.nx_no_sparks) // Not a wheel => sparks
@@ -690,7 +690,7 @@ void RoR::GfxActor::UpdateParticles(float dt)
                     {
                         if (n.nd_last_collision_slip.squaredLength() > 25.f)
                         {
-                            m_particles_sparks->allocSparks(n.AbsPosition, n.Velocity);
+                            m_particles_sparks->allocSparks(n.AbsPosition, m_actor->ar_nodes_hot[n.pos].Velocity);
                         }
                     }
                 }
@@ -942,7 +942,7 @@ void RoR::GfxActor::UpdateDebugView()
             node_t& armnode = m_actor->ar_nodes[wheels[i].wh_arm_nodenum];
             node_t& nearnode = m_actor->ar_nodes[wheels[i].wh_near_attach_nodenum];
 
-            Ogre::Vector3 axis = axisnode1.RelPosition - axisnode0.RelPosition;
+            Ogre::Vector3 axis = m_actor->ar_nodes_hot[axisnode1.pos].RelPosition - m_actor->ar_nodes_hot[axisnode0.pos].RelPosition;
             axis.normalise();
 
             // Wheel axle
@@ -987,7 +987,7 @@ void RoR::GfxActor::UpdateDebugView()
                 }
             }
 
-            Ogre::Vector3 rradius = armnode.RelPosition - nearnode.RelPosition;
+            Ogre::Vector3 rradius = m_actor->ar_nodes_hot[armnode.pos].RelPosition - m_actor->ar_nodes_hot[nearnode.pos].RelPosition;
 
             // Reference arm
             {
@@ -1011,7 +1011,7 @@ void RoR::GfxActor::UpdateDebugView()
                 }
             }
 
-            Ogre::Vector3 radius = Ogre::Plane(axis, nearnode.RelPosition).projectVector(rradius);
+            Ogre::Vector3 radius = Ogre::Plane(axis, m_actor->ar_nodes_hot[nearnode.pos].RelPosition).projectVector(rradius);
 
             // Projection plane
 #if 0
@@ -1359,7 +1359,7 @@ void RoR::GfxActor::UpdateDebugView()
             // Projection plane
             {
                 Ogre::Vector3 mid = nodes[rotators[i].axis1].AbsPosition.midPoint(nodes[rotators[i].axis2].AbsPosition);
-                Ogre::Vector3 axis = nodes[rotators[i].axis1].RelPosition - nodes[rotators[i].axis2].RelPosition;
+                Ogre::Vector3 axis = m_actor->ar_nodes_hot[nodes[rotators[i].axis1].pos].RelPosition - m_actor->ar_nodes_hot[nodes[rotators[i].axis2].pos].RelPosition;
                 Ogre::Vector3 perp = axis.perpendicular(); 
                 axis.normalise();
 
@@ -1370,7 +1370,7 @@ void RoR::GfxActor::UpdateDebugView()
                 Ogre::Real offset1 = 0.0f;
                 for (int k = 0; k < 2; k++)
                 {
-                    Ogre::Vector3 r1 = nodes[rotators[i].nodes1[k]].RelPosition - nodes[rotators[i].axis1].RelPosition;
+                    Ogre::Vector3 r1 = m_actor->ar_nodes_hot[nodes[rotators[i].nodes1[k]].pos].RelPosition - m_actor->ar_nodes_hot[nodes[rotators[i].axis1].pos].RelPosition;
                     Ogre::Real r = plane.projectVector(r1).length();
                     if (r > radius1)
                     {
@@ -1397,7 +1397,7 @@ void RoR::GfxActor::UpdateDebugView()
                 Ogre::Real offset2 = 0.0f;
                 for (int k = 0; k < 2; k++)
                 {
-                    Ogre::Vector3 r2 = nodes[rotators[i].nodes2[k]].RelPosition - nodes[rotators[i].axis2].RelPosition;
+                    Ogre::Vector3 r2 = m_actor->ar_nodes_hot[nodes[rotators[i].nodes2[k]].pos].RelPosition - m_actor->ar_nodes_hot[nodes[rotators[i].axis2].pos].RelPosition;
                     Ogre::Real r = plane.projectVector(r2).length();
                     if (r > radius2)
                     {
@@ -1789,7 +1789,7 @@ void RoR::GfxActor::UpdateSimDataBuffer()
 
     // Movement
     m_simbuf.simbuf_pos = m_actor->getRotationCenter();
-    m_simbuf.simbuf_node0_velo = m_actor->ar_nodes[0].Velocity;
+    m_simbuf.simbuf_node0_velo = m_actor->ar_nodes_hot[0].Velocity;
     m_simbuf.simbuf_rotation = m_actor->getRotation();
     m_simbuf.simbuf_direction = m_actor->getDirection();
     m_simbuf.simbuf_wheel_speed = m_actor->ar_wheel_speed;
