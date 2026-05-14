@@ -1364,35 +1364,34 @@ void CheckBeamBreaking(Actor* actor, const int i, const float k, float& slen, co
     }
 }
 
-inline void CalcBeamsCommonPrologue(Actor* actor, int i, Vector3& dis, float& dislen, float& inverted_dislen, float& difftoBeamL, float& k, float& d, float& v)
-{
-    // Calculate beam length
-    dis = actor->ar_nodes_hot[actor->ar_beams[i].p1num].RelPosition - actor->ar_nodes_hot[actor->ar_beams[i].p2num].RelPosition;
-    dislen = dis.squaredLength();
-    inverted_dislen = fast_invSqrt(dislen);
-    dislen *= inverted_dislen;
-    // Calculate beam's deviation from normal
-    difftoBeamL = dislen - actor->ar_beams[i].L;
-    k = actor->ar_beams[i].k;
-    d = actor->ar_beams[i].d;
-    // Calculate beam's rate of change
-    v = (actor->ar_nodes_hot[actor->ar_beams[i].p1num].Velocity - actor->ar_nodes_hot[actor->ar_beams[i].p2num].Velocity).dotProduct(dis) * inverted_dislen;
+#define CalcBeamsCommonPrologue(actor, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v) \
+{ \
+    /* Calculate beam length */ \
+    dis = actor->ar_nodes_hot[actor->ar_beams[i].p1num].RelPosition - actor->ar_nodes_hot[actor->ar_beams[i].p2num].RelPosition; \
+    dislen = dis.squaredLength(); \
+    inverted_dislen = fast_invSqrt(dislen); \
+    dislen *= inverted_dislen; \
+    /* Calculate beam's deviation from normal */ \
+    difftoBeamL = dislen - actor->ar_beams[i].L; \
+    k = actor->ar_beams[i].k; \
+    d = actor->ar_beams[i].d; \
+    /* Calculate beam's rate of change */ \
+    v = (actor->ar_nodes_hot[actor->ar_beams[i].p1num].Velocity - actor->ar_nodes_hot[actor->ar_beams[i].p2num].Velocity).dotProduct(dis) * inverted_dislen; \
 }
 
-inline float CalcBeamCommonStress(Actor* actor, int i, float k, float d, float v, float difftoBeamL)
-{
-    const float slen = -k * difftoBeamL - d * v;
-    actor->ar_beams[i].stress = slen;
-    return slen;
+#define CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL, slen) \
+{ \
+    slen = -k * difftoBeamL - d * v; \
+    actor->ar_beams[i].stress = slen; \
 }
 
-inline void CalcBeamsCommonEpilogue(Actor* actor, int i, float k, float d, float v, float difftoBeamL, float slen, float inverted_dislen)
-{
-    // At last update the beam forces
-    Vector3 f = actor->ar_nodes_hot[actor->ar_beams[i].p1num].RelPosition - actor->ar_nodes_hot[actor->ar_beams[i].p2num].RelPosition;
-    f *= (slen * inverted_dislen);
-    actor->ar_nodes_hot[actor->ar_beams[i].p1num].Forces += f;
-    actor->ar_nodes_hot[actor->ar_beams[i].p2num].Forces -= f;
+#define CalcBeamsCommonEpilogue(actor, i, k, d, v, difftoBeamL, slen, inverted_dislen) \
+{ \
+    /* At last update the beam forces */ \
+    Vector3 f = actor->ar_nodes_hot[actor->ar_beams[i].p1num].RelPosition - actor->ar_nodes_hot[actor->ar_beams[i].p2num].RelPosition; \
+    f *= (slen * inverted_dislen); \
+    actor->ar_nodes_hot[actor->ar_beams[i].p1num].Forces += f; \
+    actor->ar_nodes_hot[actor->ar_beams[i].p2num].Forces -= f; \
 }
 
 void CalcBeams_hook(Actor* actor, const int start, const int end)
@@ -1417,7 +1416,7 @@ void CalcBeams_hook(Actor* actor, const int start, const int end)
             }
         }
 
-        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+        float slen; CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL, slen);
 
         // Fast test for deformation
         float len = std::abs(slen);
@@ -1465,7 +1464,7 @@ void CalcBeams_wheel(Actor* actor, const int start, const int end)
             }
         }
 
-        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+        float slen; CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL, slen);
 
         // Fast test for deformation
         float len = std::abs(slen);
@@ -1492,7 +1491,7 @@ void CalcBeams_unbounded(Actor* actor, const int start, const int end)
         float dislen, inverted_dislen, difftoBeamL, k, d, v;
         CalcBeamsCommonPrologue(actor, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
 
-        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+        float slen; CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL, slen);
 
         // Fast test for deformation
         float len = std::abs(slen);
@@ -1547,7 +1546,7 @@ void CalcBeams_shock1(Actor* actor, const int start, const int end)
             }
         }
 
-        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+        float slen; CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL, slen);
 
         // Fast test for deformation
         float len = std::abs(slen);
@@ -1579,7 +1578,7 @@ void CalcBeams_shock2(Actor* actor, const int start, const int end)
             actor->CalcShocks2(i, difftoBeamL, k, d, v);
         }
 
-        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+        float slen; CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL, slen);
 
         // Fast test for deformation
         float len = std::abs(slen);
@@ -1612,7 +1611,7 @@ void CalcBeams_shock3(Actor* actor, const int start, const int end)
             actor->CalcShocks3(i, difftoBeamL, k, d, v);
         }
 
-        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+        float slen; CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL, slen);
 
         // Fast test for deformation
         float len = std::abs(slen);
@@ -1648,7 +1647,7 @@ void CalcBeams_command(Actor* actor, const int start, const int end)
             }
         }
 
-        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+        float slen; CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL, slen);
 
         // Fast test for deformation
         float len = std::abs(slen);
@@ -1675,7 +1674,7 @@ void CalcBeams_hydro(Actor* actor, const int start, const int end)
         float dislen, inverted_dislen, difftoBeamL, k, d, v;
         CalcBeamsCommonPrologue(actor, i, dis, dislen, inverted_dislen, difftoBeamL, k, d, v);
 
-        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+        float slen; CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL, slen);
 
         // Fast test for deformation
         float len = std::abs(slen);
@@ -1707,7 +1706,7 @@ void CalcBeams_trigger(Actor* actor, const int start, const int end, const bool 
             actor->CalcTriggers(i, difftoBeamL, doUpdate);
         }
 
-        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+        float slen; CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL, slen);
 
         // Fast test for deformation
         float len = std::abs(slen);
@@ -1743,7 +1742,7 @@ void CalcBeams_rope(Actor* actor, const int start, const int end)
             }
         }
 
-        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+        float slen; CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL, slen);
 
         // Fast test for deformation
         float len = std::abs(slen);
@@ -1800,7 +1799,7 @@ void CalcBeams_support(Actor* actor, const int start, const int end)
             }
         }
 
-        float slen = CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL);
+        float slen; CalcBeamCommonStress(actor, i, k, d, v, difftoBeamL, slen);
 
         // Supportbeams don't deform or break
 
