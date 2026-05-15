@@ -170,7 +170,7 @@ void GUIManager::DrawSimulationGui(float dt)
 
     if (this->NodeBeamUtils.IsVisible())
     {
-        this->NodeBeamUtils.Draw();
+        this->NodeBeamUtils.Draw(dt);
     }
 
     if (this->CollisionsDebug.IsVisible())

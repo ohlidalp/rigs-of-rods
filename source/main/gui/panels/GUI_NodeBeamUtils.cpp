@@ -24,12 +24,14 @@
 #include "Actor.h"
 #include "GameContext.h"
 #include "GUIManager.h"
+#include "GUIUtils.h"
 #include "Language.h"
+#include "Utils.h"
 
 using namespace RoR;
 using namespace GUI;
 
-void NodeBeamUtils::Draw()
+void NodeBeamUtils::Draw(float dt)
 {
     ActorPtr actor = App::GetGameContext()->GetPlayerActor();
     if (!actor)
@@ -70,6 +72,11 @@ void NodeBeamUtils::Draw()
             this->DrawSpringDampTab(actor);
             ImGui::EndTabItem();
         }
+        if (ImGui::BeginTabItem(_LC("NodeBeamUtils", "Memory")))
+        {
+            this->DrawMemoryTab(actor);
+            ImGui::EndTabItem();
+        }
         ImGui::EndTabBar();
     }
 
@@ -82,6 +89,9 @@ void NodeBeamUtils::Draw()
     App::GetGuiManager()->RequestGuiCaptureKeyboard(m_is_hovered);
 
     ImGui::End();
+
+    m_cache_paint.UpdateAnim(actor, dt);
+
     if (!keep_open)
     {
         this->SetVisible(false);
@@ -246,6 +256,7 @@ void NodeBeamUtils::SetVisible(bool v)
     if (!v)
     {
         m_is_searching = false;
+        m_cache_paint = CachePaint(); // reset
     }
 }
 
@@ -369,4 +380,146 @@ void NodeBeamUtils::DrawMassTab(ActorPtr actor)
     ImGui::Text("%s: %f", _LC("NodeBeamUtils", "Total mass"), actor->ar_total_mass);
     ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Total nodes"), actor->ar_num_nodes);
     ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Loaded nodes"), actor->ar_masscount);
+}
+
+const float BEAM_THICKNESS           (1.2f);
+const ImVec4 BEAM_COLOR_VISITED(0.2f, 0.6f, 0.45f, 1.f);
+const ImVec4 BEAM_COLOR_NONVISITED(0.25f, 0.45f, 0.55f, 1.f);
+
+const float NODE_RADIUS              (2.f);
+const ImVec4 NODE_COLOR_MISS(0.8f, 0.2f, 0.2f, 1.f);
+const ImVec4 NODE_COLOR_HIT(0.9f, 0.8f, 0.2f, 1.f);
+const ImVec4 NODE_COLOR_MULTIHIT(0.2f, 0.8f, 0.3f, 1.f);
+
+void NodeBeamUtils::DrawMemoryTab(ActorPtr actor)
+{
+    ImGui::TextDisabled(_LC("NodeBeamUtils", "Beam counts per type:")); // see `BeamRangesByOrigin` and `Actor::ar_beam_ranges_by_origin`
+
+    /*
+    // beams at the start are hookbeams from 'nodes' with option 'h'
+    int wheelbeams_start = 0; // '*wheels*'
+    int unboundedbeams_start = 0; // 'beams' without flags 'r' or 's'
+    int shock1beams_start = 0; // 'shocks'
+    int shock2beams_start = 0; // 'shocks2'
+    int shock3beams_start = 0; // 'shocks3'
+    int commandbeams_start = 0; // 'commands*'
+    int hydrobeams_start = 0; // 'hydros'
+    int triggerbeams_start = 0; // 'triggers'
+    int ropebeams_start = 0; // 'ropes' and 'beams' with 'r' flag - both have identical physics
+    int supportbeams_start = 0; // 'beams' with 's' flag
+    */
+
+    BeamRangesByOrigin& r = actor->ar_beam_ranges_by_origin;
+    ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Hookbeams"), r.wheelbeams_start);
+    ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Wheels"), r.unboundedbeams_start - r.wheelbeams_start);
+    ImGui::SameLine();
+    ImGui::PushID("wheel"); // To disambiguate the 'Visualize' buttons.
+    if (ImGui::SmallButton(_LC("NodeBeamUtils","Visualize!")))
+    {
+        m_cache_paint.StartAnim(r.wheelbeams_start, r.unboundedbeams_start);
+    }
+    ImGui::PopID(); // "wheel"
+    ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Unbounded"), r.shock1beams_start - r.unboundedbeams_start);
+    ImGui::SameLine();
+    ImGui::PushID("unbo"); // To disambiguate the 'Visualize' buttons.
+    if (ImGui::SmallButton(_LC("NodeBeamUtils","Visualize!")))
+    {
+        m_cache_paint.StartAnim(r.unboundedbeams_start, r.shock1beams_start);
+    }
+    ImGui::PopID(); // "unbo"
+    ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Shocks1"), r.shock2beams_start - r.shock1beams_start);
+    ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Shocks2"), r.shock3beams_start - r.shock2beams_start);
+    ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Shocks3"), r.commandbeams_start - r.shock3beams_start);
+    ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Commands"), r.hydrobeams_start - r.commandbeams_start);
+    ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Hydros"), r.triggerbeams_start - r.hydrobeams_start);
+    ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Triggers"), r.ropebeams_start - r.triggerbeams_start);
+    ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Ropes"), r.supportbeams_start - r.ropebeams_start);
+    ImGui::Text("%s: %d", _LC("NodeBeamUtils", "Supports"), actor->ar_num_beams - r.supportbeams_start);
+
+    ImGui::Separator();
+
+    ImGui::TextDisabled(_LC("NodeBeamUtils", "Cache visualization settings:"));
+    ImGui::SliderFloat(_LC("NodeBeamUtils", "Animation speed"), &m_cache_paint.anim_speed, 0.005f, 0.5f, "%.2f seconds per beam");
+    ImGui::SliderInt(_LC("NodeBeamUtils", "Number of nodes in cache"), &m_cache_paint.nodecache_cap, 1, actor->ar_num_nodes);
+
+    ImGui::TextDisabled(_LC("NodeBeamUtils", "Cache visualization stats:"));
+    ImGui::TextColored(ImColor(NODE_COLOR_MISS), "%s: %d", _LC("NodeBeamUtils", "misses"), m_cache_paint.total_misses);
+    ImGui::TextColored(ImColor(NODE_COLOR_HIT), "%s: %d", _LC("NodeBeamUtils", "hits"), m_cache_paint.total_hits);
+    ImGui::SameLine();
+    ImGui::TextColored(ImColor(NODE_COLOR_MULTIHIT), "(%s: %d)", _LC("NodeBeamUtils", "multihits"), m_cache_paint.total_multihits);
+}
+
+void CachePaint::UpdateAnim(const ActorPtr& actor, float dt)
+{
+    if (anim_running)
+    {
+        anim_total_time += dt;
+        int projected_progress = std::min(beams_start + static_cast<int>(anim_total_time / anim_speed), beams_end);
+        while (anim_curbeam < projected_progress)
+        {
+            anim_curbeam++;
+            if (anim_curbeam == beams_end)
+            {
+                anim_running = false;
+            }
+            else
+            {
+                this->TouchNode(actor->ar_beams[anim_curbeam].p1num);
+                this->TouchNode(actor->ar_beams[anim_curbeam].p2num);
+            }
+        }
+    }
+
+    // Var
+    ImVec2 screen_size = ImGui::GetIO().DisplaySize;
+    World2ScreenConverter world2screen(
+        App::GetCameraManager()->GetCamera()->getViewMatrix(true), App::GetCameraManager()->GetCamera()->getProjectionMatrix(), Ogre::Vector2(screen_size.x, screen_size.y));
+
+    ImDrawList* drawlist = GetImDummyFullscreenWindow();
+
+    // Beams
+    const beam_t* beams = actor->ar_beams;
+    for (int i = beams_start; i < beams_end; ++i)
+    {
+        node_t& node_p1 = actor->ar_nodes[beams[i].p1num];
+        node_t& node_p2 = actor->ar_nodes[beams[i].p2num];
+
+        Ogre::Vector3 pos1 = world2screen.Convert(node_p1.AbsPosition);
+        Ogre::Vector3 pos2 = world2screen.Convert(node_p2.AbsPosition);
+
+        if ((pos1.z < 0.f) && (pos2.z < 0.f))
+        {
+            ImVec2 pos1xy(pos1.x, pos1.y);
+            ImVec2 pos2xy(pos2.x, pos2.y);
+
+            ImU32 color = (i <= anim_curbeam) ? ImColor(BEAM_COLOR_VISITED) : ImColor(BEAM_COLOR_NONVISITED);
+
+            drawlist->AddLine(pos1xy, pos2xy, color, BEAM_THICKNESS);
+            
+        }
+    }
+
+    // Nodes
+    const node_t* nodes = actor->ar_nodes;
+    for (size_t i = 0; i < nodecache.size(); ++i)
+    {
+        const NodeNum_t n = nodecache[i];
+
+        Ogre::Vector3 pos_xyz = world2screen.Convert(nodes[n].AbsPosition);
+
+        if (pos_xyz.z < 0.f)
+        {
+            ImVec2 pos(pos_xyz.x, pos_xyz.y);
+            ImU32 color = 0;
+            switch(nodecache_hits[i])
+            {
+            case 0: color = ImColor(NODE_COLOR_MISS); break;
+            case 1: color = ImColor(NODE_COLOR_HIT); break;
+            default: color = ImColor(NODE_COLOR_MULTIHIT); break;
+            }
+
+            drawlist->AddCircleFilled(pos, NODE_RADIUS, color);
+                
+        }
+    }
 }
