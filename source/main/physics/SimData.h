@@ -303,7 +303,7 @@ struct node_t
     Ogre::Real      nd_avg_collision_slip;   //!< Physics state; average slip velocity across the last few physics frames
     Ogre::Vector3   nd_last_collision_slip;  //!< Physics state; last collision slip vector
     Ogre::Vector3   nd_last_collision_force; //!< Physics state; last collision force
-    ground_model_t* nd_last_collision_gm;    //!< Physics state; last collision 'ground model' (surface definition)
+    GroundModelID_t nd_last_collision_gm = GROUNDMODELID_INVALID;    //!< Physics state; last collision 'ground model' (surface definition)
 };
 
 struct BeamRangesByOrigin // Partitions of the `Actor::ar_beams` array, filled at spawn
@@ -721,6 +721,15 @@ struct collision_box_t
 };
 typedef std::vector<collision_box_t*> CollisionBoxPtrVec;
 
+enum SurfaceFxType
+{
+    SURFACE_FX_NONE,
+    SURFACE_FX_HARD, // hard surface: rubber burning and sparks
+    SURFACE_FX_DUSTY, // dusty surface (with dust colour)
+    SURFACE_FX_CLUMPY, // throws clumps (e.g. snow, grass) with colour
+    SURFACE_FX_PARTICLE
+};
+
 /// Surface friction properties.
 struct ground_model_t
 {
@@ -743,8 +752,9 @@ struct ground_model_t
     float solid_ground_level = 0.f;       //!< how deep the solid ground is
     float drag_anisotropy = 0.f;          //!< Upwards/Downwards drag anisotropy
 
-    int fx_type = Collisions::FX_NONE;
+    int fx_type = SURFACE_FX_NONE;
     Ogre::ColourValue fx_colour = Ogre::ColourValue::ZERO;
+    GroundModelID_t gm_id = GROUNDMODELID_INVALID;
     std::string gm_name;
     std::string gm_basename;
     std::string fx_particle_name;

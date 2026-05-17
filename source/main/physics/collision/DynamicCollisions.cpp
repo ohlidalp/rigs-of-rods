@@ -222,7 +222,7 @@ void RoR::ResolveInterActorCollisions(Actor* const actor, PointColDetector &inte
                         coord.alpha, coord.beta, coord.gamma,
                         normal, PHYSICS_DT, remote, submesh_ground_model);
 
-                    hit_actor->ar_nodes[hit_node].nd_last_collision_gm = &submesh_ground_model;
+                    hit_actor->ar_nodes[hit_node].nd_last_collision_gm = submesh_ground_model.gm_id;
                     hit_actor->ar_nodes[hit_node].nd_has_mesh_contact = true;
 
                     actor->ar_nodes[na].nd_has_mesh_contact = true;

@@ -490,7 +490,7 @@ public:
     DashBoardManagerPtr ar_dashboard;
     float             ar_collision_range = DEFAULT_COLLISION_RANGE;             //!< Physics attr
     float             ar_top_speed = 0.f;                   //!< Sim state
-    ground_model_t*   ar_last_fuzzy_ground_model = nullptr;     //!< GUI state
+    GroundModelID_t   ar_last_fuzzy_ground_model = GROUNDMODELID_INVALID;     //!< GUI state
     CollisionBoxPtrVec m_potential_eventboxes;
     std::vector<std::pair<collision_box_t*, NodeNum_t>> m_active_eventboxes;
     std::unique_ptr<Buoyance> m_buoyance;

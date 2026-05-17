@@ -83,15 +83,6 @@ public:
 
     typedef std::vector<collision_box_t> CollisionBoxVec;
 
-    enum SurfaceType
-    {
-        FX_NONE,
-        FX_HARD, // hard surface: rubber burning and sparks
-        FX_DUSTY, // dusty surface (with dust colour)
-        FX_CLUMPY, // throws clumps (e.g. snow, grass) with colour
-        FX_PARTICLE
-    };
-
     Collisions(Ogre::Vector3 terrn_size);
     ~Collisions();
 
@@ -142,9 +133,6 @@ private:
     std::array<float, HASH_SIZE> hashtable_height;
     std::vector<hash_coll_element_t> hashtable[HASH_SIZE];
 
-    // ground models
-    std::map<Ogre::String, ground_model_t> ground_models;
-
     // event sources
     eventsource_t eventsources[MAX_EVENT_SOURCE];
     int free_eventsource;
@@ -171,7 +159,11 @@ public:
 
     bool forcecam;
     Ogre::Vector3 forcecampos;
-    ground_model_t *defaultgm, *defaultgroundgm;
+
+    // ground models
+    std::vector<ground_model_t> ground_models;
+    GroundModelID_t defaultgm = GROUNDMODELID_INVALID;
+    GroundModelID_t defaultgroundgm = GROUNDMODELID_INVALID;
 
     Ogre::Vector3 getPosition(const Ogre::String& inst, const Ogre::String& box);
     Ogre::Quaternion getDirection(const Ogre::String& inst, const Ogre::String& box);
@@ -213,9 +205,8 @@ public:
     // ground models things
     int loadDefaultModels();
     int loadGroundModelsConfigFile(Ogre::String filename);
-    std::map<Ogre::String, ground_model_t>* getGroundModels() { return &ground_models; };
     void setupLandUse(const char* configfile);
-    ground_model_t* getGroundModelByString(const Ogre::String name);
+    ground_model_t* getGroundModelByString(const std::string& name);
 
     void getMeshInformation(Ogre::Mesh* mesh, size_t& vertex_count, Ogre::Vector3* & vertices,
         size_t& index_count, unsigned* & indices,

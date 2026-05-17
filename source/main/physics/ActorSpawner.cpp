@@ -389,7 +389,7 @@ void ActorSpawner::InitializeRig()
         m_actor->m_intra_point_col_detector = new PointColDetector(m_actor.GetRef());
     }
 
-    m_actor->ar_submesh_ground_model = App::GetGameContext()->GetTerrain()->GetCollisions()->defaultgm;
+    m_actor->ar_submesh_ground_model = &App::GetGameContext()->GetTerrain()->GetCollisions()->ground_models[App::GetGameContext()->GetTerrain()->GetCollisions()->defaultgm]; // OK to grab pointer - actors are loaded after groundmodels are finished initializing.
 
     // Lights mode
     m_actor->m_flares_mode = App::gfx_flares_mode->getEnum<GfxFlaresMode>();

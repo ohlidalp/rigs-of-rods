@@ -597,6 +597,7 @@ void RoR::GfxActor::UpdateParticles(float dt)
         water_height = App::GetGameContext()->GetTerrain()->getWater()->GetStaticWaterHeight();
     }
 
+    Collisions* const collisions = App::GetGameContext()->GetTerrain()->GetCollisions();
     for (NodeGfx& nfx: m_gfx_nodes)
     {
         const node_t& n = m_actor->ar_nodes[nfx.nx_node_idx];
@@ -649,25 +650,25 @@ void RoR::GfxActor::UpdateParticles(float dt)
         }
 
         // Ground collision (dust, sparks, tyre smoke, clumps...)
-        if (!nfx.nx_no_particles && n.nd_has_ground_contact && n.nd_last_collision_gm != nullptr)
+        if (!nfx.nx_no_particles && n.nd_has_ground_contact && n.nd_last_collision_gm != GROUNDMODELID_INVALID)
         {
-            switch (n.nd_last_collision_gm->fx_type)
+            switch (collisions->ground_models[n.nd_last_collision_gm].fx_type)
             {
-            case Collisions::FX_DUSTY:
+            case SURFACE_FX_DUSTY:
                 if (m_particles_dust != nullptr)
                 {
-                    m_particles_dust->malloc(n.AbsPosition, m_actor->ar_nodes_hot[n.pos].Velocity / 2.0, n.nd_last_collision_gm->fx_colour);
+                    m_particles_dust->malloc(n.AbsPosition, m_actor->ar_nodes_hot[n.pos].Velocity / 2.0, collisions->ground_models[n.nd_last_collision_gm].fx_colour);
                 }
                 break;
 
-            case Collisions::FX_CLUMPY:
+            case SURFACE_FX_CLUMPY:
                 if (m_particles_clump != nullptr && m_actor->ar_nodes_hot[n.pos].Velocity.squaredLength() > 1.f)
                 {
-                    m_particles_clump->allocClump(n.AbsPosition, m_actor->ar_nodes_hot[n.pos].Velocity / 2.0, n.nd_last_collision_gm->fx_colour);
+                    m_particles_clump->allocClump(n.AbsPosition, m_actor->ar_nodes_hot[n.pos].Velocity / 2.0, collisions->ground_models[n.nd_last_collision_gm].fx_colour);
                 }
                 break;
 
-            case Collisions::FX_HARD:
+            case SURFACE_FX_HARD:
                 if (n.nd_tyre_node) // skidmarks and tyre smoke
                 {
                     const float SMOKE_THRESHOLD = 8.f;

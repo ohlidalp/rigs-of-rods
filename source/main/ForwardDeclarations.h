@@ -96,6 +96,9 @@ namespace RoR
     typedef int RopableID_t; //!< Index to `Actor::ar_ropables`, use RoR::ROPABLEID_INVALID as empty value.
     static const RopableID_t ROPABLEID_INVALID = -1;
 
+    typedef int8_t GroundModelID_t; //!< Index to `Collisions::ground_models`, use `RoR::GROUNDMODELID_INVALID` as empty value.
+    static const GroundModelID_t GROUNDMODELID_INVALID = -1;
+
     class  Actor;
     class  ActorManager;
     class  ActorSpawner;

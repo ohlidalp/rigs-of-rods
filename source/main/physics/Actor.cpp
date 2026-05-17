@@ -3014,6 +3014,7 @@ void Actor::setAircraftFlaps(int flapsLevel)
 // call this once per frame in order to update the skidmarks
 void Actor::updateSkidmarks()
 {
+    Collisions* const collisions = App::GetGameContext()->GetTerrain()->GetCollisions();
     for (int i = 0; i < ar_num_wheels; i++)
     {
         if (!m_skid_trails[i])
@@ -3022,14 +3023,14 @@ void Actor::updateSkidmarks()
         for (size_t j = 0; j < ar_wheels[i].wh_tire_nodes.size(); j++)
         {
             node_t* n = &ar_nodes[ar_wheels[i].wh_tire_nodes[j]];
-            if (!n || !n->nd_has_ground_contact || n->nd_last_collision_gm == nullptr ||
-                    n->nd_last_collision_gm->fx_type != Collisions::FX_HARD)
+            if (!n || !n->nd_has_ground_contact || n->nd_last_collision_gm == GROUNDMODELID_INVALID ||
+                    collisions->ground_models[n->nd_last_collision_gm].fx_type != SURFACE_FX_HARD)
             {
                 continue;
             }
             if (n->nd_avg_collision_slip > 6.f && n->nd_last_collision_slip.squaredLength() > 9.f)
             {
-                m_skid_trails[i]->update(n->AbsPosition, j, n->nd_avg_collision_slip, n->nd_last_collision_gm->gm_name);
+                m_skid_trails[i]->update(n->AbsPosition, j, n->nd_avg_collision_slip, collisions->ground_models[n->nd_last_collision_gm].gm_name);
                 return;
             }
         }

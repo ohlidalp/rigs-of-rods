@@ -210,10 +210,11 @@ ActorPtr ActorManager::CreateNewActor(ActorSpawnRequest rq, RigDef::DocumentPtr 
     std::string subMeshGroundModelName = spawner.GetSubmeshGroundmodelName();
     if (!subMeshGroundModelName.empty())
     {
-        actor->ar_submesh_ground_model = App::GetGameContext()->GetTerrain()->GetCollisions()->getGroundModelByString(subMeshGroundModelName);
+        Collisions* const collisions = App::GetGameContext()->GetTerrain()->GetCollisions();
+        actor->ar_submesh_ground_model = collisions->getGroundModelByString(subMeshGroundModelName);
         if (!actor->ar_submesh_ground_model)
         {
-            actor->ar_submesh_ground_model = App::GetGameContext()->GetTerrain()->GetCollisions()->defaultgm;
+            actor->ar_submesh_ground_model = &collisions->ground_models[collisions->defaultgm]; // OK to grab pointer ... groundmodels are never reallocated after initialization
         }
     }
 

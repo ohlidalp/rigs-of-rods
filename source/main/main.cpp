@@ -2173,7 +2173,16 @@ int main(int argc, char *argv[])
                     App::GetGuiManager()->VehicleInfoTPanel.UpdateStats(dt, App::GetGameContext()->GetPlayerActor());
                     if (App::GetGuiManager()->FrictionSettings.IsVisible())
                     {
-                        App::GetGuiManager()->FrictionSettings.setActiveCol(App::GetGameContext()->GetPlayerActor()->ar_last_fuzzy_ground_model);
+                        const GroundModelID_t nearest_gm_id = App::GetGameContext()->GetPlayerActor()->ar_last_fuzzy_ground_model;
+                        if (nearest_gm_id == GROUNDMODELID_INVALID)
+                        {
+                            App::GetGuiManager()->FrictionSettings.setActiveCol(nullptr);
+                        }
+                        else
+                        {
+                            ground_model_t* nearest_gm = &App::GetGameContext()->GetTerrain()->GetCollisions()->ground_models[nearest_gm_id];
+                            App::GetGuiManager()->FrictionSettings.setActiveCol(nearest_gm);
+                        }
                     }
                 }
             }

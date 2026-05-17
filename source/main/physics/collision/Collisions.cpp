@@ -131,8 +131,8 @@ Collisions::Collisions(Ogre::Vector3 terrn_size):
     }
 
     loadDefaultModels();
-    defaultgm = getGroundModelByString("concrete");
-    defaultgroundgm = getGroundModelByString("gravel");
+    defaultgm = getGroundModelByString("concrete")->gm_id;
+    defaultgroundgm = getGroundModelByString("gravel")->gm_id;
 
     hashtable_height.fill(std::numeric_limits<float>::min());
 }
@@ -178,20 +178,20 @@ int Collisions::loadGroundModelsConfigFile(Ogre::String filename)
     parseGroundConfig(&cfg);
 
     // after it was parsed, resolve the dependencies
-    std::map<Ogre::String, ground_model_t>::iterator it;
-    for (it=ground_models.begin(); it!=ground_models.end(); it++)
+    for (GroundModelID_t i = 0; i < (GroundModelID_t)ground_models.size(); i++)
     {
-        if (it->second.gm_basename == "") continue; // no base, normal material
-        String bname = it->second.gm_basename;
-        if (ground_models.find(bname) == ground_models.end()) continue; // base not found!
+        ground_model_t &gm = ground_models[i];
+        if (gm.gm_basename == "") continue; // no base, normal material
+        String bname = gm.gm_basename;
+        if (!getGroundModelByString(bname)) continue; // base not found!
         // copy the values from the base if not set otherwise
-        ground_model_t *thisgm = &(it->second);
-        ground_model_t *basegm = &ground_models[bname];
-        memcpy(thisgm, basegm, sizeof(ground_model_t));
+        std::string orig_name = ground_models[i].gm_name; // backup the name, since it will be overwritten by the copy
+        ground_models[i] = *getGroundModelByString(bname); // copy the whole struct, then overwrite the values that are set in this struct
         // re-set the name
-        thisgm->gm_name = it->first;
+        ground_models[i].gm_name = orig_name;
+        ground_models[i].gm_id = i;
         // after that we need to reload the config to overwrite settings of the base
-        parseGroundConfig(&cfg, it->first);
+        parseGroundConfig(&cfg, orig_name);
     }
     // check the version
     if (this->collision_version != LATEST_GROUND_MODEL_VERSION)
@@ -225,51 +225,57 @@ void Collisions::parseGroundConfig(Ogre::ConfigFile *cfg, String groundModel)
             {
                 // set some class properties accoring to the information in this section
                 if (kname == "version") this->collision_version = StringConverter::parseInt(kvalue);
-            } else
+            }
+            else
             {
                 // we assume that all other sections are separate ground types!
-                if (ground_models.find(secName) == ground_models.end())
+                GroundModelID_t secID = (GroundModelID_t)ground_models.size();
+                if (!this->getGroundModelByString(secName))
                 {
-                    // Constructor takes care of initialization :)
-                    ground_models[secName].gm_name = secName;
-
+                    ground_models.push_back(ground_model_t());
+                    ground_models[secID].gm_name = secName;
+                    ground_models[secID].gm_id = secID;
+                }
+                else
+                {
+                    secID = this->getGroundModelByString(secName)->gm_id;
                 }
 
-                if (kname == "adhesion velocity") ground_models[secName].va = StringConverter::parseReal(kvalue);
-                else if (kname == "static friction coefficient") ground_models[secName].ms = StringConverter::parseReal(kvalue);
-                else if (kname == "sliding friction coefficient") ground_models[secName].mc = StringConverter::parseReal(kvalue);
-                else if (kname == "hydrodynamic friction") ground_models[secName].t2 = StringConverter::parseReal(kvalue);
-                else if (kname == "stribeck velocity") ground_models[secName].vs = StringConverter::parseReal(kvalue);
-                else if (kname == "alpha") ground_models[secName].alpha = StringConverter::parseReal(kvalue);
-                else if (kname == "strength") ground_models[secName].strength = StringConverter::parseReal(kvalue);
-                else if (kname == "base") ground_models[secName].gm_basename = kvalue;
+                if (kname == "adhesion velocity") ground_models[secID].va = StringConverter::parseReal(kvalue);
+                else if (kname == "static friction coefficient") ground_models[secID].ms = StringConverter::parseReal(kvalue);
+                else if (kname == "sliding friction coefficient") ground_models[secID].mc = StringConverter::parseReal(kvalue);
+                else if (kname == "hydrodynamic friction") ground_models[secID].t2 = StringConverter::parseReal(kvalue);
+                else if (kname == "stribeck velocity") ground_models[secID].vs = StringConverter::parseReal(kvalue);
+                else if (kname == "alpha") ground_models[secID].alpha = StringConverter::parseReal(kvalue);
+                else if (kname == "strength") ground_models[secID].strength = StringConverter::parseReal(kvalue);
+                else if (kname == "base") ground_models[secID].gm_basename = kvalue;
                 else if (kname == "fx_type")
                 {
                     if (kvalue == "PARTICLE")
-                        ground_models[secName].fx_type = FX_PARTICLE;
+                        ground_models[secID].fx_type = SURFACE_FX_PARTICLE;
                     else if (kvalue == "HARD")
-                        ground_models[secName].fx_type = FX_HARD;
+                        ground_models[secID].fx_type = SURFACE_FX_HARD;
                     else if (kvalue == "DUSTY")
-                        ground_models[secName].fx_type = FX_DUSTY;
+                        ground_models[secID].fx_type = SURFACE_FX_DUSTY;
                     else if (kvalue == "CLUMPY")
-                        ground_models[secName].fx_type = FX_CLUMPY;
+                        ground_models[secID].fx_type = SURFACE_FX_CLUMPY;
                 }
-                else if (kname == "fx_particle_name") ground_models[secName].fx_particle_name = kvalue;
-                else if (kname == "fx_colour") ground_models[secName].fx_colour = StringConverter::parseColourValue(kvalue);
-                else if (kname == "fx_particle_amount") ground_models[secName].fx_particle_amount = StringConverter::parseInt(kvalue);
-                else if (kname == "fx_particle_min_velo") ground_models[secName].fx_particle_min_velo = StringConverter::parseReal(kvalue);
-                else if (kname == "fx_particle_max_velo") ground_models[secName].fx_particle_max_velo = StringConverter::parseReal(kvalue);
-                else if (kname == "fx_particle_fade") ground_models[secName].fx_particle_fade = StringConverter::parseReal(kvalue);
-                else if (kname == "fx_particle_timedelta") ground_models[secName].fx_particle_timedelta = StringConverter::parseReal(kvalue);
-                else if (kname == "fx_particle_velo_factor") ground_models[secName].fx_particle_velo_factor = StringConverter::parseReal(kvalue);
-                else if (kname == "fx_particle_ttl") ground_models[secName].fx_particle_ttl = StringConverter::parseReal(kvalue);
+                else if (kname == "fx_particle_name") ground_models[secID].fx_particle_name = kvalue;
+                else if (kname == "fx_colour") ground_models[secID].fx_colour = StringConverter::parseColourValue(kvalue);
+                else if (kname == "fx_particle_amount") ground_models[secID].fx_particle_amount = StringConverter::parseInt(kvalue);
+                else if (kname == "fx_particle_min_velo") ground_models[secID].fx_particle_min_velo = StringConverter::parseReal(kvalue);
+                else if (kname == "fx_particle_max_velo") ground_models[secID].fx_particle_max_velo = StringConverter::parseReal(kvalue);
+                else if (kname == "fx_particle_fade") ground_models[secID].fx_particle_fade = StringConverter::parseReal(kvalue);
+                else if (kname == "fx_particle_timedelta") ground_models[secID].fx_particle_timedelta = StringConverter::parseReal(kvalue);
+                else if (kname == "fx_particle_velo_factor") ground_models[secID].fx_particle_velo_factor = StringConverter::parseReal(kvalue);
+                else if (kname == "fx_particle_ttl") ground_models[secID].fx_particle_ttl = StringConverter::parseReal(kvalue);
 
 
-                else if (kname == "fluid density") ground_models[secName].fluid_density = StringConverter::parseReal(kvalue);
-                else if (kname == "flow consistency index") ground_models[secName].flow_consistency_index = StringConverter::parseReal(kvalue);
-                else if (kname == "flow behavior index") ground_models[secName].flow_behavior_index = StringConverter::parseReal(kvalue);
-                else if (kname == "solid ground level") ground_models[secName].solid_ground_level = StringConverter::parseReal(kvalue);
-                else if (kname == "drag anisotropy") ground_models[secName].drag_anisotropy = StringConverter::parseReal(kvalue);
+                else if (kname == "fluid density") ground_models[secID].fluid_density = StringConverter::parseReal(kvalue);
+                else if (kname == "flow consistency index") ground_models[secID].flow_consistency_index = StringConverter::parseReal(kvalue);
+                else if (kname == "flow behavior index") ground_models[secID].flow_behavior_index = StringConverter::parseReal(kvalue);
+                else if (kname == "solid ground level") ground_models[secID].solid_ground_level = StringConverter::parseReal(kvalue);
+                else if (kname == "drag anisotropy") ground_models[secID].drag_anisotropy = StringConverter::parseReal(kvalue);
 
             }
         }
@@ -348,12 +354,15 @@ void Collisions::removeCollisionTri(int number)
     }
 }
 
-ground_model_t *Collisions::getGroundModelByString(const String name)
+ground_model_t *Collisions::getGroundModelByString(const std::string& name)
 {
-    if (!ground_models.size() || ground_models.find(name) == ground_models.end())
-        return 0;
+    auto itor = std::find_if(ground_models.begin(), ground_models.end(),
+        [&name](const ground_model_t& obj)
+        {
+            return obj.gm_name == name;
+        });
 
-    return &ground_models[name];
+    return (itor != ground_models.end()) ? &*itor : nullptr;
 }
 
 unsigned int Collisions::hashfunc(unsigned int cellid)
@@ -1022,7 +1031,7 @@ bool Collisions::nodeCollision(Actor* const actor, const NodeNum_t node, float d
                             if (cbox->refined) normal = cbox->rot * normal;
 
                             // collision boxes are always out of concrete as it seems
-                            actor->ar_nodes_hot[node].Forces += primitiveCollision(actor, node, actor->ar_nodes_hot[node].Velocity, actor->ar_nodes[node].mass, normal, dt, defaultgm);
+                            actor->ar_nodes_hot[node].Forces += primitiveCollision(actor, node, actor->ar_nodes_hot[node].Velocity, actor->ar_nodes[node].mass, normal, dt, &ground_models[defaultgm]);
                             actor->ar_nodes[node].nd_last_collision_gm = defaultgm;
                         }
                     }
@@ -1056,7 +1065,7 @@ bool Collisions::nodeCollision(Actor* const actor, const NodeNum_t node, float d
                         if (cbox->refined) normal = cbox->rot * normal;
 
                         // collision boxes are always out of concrete as it seems
-                        actor->ar_nodes_hot[node].Forces += primitiveCollision(actor, node, actor->ar_nodes_hot[node].Velocity, actor->ar_nodes[node].mass, normal, dt, defaultgm);
+                        actor->ar_nodes_hot[node].Forces += primitiveCollision(actor, node, actor->ar_nodes_hot[node].Velocity, actor->ar_nodes[node].mass, normal, dt, &ground_models[defaultgm]);
                         actor->ar_nodes[node].nd_last_collision_gm = defaultgm;
                     }
                 }
@@ -1098,7 +1107,7 @@ bool Collisions::nodeCollision(Actor* const actor, const NodeNum_t node, float d
         // resume repere for the normal
         Vector3 normal = minctri->reverse * Vector3::UNIT_Z;
         actor->ar_nodes_hot[node].Forces += primitiveCollision(actor, node, actor->ar_nodes_hot[node].Velocity, actor->ar_nodes[node].mass, normal, dt, minctri->gm);
-        actor->ar_nodes[node].nd_last_collision_gm = minctri->gm;
+        actor->ar_nodes[node].nd_last_collision_gm = minctri->gm->gm_id;
     }
 
     return contacted;
@@ -1235,10 +1244,10 @@ bool Collisions::groundCollision(Actor* actor, const NodeNum_t node, float dt)
     {
         ground_model_t* ogm = landuse ? landuse->getGroundModelAt(actor->ar_nodes[node].AbsPosition.x, actor->ar_nodes[node].AbsPosition.z) : nullptr;
         // when landuse fails or we don't have it, use the default value
-        if (!ogm) ogm = defaultgroundgm;
+        if (!ogm) ogm = &ground_models[defaultgroundgm];
         Ogre::Vector3 normal = App::GetGameContext()->GetTerrain()->GetNormalAt(actor->ar_nodes[node].AbsPosition.x, v, actor->ar_nodes[node].AbsPosition.z);
         actor->ar_nodes_hot[node].Forces += primitiveCollision(actor, node, actor->ar_nodes_hot[node].Velocity, actor->ar_nodes[node].mass, normal, dt, ogm, v - actor->ar_nodes[node].AbsPosition.y);
-        actor->ar_nodes[node].nd_last_collision_gm = ogm;
+        actor->ar_nodes[node].nd_last_collision_gm = ogm->gm_id;
         return true;
     }
     return false;
