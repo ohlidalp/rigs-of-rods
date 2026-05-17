@@ -181,8 +181,8 @@ int Collisions::loadGroundModelsConfigFile(Ogre::String filename)
     std::map<Ogre::String, ground_model_t>::iterator it;
     for (it=ground_models.begin(); it!=ground_models.end(); it++)
     {
-        if (!strlen(it->second.basename)) continue; // no base, normal material
-        String bname = String(it->second.basename);
+        if (it->second.gm_basename == "") continue; // no base, normal material
+        String bname = it->second.gm_basename;
         if (ground_models.find(bname) == ground_models.end()) continue; // base not found!
         // copy the values from the base if not set otherwise
         ground_model_t *thisgm = &(it->second);
@@ -256,7 +256,7 @@ void Collisions::parseGroundConfig(Ogre::ConfigFile *cfg, String groundModel)
                 else if (kname == "stribeck velocity") ground_models[secName].vs = StringConverter::parseReal(kvalue);
                 else if (kname == "alpha") ground_models[secName].alpha = StringConverter::parseReal(kvalue);
                 else if (kname == "strength") ground_models[secName].strength = StringConverter::parseReal(kvalue);
-                else if (kname == "base") strncpy(ground_models[secName].basename, kvalue.c_str(), 255);
+                else if (kname == "base") ground_models[secName].gm_basename = kvalue;
                 else if (kname == "fx_type")
                 {
                     if (kvalue == "PARTICLE")
