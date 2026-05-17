@@ -268,7 +268,7 @@ void Collisions::parseGroundConfig(Ogre::ConfigFile *cfg, String groundModel)
                     else if (kvalue == "CLUMPY")
                         ground_models[secName].fx_type = FX_CLUMPY;
                 }
-                else if (kname == "fx_particle_name") strncpy(ground_models[secName].particle_name, kvalue.c_str(), 255);
+                else if (kname == "fx_particle_name") ground_models[secName].fx_particle_name = kvalue;
                 else if (kname == "fx_colour") ground_models[secName].fx_colour = StringConverter::parseColourValue(kvalue);
                 else if (kname == "fx_particle_amount") ground_models[secName].fx_particle_amount = StringConverter::parseInt(kvalue);
                 else if (kname == "fx_particle_min_velo") ground_models[secName].fx_particle_min_velo = StringConverter::parseReal(kvalue);

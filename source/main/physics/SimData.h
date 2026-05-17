@@ -748,7 +748,7 @@ struct ground_model_t
     Ogre::ColourValue fx_colour;
     std::string gm_name;
     std::string gm_basename;
-    char particle_name[256];
+    std::string fx_particle_name;
 
     int fx_particle_amount;         //!< amount of particles
 
