@@ -724,40 +724,39 @@ typedef std::vector<collision_box_t*> CollisionBoxPtrVec;
 /// Surface friction properties.
 struct ground_model_t
 {
-    float va;                       //!< adhesion velocity
-    float ms;                       //!< static friction coefficient
-    float mc;                       //!< sliding friction coefficient
-    float t2;                       //!< hydrodynamic friction (s/m)
-    float vs;                       //!< stribeck velocity (m/s)
-    float alpha;                    //!< steady-steady
-    float strength;                 //!< ground strength
+    float va = 0.f;                       //!< adhesion velocity
+    float ms = 0.f;                       //!< static friction coefficient
+    float mc = 0.f;                       //!< sliding friction coefficient
+    float t2 = 0.f;                       //!< hydrodynamic friction (s/m)
+    float vs = 0.f;                       //!< stribeck velocity (m/s)
+    float alpha = 2.f;                    //!< steady-steady
+    float strength = 1.f;                 //!< ground strength
 
-    float fluid_density;            //!< Density of liquid
-    float flow_consistency_index;   //!< general drag coefficient
+    float fluid_density = 0.f;            //!< Density of liquid
+    float flow_consistency_index = 0.f;   //!< general drag coefficient
 
     //! if flow_behavior_index<1 then liquid is Pseudoplastic (ketchup, whipped cream, paint)
     //! if =1 then liquid is Newtoni'an fluid
     //! if >1 then liquid is Dilatant fluid (less common)
-    float flow_behavior_index;
+    float flow_behavior_index = 0.f;
 
-    
-    float solid_ground_level;       //!< how deep the solid ground is
-    float drag_anisotropy;          //!< Upwards/Downwards drag anisotropy
+    float solid_ground_level = 0.f;       //!< how deep the solid ground is
+    float drag_anisotropy = 0.f;          //!< Upwards/Downwards drag anisotropy
 
-    int fx_type;
-    Ogre::ColourValue fx_colour;
+    int fx_type = Collisions::FX_NONE;
+    Ogre::ColourValue fx_colour = Ogre::ColourValue::ZERO;
     std::string gm_name;
     std::string gm_basename;
     std::string fx_particle_name;
 
-    int fx_particle_amount;         //!< amount of particles
+    int fx_particle_amount = 20;          //!< amount of particles
 
-    float fx_particle_min_velo;     //!< minimum velocity to display sparks
-    float fx_particle_max_velo;     //!< maximum velocity to display sparks
-    float fx_particle_fade;         //!< fade coefficient
-    float fx_particle_timedelta;    //!< delta for particle animation
-    float fx_particle_velo_factor;  //!< velocity factor
-    float fx_particle_ttl;
+    float fx_particle_min_velo = 5.f;     //!< minimum velocity to display sparks
+    float fx_particle_max_velo = 99999.f; //!< maximum velocity to display sparks
+    float fx_particle_fade = -1.f;        //!< fade coefficient
+    float fx_particle_timedelta = 1.f;    //!< delta for particle animation
+    float fx_particle_velo_factor = 0.7f; //!< velocity factor
+    float fx_particle_ttl = 2.f;
 };
 
 /// @} // addtogroup Collisions

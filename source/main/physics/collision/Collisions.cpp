@@ -230,21 +230,7 @@ void Collisions::parseGroundConfig(Ogre::ConfigFile *cfg, String groundModel)
                 // we assume that all other sections are separate ground types!
                 if (ground_models.find(secName) == ground_models.end())
                 {
-                    // ground models not known yet, init it!
-                    ground_models[secName] = ground_model_t();
-                    // clear it
-                    memset(&ground_models[secName], 0, sizeof(ground_model_t));
-                    // set some default values
-                    ground_models[secName].alpha = 2.0f;
-                    ground_models[secName].strength = 1.0f;
-                    // some fx defaults
-                    ground_models[secName].fx_particle_amount = 20;
-                    ground_models[secName].fx_particle_min_velo = 5;
-                    ground_models[secName].fx_particle_max_velo = 99999;
-                    ground_models[secName].fx_particle_velo_factor = 0.7f;
-                    ground_models[secName].fx_particle_fade = -1;
-                    ground_models[secName].fx_particle_timedelta = 1;
-                    ground_models[secName].fx_particle_ttl = 2;
+                    // Constructor takes care of initialization :)
                     ground_models[secName].gm_name = secName;
 
                 }
