@@ -327,7 +327,10 @@ int main(int argc, char *argv[])
         // --------------------------------------------------------------
 
         auto start_time = std::chrono::high_resolution_clock::now();
-
+        std::array<double, PROF_Count_> prof_smooth_avgs;
+        std::fill(prof_smooth_avgs.begin(), prof_smooth_avgs.end(), 0.0);
+        float prof_smooth_ticks = 0.f;
+        bool prof_show_details = false;
         while (App::app_state->getEnum<AppState>() != AppState::SHUTDOWN)
         {
             OgreBites::WindowEventUtilities::messagePump();
@@ -2091,36 +2094,79 @@ int main(int argc, char *argv[])
             {
                 App::GetGuiManager()->DrawSimulationGui(dt);
 
-                // -----Prof-----
-                for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
+                // ---- Prof avgs ----
+                if (App::GetGameContext()->GetActorManager()->GetActors().size()
+                    && ImGui::Begin("Prof"))
                 {
-                    actor->GetGfxActor()->UpdateDebugView();
-                    if (ImGui::Begin("Prof"))
+                    prof_smooth_ticks = 0.9 * prof_smooth_ticks + 0.1 * App::GetGameContext()->GetActorManager()->GetActors().front()->ar_prof.prof_ticks;
+                    ImGui::TextDisabled("<< avg (%zu actors, %.2f ticks) >> ", App::GetGameContext()->GetActorManager()->GetActors().size(), prof_smooth_ticks);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Details", &prof_show_details);
+
+                    for (int i = 0; i < PROF_Count_; i++)
                     {
-                        ImGui::TextDisabled("%s",actor->ar_filename.c_str());
-                        ImGui::End();
+                        Prof::Timeval_t sum_us = 0;
+                        for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
+                        {
+                            sum_us += actor->ar_prof.prof_totals_us[i];
+                        }
+                        prof_smooth_avgs[i] = 0.9 * prof_smooth_avgs[i] + 0.1 * ((double)sum_us / App::GetGameContext()->GetActorManager()->GetActors().size());
+                        ImGui::Text("%s: %.2fus", Prof::ProfStatToStr(static_cast<ProfStat>(i)), prof_smooth_avgs[i]);
                     }
-                    actor->ar_prof.ProfDraw();
-                    actor->ar_prof.ProfClear();
+
+                    ImGui::End();
                 }
+
+                // ----- Prof LOG -----
                 if (ImGui::Begin("Prof"))
                 {
                     if (ImGui::Button("log"))
                     {
-                        LOG("-----Prof-----");
-                        for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
+                        LOG(fmt::format("-----Prof avg ({} actors, {} ticks) -----",
+                            App::GetGameContext()->GetActorManager()->GetActors().size(), prof_smooth_ticks));
+                        for (int i = 0; i < PROF_Count_; i++)
                         {
-                            LOG(actor->ar_filename);
-                            actor->ar_prof.ProfLog();
+                            LOG(fmt::format("{}: {:.2f}us", Prof::ProfStatToStr(static_cast<ProfStat>(i)), prof_smooth_avgs[i]));
+                        }
+
+                        if (prof_show_details)
+                        {
+                            LOG("-----Prof details-----");
+                            for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
+                            {
+                                LOG(actor->ar_filename);
+                                actor->ar_prof.ProfLog();
+                            }
+                            
                         }
                         LOG("-----END Prof-----");
                     }
                     ImGui::End();
                 }
+
+                // -----Prof details -----
+                if (prof_show_details && ImGui::Begin("Prof"))
+                {
+                    for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
+                    {
+                        ImGui::TextDisabled("%s (%d ticks)",actor->ar_filename.c_str(), actor->ar_prof.prof_ticks);
+
+                        actor->ar_prof.ProfDraw();
+                    }
+                    ImGui::End();
+                }
+                // ----- Prof reset -----
                 for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
                 {
                     actor->ar_prof.ProfClear();
                 }
+                // ---- END Prof ----
+
+                for (ActorPtr& actor : App::GetGameContext()->GetActorManager()->GetActors())
+                {
+                    actor->GetGfxActor()->UpdateDebugView();
+                }
+                
 
                 if (App::GetGameContext()->GetPlayerActor())
                 {

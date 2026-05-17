@@ -72,7 +72,7 @@ namespace RoR
             prof_begin_us[stat] = PROF_NOBEGIN;
         }
 
-        const char* ProfStatToStr(ProfStat stat)
+        static const char* ProfStatToStr(ProfStat stat)
         {
             switch (stat)
             {
@@ -90,15 +90,10 @@ namespace RoR
 
         void ProfDraw()
         {
-            if (ImGui::Begin("Prof"))
+            for (int i = 0; i < PROF_Count_; ++i)
             {
-                ImGui::TextDisabled("Actor %zu (%d ticks)", prof_actor, prof_ticks);
-                for (int i = 0; i < PROF_Count_; ++i)
-                {
-                    prof_smoothtot_us[i] = 0.9 * prof_smoothtot_us[i] + 0.1 * prof_totals_us[i];
-                    ImGui::Text("%s: %.2fus", ProfStatToStr(static_cast<ProfStat>(i)), prof_smoothtot_us[i]);
-                }
-                ImGui::End();
+                prof_smoothtot_us[i] = 0.9 * prof_smoothtot_us[i] + 0.1 * prof_totals_us[i];
+                ImGui::Text("%s: %.2fus", ProfStatToStr(static_cast<ProfStat>(i)), prof_smoothtot_us[i]);
             }
         }
 
