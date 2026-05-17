@@ -48,7 +48,7 @@ void FrictionSettings::Draw()
 
     ImGui::Text("%s", _LC("FrictionSettings", "Current active Ground: "));
     ImGui::SameLine();
-    ImGui::Text("%s", (m_nearest_gm != nullptr) ? m_nearest_gm->name : "~");
+    ImGui::Text("%s", (m_nearest_gm != nullptr) ? m_nearest_gm->gm_name.c_str() : "~");
 
     ImGui::Separator();
     ImGui::PushItemWidth(200.f);
@@ -132,7 +132,7 @@ bool FrictionSettings::GmComboItemGetter(void* data, int idx, const char** out_t
 {
     auto items = static_cast<std::vector<FrictionSettings::Entry>*>(data);
     if (out_text)
-        *out_text = (*items)[idx].live_data->name;
+        *out_text = (*items)[idx].live_data->gm_name.c_str();
     return true;
 }
 

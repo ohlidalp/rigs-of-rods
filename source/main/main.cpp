@@ -1615,7 +1615,7 @@ int main(int argc, char *argv[])
                     try
                     {
                         ground_model_t* modified_gm = static_cast<ground_model_t*>(m.payload);
-                        ground_model_t* live_gm = App::GetGameContext()->GetTerrain()->GetCollisions()->getGroundModelByString(modified_gm->name);
+                        ground_model_t* live_gm = App::GetGameContext()->GetTerrain()->GetCollisions()->getGroundModelByString(modified_gm->gm_name);
                         *live_gm = *modified_gm; // Copy over
                         //DO NOT `delete` the payload - it's a weak pointer, the data are owned by `RoR::Collisions`; See `enum MsgType` in file 'Application.h'.
                     }

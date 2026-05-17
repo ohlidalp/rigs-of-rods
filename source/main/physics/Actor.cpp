@@ -3029,7 +3029,7 @@ void Actor::updateSkidmarks()
             }
             if (n->nd_avg_collision_slip > 6.f && n->nd_last_collision_slip.squaredLength() > 9.f)
             {
-                m_skid_trails[i]->update(n->AbsPosition, j, n->nd_avg_collision_slip, n->nd_last_collision_gm->name);
+                m_skid_trails[i]->update(n->AbsPosition, j, n->nd_avg_collision_slip, n->nd_last_collision_gm->gm_name);
                 return;
             }
         }

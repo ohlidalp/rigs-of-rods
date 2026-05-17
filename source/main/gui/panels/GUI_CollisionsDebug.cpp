@@ -309,7 +309,7 @@ Ogre::Vector3 CollisionsDebug::GetCollBoxWorldPos(collision_box_t const& coll_bo
 void CollisionsDebug::DrawCollisionMeshDebugText(collision_mesh_t const& coll_mesh)
 {
     const char* label_type_str = (m_labels_draw_types) ? "COLLMESH\n" : "";
-    const char* ground_model_str = (coll_mesh.ground_model) ? coll_mesh.ground_model->name : "(multiple)";
+    const char* ground_model_str = (coll_mesh.ground_model) ? coll_mesh.ground_model->gm_name.c_str() : "(multiple)";
 
     std::string caption = fmt::format("{}meshname:{}\ngroundmodel:{}",
         label_type_str, coll_mesh.mesh_name, ground_model_str);

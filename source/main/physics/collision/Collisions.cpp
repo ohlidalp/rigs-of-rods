@@ -189,7 +189,7 @@ int Collisions::loadGroundModelsConfigFile(Ogre::String filename)
         ground_model_t *basegm = &ground_models[bname];
         memcpy(thisgm, basegm, sizeof(ground_model_t));
         // re-set the name
-        strncpy(thisgm->name, it->first.c_str(), 255);
+        thisgm->gm_name = it->first;
         // after that we need to reload the config to overwrite settings of the base
         parseGroundConfig(&cfg, it->first);
     }
@@ -245,7 +245,7 @@ void Collisions::parseGroundConfig(Ogre::ConfigFile *cfg, String groundModel)
                     ground_models[secName].fx_particle_fade = -1;
                     ground_models[secName].fx_particle_timedelta = 1;
                     ground_models[secName].fx_particle_ttl = 2;
-                    strncpy(ground_models[secName].name, secName.c_str(), 255);
+                    ground_models[secName].gm_name = secName;
 
                 }
 
