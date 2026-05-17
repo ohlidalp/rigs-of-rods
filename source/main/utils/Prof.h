@@ -17,6 +17,7 @@ namespace RoR
       //  PROF_CALCBEAMS_PROLOGUE, \
       //  PROF_CALCBEAMS_DEFORM,    > Lesson learned! with/without these in, CalcBeams:~8000us vs ~180us (on Release)
       //  PROF_CALCBEAMS_EPILOGUE, /
+        PROF_CALCNODES_TOTAL,
         PROF_INTRACOL_UPDATE,
         PROF_INTRACOL_RESOLVE,
         PROF_INTERCOL_UPDATE,
@@ -80,6 +81,7 @@ namespace RoR
             //case PROF_CALCBEAMS_PROLOGUE: return "PROF_CALCBEAMS_PROLOGUE";
             //case PROF_CALCBEAMS_DEFORM: return "PROF_CALCBEAMS_DEFORM";
             //case PROF_CALCBEAMS_EPILOGUE: return "PROF_CALCBEAMS_EPILOGUE";
+            case PROF_CALCNODES_TOTAL: return "PROF_CALCNODES_TOTAL";
             case PROF_INTRACOL_UPDATE: return "PROF_INTRACOL_UPDATE";
             case PROF_INTRACOL_RESOLVE: return "PROF_INTRACOL_RESOLVE";
             case PROF_INTERCOL_UPDATE: return "PROF_INTERCOL_UPDATE";
