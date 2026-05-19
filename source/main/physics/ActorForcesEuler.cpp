@@ -1674,7 +1674,10 @@ void Actor::CalcNodes()
             Vector3 drag = -defdragxspeed * ar_nodes[i].Velocity;
             // plus: turbulences
             Real maxtur = defdragxspeed * approx_speed * 0.005f;
-            drag += maxtur * Vector3(frand_11(), frand_11(), frand_11());
+            const float frandX = frand_11_local(ar_nextrand);
+            const float frandY = frand_11_local(ar_nextrand);
+            const float frandZ = frand_11_local(ar_nextrand);
+            drag += maxtur * Vector3(frandX, frandY, frandZ);
             ar_nodes[i].Forces += drag;
         }
 

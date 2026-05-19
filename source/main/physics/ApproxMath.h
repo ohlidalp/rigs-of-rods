@@ -52,7 +52,7 @@ inline float frand_02()
 }
 
 // Returns a random number in the range [-1, 1]
-inline float frand_11()
+inline float frand_11_local(int& mirand)
 {
     unsigned int a;
 

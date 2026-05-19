@@ -437,6 +437,7 @@ public:
     float             ar_brake_force = 0.f;              //!< Physics attr; filled at spawn
     
     Ogre::Vector3     ar_origin = Ogre::Vector3::ZERO;                   //!< Physics state; base position for softbody nodes
+    int               ar_nextrand = 1;
     int               ar_num_cameras = 0;
     Ogre::Quaternion  ar_main_camera_dir_corr = Ogre::Quaternion::IDENTITY;              //!< Sim attr;
     NodeNum_t         ar_main_camera_node_pos            = 0;    //!< Sim attr; ar_camera_node_pos[0]  >= 0 ? ar_camera_node_pos[0]  : 0
