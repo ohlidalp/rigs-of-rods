@@ -1212,6 +1212,29 @@ void LogBeamNodes(RoR::Str<L>& msg, beam_t& beam) // Internal helper
     msg << ".";
 }
 
+inline void CalcBeamsCommonPrologue(node_t* const node1, node_t* const node2, const float beamL, float& dx, float& dy, float& dz, float& dislen, float& inverted_dislen, float& difftoBeamL, float& v)
+{
+    // Calculate beam length
+    const Vector3& pos1 = node1->RelPosition;
+    const Vector3& pos2 = node2->RelPosition;
+    dx = pos1.x - pos2.x; //ORIG: `Vector3 dis = pos1 - pos2;`
+    dy = pos1.y - pos2.y;
+    dz = pos1.z - pos2.z;
+
+    dislen = dx * dx + dy * dy + dz * dz; //ORIG: `dislen = dis.squaredLength()`
+    inverted_dislen = simd_invSqrt(dislen);
+    dislen *= inverted_dislen;
+
+    // Calculate beam's deviation from normal
+    difftoBeamL = dislen - beamL;
+
+    // Calculate beam's rate of change
+    const Vector3& vel1 = node1->Velocity;
+    const Vector3& vel2 = node2->Velocity;
+    const float vdot = (vel1.x - vel2.x) * dx + (vel1.y - vel2.y) * dy + (vel1.z - vel2.z) * dz; //ORIG: `(vel1 - vel2).dotProduct(dis)`
+    v = vdot * inverted_dislen;
+}
+
 void Actor::CalcBeams(bool trigger_hooks)
 {
     for (int i = 0; i < ar_num_beams; i++)
@@ -1221,29 +1244,11 @@ void Actor::CalcBeams(bool trigger_hooks)
             node_t* const node1 = ar_beams[i].p1;
             node_t* const node2 = ar_beams[i].p2;
 
-            // Calculate beam length
-            const Vector3& pos1 = node1->RelPosition;
-            const Vector3& pos2 = node2->RelPosition;
-            const Real dx = pos1.x - pos2.x;
-            const Real dy = pos1.y - pos2.y;
-            const Real dz = pos1.z - pos2.z;
-            
-            Real dislen = dx * dx + dy * dy + dz * dz; // `Vector3::squaredLength()`
-            Real inverted_dislen = simd_invSqrt(dislen);
-
-            dislen *= inverted_dislen;
-
-            // Calculate beam's deviation from normal
-            Real difftoBeamL = dislen - ar_beams[i].L;
+            float dx, dy, dz, dislen, inverted_dislen, difftoBeamL, v;
+            CalcBeamsCommonPrologue(node1, node2, ar_beams[i].L, dx, dy, dz, dislen, inverted_dislen, difftoBeamL, v);
 
             Real k = ar_beams[i].k;
             Real d = ar_beams[i].d;
-
-            // Calculate beam's rate of change
-            const Vector3& vel1 = node1->Velocity;
-            const Vector3& vel2 = node2->Velocity;
-            const Real vdot = (vel1.x - vel2.x) * dx + (vel1.y - vel2.y) * dy + (vel1.z - vel2.z) * dz; // `(vel1 - vel2).dotProduct(Vector3(dx,dy,dz))`
-            float v = vdot * inverted_dislen;
 
             if (ar_beams[i].bounded == SHOCK1)
             {
