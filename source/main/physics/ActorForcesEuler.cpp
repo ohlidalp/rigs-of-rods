@@ -1235,6 +1235,23 @@ inline void CalcBeamsCommonPrologue(node_t* const node1, node_t* const node2, co
     v = vdot * inverted_dislen;
 }
 
+ inline void CalcBeamsCommonEpilogue(const float dx, const float dy, const float dz, const float slen, const float inverted_dislen, node_t* const node1, node_t* const node2)
+ {
+    // At last update the beam forces - optimized to avoid temporary Vector3 creation
+    const float force_multiplier = slen * inverted_dislen;
+    const float fx = dx * force_multiplier;
+    const float fy = dy * force_multiplier;
+    const float fz = dz * force_multiplier;
+
+    node1->Forces.x += fx;
+    node1->Forces.y += fy;
+    node1->Forces.z += fz;
+
+    node2->Forces.x -= fx;
+    node2->Forces.y -= fy;
+    node2->Forces.z -= fz;
+ }
+
 void Actor::CalcBeams(bool trigger_hooks)
 {
     for (int i = 0; i < ar_num_beams; i++)
@@ -1477,19 +1494,7 @@ void Actor::CalcBeams(bool trigger_hooks)
                 }
             }
 
-            // At last update the beam forces - optimized to avoid temporary Vector3 creation
-            const Real force_multiplier = slen * inverted_dislen;
-            const Real fx = dx * force_multiplier;
-            const Real fy = dy * force_multiplier;
-            const Real fz = dz * force_multiplier;
-            
-            node1->Forces.x += fx;
-            node1->Forces.y += fy;
-            node1->Forces.z += fz;
-            
-            node2->Forces.x -= fx;
-            node2->Forces.y -= fy;
-            node2->Forces.z -= fz;
+            CalcBeamsCommonEpilogue(dx, dy, dz, slen, inverted_dislen, node1, node2);
         }
     }
 }
