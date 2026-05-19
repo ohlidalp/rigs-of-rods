@@ -156,6 +156,7 @@ set(SOURCE_FILES
         physics/Savegame.cpp
         physics/SimConstants.h
         physics/SimData.{h,cpp}
+        physics/SimdMath.h
         physics/SlideNode.{h,cpp}
         physics/air/AeroEngine.h
         physics/air/AirBrake.{h,cpp}

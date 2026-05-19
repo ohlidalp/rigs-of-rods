@@ -36,6 +36,7 @@
 #include "Replay.h"
 #include "ScrewProp.h"
 #include "ScriptEngine.h"
+#include "SimdMath.h"
 #include "SoundScriptManager.h"
 #include "Terrain.h"
 #include "GfxWater.h"
@@ -1228,7 +1229,7 @@ void Actor::CalcBeams(bool trigger_hooks)
             const Real dz = pos1.z - pos2.z;
             
             Real dislen = dx * dx + dy * dy + dz * dz; // `Vector3::squaredLength()`
-            Real inverted_dislen = fast_invSqrt(dislen);
+            Real inverted_dislen = simd_invSqrt(dislen);
 
             dislen *= inverted_dislen;
 
