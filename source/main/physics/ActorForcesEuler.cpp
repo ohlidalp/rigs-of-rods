@@ -1217,10 +1217,17 @@ void Actor::CalcBeams(bool trigger_hooks)
     {
         if (!ar_beams[i].bm_disabled && !ar_beams[i].bm_inter_actor)
         {
-            // Calculate beam length
-            Vector3 dis = ar_beams[i].p1->RelPosition - ar_beams[i].p2->RelPosition;
+            node_t* const node1 = ar_beams[i].p1;
+            node_t* const node2 = ar_beams[i].p2;
 
-            Real dislen = dis.squaredLength();
+            // Calculate beam length
+            const Vector3& pos1 = node1->RelPosition;
+            const Vector3& pos2 = node2->RelPosition;
+            const Real dx = pos1.x - pos2.x;
+            const Real dy = pos1.y - pos2.y;
+            const Real dz = pos1.z - pos2.z;
+            
+            Real dislen = dx * dx + dy * dy + dz * dz; // `Vector3::squaredLength()`
             Real inverted_dislen = fast_invSqrt(dislen);
 
             dislen *= inverted_dislen;
@@ -1232,7 +1239,10 @@ void Actor::CalcBeams(bool trigger_hooks)
             Real d = ar_beams[i].d;
 
             // Calculate beam's rate of change
-            float v = (ar_beams[i].p1->Velocity - ar_beams[i].p2->Velocity).dotProduct(dis) * inverted_dislen;
+            const Vector3& vel1 = node1->Velocity;
+            const Vector3& vel2 = node2->Velocity;
+            const Real vdot = (vel1.x - vel2.x) * dx + (vel1.y - vel2.y) * dy + (vel1.z - vel2.z) * dz; // `(vel1 - vel2).dotProduct(Vector3(dx,dy,dz))`
+            float v = vdot * inverted_dislen;
 
             if (ar_beams[i].bounded == SHOCK1)
             {
@@ -1461,11 +1471,19 @@ void Actor::CalcBeams(bool trigger_hooks)
                 }
             }
 
-            // At last update the beam forces
-            Vector3 f = dis;
-            f *= (slen * inverted_dislen);
-            ar_beams[i].p1->Forces += f;
-            ar_beams[i].p2->Forces -= f;
+            // At last update the beam forces - optimized to avoid temporary Vector3 creation
+            const Real force_multiplier = slen * inverted_dislen;
+            const Real fx = dx * force_multiplier;
+            const Real fy = dy * force_multiplier;
+            const Real fz = dz * force_multiplier;
+            
+            node1->Forces.x += fx;
+            node1->Forces.y += fy;
+            node1->Forces.z += fz;
+            
+            node2->Forces.x -= fx;
+            node2->Forces.y -= fy;
+            node2->Forces.z -= fz;
         }
     }
 }
