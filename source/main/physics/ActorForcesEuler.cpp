@@ -1637,10 +1637,12 @@ void Actor::CalcNodes()
         // integration
         if (!ar_nodes[i].nd_immovable)
         {
-            ar_nodes[i].Velocity += ar_nodes[i].Forces / ar_nodes[i].mass * PHYSICS_DT;
-            ar_nodes[i].RelPosition += ar_nodes[i].Velocity * PHYSICS_DT;
-            ar_nodes[i].AbsPosition = ar_origin;
-            ar_nodes[i].AbsPosition += ar_nodes[i].RelPosition;
+            const Vector3 velo = ar_nodes[i].Velocity + ar_nodes[i].Forces / ar_nodes[i].mass * PHYSICS_DT;
+            const Vector3 relpos = ar_nodes[i].RelPosition + velo * PHYSICS_DT;
+
+            ar_nodes[i].Velocity = velo;
+            ar_nodes[i].RelPosition = relpos;
+            ar_nodes[i].AbsPosition = relpos + ar_origin;
         }
 
         // prepare next loop (optimisation)
