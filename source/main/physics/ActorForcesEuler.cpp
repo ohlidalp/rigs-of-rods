@@ -1252,6 +1252,67 @@ inline void CalcBeamsCommonPrologue(node_t* const node1, node_t* const node2, co
     node2->Forces.z -= fz;
  }
 
+void CalcBeamsCommonDeformation(Actor* actor, BeamID_t i, const float k, float& len, float& slen, const float difftoBeamL)
+{
+    beam_t& beam = actor->ar_beams[i];
+
+    if (beam.bm_type == BEAM_NORMAL && beam.bounded != SHOCK1 && k != 0.0f)
+    {
+        // Actual deformation tests
+        if (slen > beam.maxposstress && difftoBeamL < 0.0f) // compression
+        {
+            Real yield_length = beam.maxposstress / k;
+            Real deform = difftoBeamL + yield_length * (1.0f - beam.plastic_coef);
+            Real Lold = beam.L;
+            beam.L += deform;
+            beam.L = std::max(MIN_BEAM_LENGTH, beam.L);
+            slen = slen - (slen - beam.maxposstress) * 0.5f;
+            len = slen;
+            if (beam.L > 0.0f && Lold > beam.L)
+            {
+                beam.maxposstress *= Lold / beam.L;
+                beam.minmaxposnegstress = std::min(beam.maxposstress, -beam.maxnegstress);
+                beam.minmaxposnegstress = std::min(beam.minmaxposnegstress, beam.strength);
+            }
+            // For the compression case we do not remove any of the beam's
+            // strength for structure stability reasons
+            //beam.strength += deform * k * 0.5f;
+            if (actor->ar_beam_deform_debug_enabled)
+            {
+                RoR::Str<300> msg;
+                msg << "[RoR|Diag] YYY Beam " << i << " just deformed with extension force "
+                    << len << " / " << beam.strength << ". ";
+                LogBeamNodes(msg, beam);
+                RoR::Log(msg.ToCStr());
+            }
+        }
+        else if (slen < beam.maxnegstress && difftoBeamL > 0.0f) // expansion
+        {
+            Real yield_length = beam.maxnegstress / k;
+            Real deform = difftoBeamL + yield_length * (1.0f - beam.plastic_coef);
+            Real Lold = beam.L;
+            beam.L += deform;
+            slen = slen - (slen - beam.maxnegstress) * 0.5f;
+            len = -slen;
+            if (Lold > 0.0f && beam.L > Lold)
+            {
+                beam.maxnegstress *= beam.L / Lold;
+                beam.minmaxposnegstress = std::min(beam.maxposstress, -beam.maxnegstress);
+                beam.minmaxposnegstress = std::min(beam.minmaxposnegstress, beam.strength);
+            }
+            beam.strength -= deform * k;
+            if (actor->ar_beam_deform_debug_enabled)
+            {
+                RoR::Str<300> msg;
+                msg << "[RoR|Diag] YYY Beam " << i << " just deformed with extension force "
+                    << len << " / " << beam.strength << ". ";
+                LogBeamNodes(msg, beam);
+                RoR::Log(msg.ToCStr());
+            }
+        }
+    }
+ }
+
 void Actor::CalcBeams(bool trigger_hooks)
 {
     for (int i = 0; i < ar_num_beams; i++)
@@ -1358,61 +1419,7 @@ void Actor::CalcBeams(bool trigger_hooks)
             float len = std::abs(slen);
             if (len > ar_beams[i].minmaxposnegstress)
             {
-                if (ar_beams[i].bm_type == BEAM_NORMAL && ar_beams[i].bounded != SHOCK1 && k != 0.0f)
-                {
-                    // Actual deformation tests
-                    if (slen > ar_beams[i].maxposstress && difftoBeamL < 0.0f) // compression
-                    {
-                        Real yield_length = ar_beams[i].maxposstress / k;
-                        Real deform = difftoBeamL + yield_length * (1.0f - ar_beams[i].plastic_coef);
-                        Real Lold = ar_beams[i].L;
-                        ar_beams[i].L += deform;
-                        ar_beams[i].L = std::max(MIN_BEAM_LENGTH, ar_beams[i].L);
-                        slen = slen - (slen - ar_beams[i].maxposstress) * 0.5f;
-                        len = slen;
-                        if (ar_beams[i].L > 0.0f && Lold > ar_beams[i].L)
-                        {
-                            ar_beams[i].maxposstress *= Lold / ar_beams[i].L;
-                            ar_beams[i].minmaxposnegstress = std::min(ar_beams[i].maxposstress, -ar_beams[i].maxnegstress);
-                            ar_beams[i].minmaxposnegstress = std::min(ar_beams[i].minmaxposnegstress, ar_beams[i].strength);
-                        }
-                        // For the compression case we do not remove any of the beam's
-                        // strength for structure stability reasons
-                        //ar_beams[i].strength += deform * k * 0.5f;
-                        if (m_beam_deform_debug_enabled)
-                        {
-                            RoR::Str<300> msg;
-                            msg << "[RoR|Diag] YYY Beam " << i << " just deformed with extension force "
-                                << len << " / " << ar_beams[i].strength << ". ";
-                            LogBeamNodes(msg, ar_beams[i]);
-                            RoR::Log(msg.ToCStr());
-                        }
-                    }
-                    else if (slen < ar_beams[i].maxnegstress && difftoBeamL > 0.0f) // expansion
-                    {
-                        Real yield_length = ar_beams[i].maxnegstress / k;
-                        Real deform = difftoBeamL + yield_length * (1.0f - ar_beams[i].plastic_coef);
-                        Real Lold = ar_beams[i].L;
-                        ar_beams[i].L += deform;
-                        slen = slen - (slen - ar_beams[i].maxnegstress) * 0.5f;
-                        len = -slen;
-                        if (Lold > 0.0f && ar_beams[i].L > Lold)
-                        {
-                            ar_beams[i].maxnegstress *= ar_beams[i].L / Lold;
-                            ar_beams[i].minmaxposnegstress = std::min(ar_beams[i].maxposstress, -ar_beams[i].maxnegstress);
-                            ar_beams[i].minmaxposnegstress = std::min(ar_beams[i].minmaxposnegstress, ar_beams[i].strength);
-                        }
-                        ar_beams[i].strength -= deform * k;
-                        if (m_beam_deform_debug_enabled)
-                        {
-                            RoR::Str<300> msg;
-                            msg << "[RoR|Diag] YYY Beam " << i << " just deformed with extension force "
-                                << len << " / " << ar_beams[i].strength << ". ";
-                            LogBeamNodes(msg, ar_beams[i]);
-                            RoR::Log(msg.ToCStr());
-                        }
-                    }
-                }
+                CalcBeamsCommonDeformation(this, i, k, len, slen, difftoBeamL);
 
                 // Test if the beam should break
                 if (len > ar_beams[i].strength)

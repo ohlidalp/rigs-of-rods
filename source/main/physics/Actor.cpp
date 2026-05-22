@@ -4497,7 +4497,7 @@ Actor::Actor(
     , m_has_command_beams(false)
     , ar_cparticles_active(false)
     , m_beam_break_debug_enabled(false)
-    , m_beam_deform_debug_enabled(false)
+    , ar_beam_deform_debug_enabled(false)
     , m_trigger_debug_enabled(false)
     , m_disable_default_sounds(false)
     , m_disable_smoke(false)
