@@ -300,6 +300,25 @@ struct node_t
     ground_model_t* nd_last_collision_gm;    //!< Physics state; last collision 'ground model' (surface definition)
 };
 
+struct BeamRangesByOrigin // Partitions of the `Actor::ar_beams` array, filled at spawn
+{
+    // variables are _IN ORDER_ of processing in `ActorSpawner`, see file 'ActorSpawnerFlow.cpp'
+    BeamID_t wheelbeams_start = 0; // '*wheels*'
+    BeamID_t unboundedbeams_start = 0; // 'cinecam', then 'beams' without flags 'r' or 's'
+    BeamID_t otherbeams_start = 0;
+
+    /* Other beams (not worth splitting the loop):
+    BeamID_t shock1beams_start = 0; // 'shocks'
+    BeamID_t shock2beams_start = 0; // 'shocks2'
+    BeamID_t shock3beams_start = 0; // 'shocks3'
+    BeamID_t commandbeams_start = 0; // 'commands*'
+    BeamID_t hydrobeams_start = 0; // 'hydros'
+    BeamID_t triggerbeams_start = 0; // 'triggers'
+    BeamID_t ropebeams_start = 0; // 'ropes' and 'beams' with 'r' flag - both have identical physics
+    BeamID_t supportbeams_start = 0; // 'beams' with 's' flag
+    */
+};
+
 /// Simulation: An edge in the softbody structure
 struct beam_t
 {

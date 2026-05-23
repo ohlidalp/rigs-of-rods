@@ -157,6 +157,7 @@ void ActorSpawner::ProcessNewActor(ActorPtr actor, ActorSpawnRequest rq, RigDef:
 
     // ---------------------------- Wheels (generate nodes and beams) ----------------------------
 
+    m_actor->ar_beam_ranges_by_origin.wheelbeams_start = m_actor->ar_num_beams;
     PROCESS_ELEMENT(RigDef::Keyword::WHEELS, wheels, ProcessWheel);
     PROCESS_ELEMENT(RigDef::Keyword::WHEELS2, wheels2, ProcessWheel2);
     PROCESS_ELEMENT(RigDef::Keyword::MESHWHEELS, meshwheels, ProcessMeshWheel);
@@ -169,12 +170,15 @@ void ActorSpawner::ProcessNewActor(ActorPtr actor, ActorSpawnRequest rq, RigDef:
 
     // ---------------------------- Cinecam (generates nodes and beams) ----------------------------
 
+    m_actor->ar_beam_ranges_by_origin.unboundedbeams_start = m_actor->ar_num_beams; // Cinecam beams are quite ordinary
     PROCESS_ELEMENT(RigDef::Keyword::CINECAM, cinecam, ProcessCinecam);
 
     // ---------------------------- User-defined beams ----------------------------
     //              (may reference any generated/user-defined node)
 
     PROCESS_ELEMENT(RigDef::Keyword::BEAMS, beams, _ProcessBeamIfUnbounded); // partial processing of 'beams' for performance
+
+    m_actor->ar_beam_ranges_by_origin.otherbeams_start = m_actor->ar_num_beams;
 
     // ---------------------------- Other beam types ----------------------------
     //              (may reference any generated/user-defined node)

@@ -64,7 +64,9 @@ void Actor::CalcForcesEulerCompute(bool doUpdate, int num_steps)
     this->CalcTruckEngine(doUpdate); // must be done after the commands / engine triggers are updated
     this->CalcMouse();
     ar_prof.ProfBegin(PROF_CALCBEAMS_TOTAL);
-    this->CalcBeams(doUpdate);
+    this->CalcOtherBeams(ar_beam_ranges_by_origin.wheelbeams_start, ar_beam_ranges_by_origin.unboundedbeams_start, doUpdate);
+    this->CalcUnboundedBeams(ar_beam_ranges_by_origin.unboundedbeams_start, ar_beam_ranges_by_origin.otherbeams_start);
+    this->CalcOtherBeams(ar_beam_ranges_by_origin.otherbeams_start, ar_num_beams, doUpdate);
     ar_prof.ProfEnd(PROF_CALCBEAMS_TOTAL);
     this->CalcCabCollisions();
     this->updateSlideNodeForces(PHYSICS_DT); // must be done after the contacters are updated
@@ -1196,6 +1198,22 @@ bool Actor::CalcForcesEulerPrepare(bool doUpdate)
     return true;
 }
 
+/*
+===================================================================================================
+                                             BEAMS
+
+    There's quite a bit duplicate code, but performance requires it.
+    Each type of beam has it's own mini-loop, see `struct BeamRangesByOrigin`.
+    CONTENTS:
+     1. Helpers: Log***().
+     2. Common processing: CalcBeamsCommon***() ~ Prologue, Deformation, Breaking, Epilogue.
+     3. Mini-loops: Calc****Beams() ~ Unbounded ('cinecam', 'beams' without flags 'r/s')
+     4. Classic omni-loop: CalcOtherBeams() ~ handles the rest of the beams array.
+     5. Inter-beam handling: CalcBeamsInterActor()
+
+===================================================================================================
+*/
+
 template <size_t L>
 void LogNodeId(RoR::Str<L>& msg, node_t* node) // Internal helper
 {
@@ -1397,9 +1415,44 @@ void CalcBeamsCommonBreaking(Actor* actor, BeamID_t i, const float k, float& len
     }
 }
 
-void Actor::CalcBeams(bool trigger_hooks)
+void Actor::CalcUnboundedBeams(const BeamID_t start, const BeamID_t end)
 {
-    for (int i = 0; i < ar_num_beams; i++)
+    // type=BEAM_NORMAL, bounded=NOSHOCK
+    // ---------------------------------
+
+    for (BeamID_t i = start; i < end; i++)
+    {
+        if (!ar_beams[i].bm_disabled && !ar_beams[i].bm_inter_actor)
+        {
+            node_t* const node1 = ar_beams[i].p1;
+            node_t* const node2 = ar_beams[i].p2;
+
+            float dx, dy, dz, dislen, inverted_dislen, difftoBeamL, v;
+            CalcBeamsCommonPrologue(node1, node2, ar_beams[i].L, dx, dy, dz, dislen, inverted_dislen, difftoBeamL, v);
+
+            float k = ar_beams[i].k;
+            float d = ar_beams[i].d;
+
+            float slen = -k * difftoBeamL - d * v;
+            ar_beams[i].stress = slen;
+
+            // Fast test for deformation
+            float len = std::abs(slen);
+            if (len > ar_beams[i].minmaxposnegstress)
+            {
+                CalcBeamsCommonDeformation(this, i, k, len, slen, difftoBeamL);
+
+                CalcBeamsCommonBreaking(this, i, k, len, slen, difftoBeamL);
+            }
+
+            CalcBeamsCommonEpilogue(dx, dy, dz, slen, inverted_dislen, node1, node2);
+        }
+    }
+}
+
+void Actor::CalcOtherBeams(const BeamID_t start, const BeamID_t end, bool trigger_hooks)
+{
+    for (int i = start; i < end; i++)
     {
         if (!ar_beams[i].bm_disabled && !ar_beams[i].bm_inter_actor)
         {

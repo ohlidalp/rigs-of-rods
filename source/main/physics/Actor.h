@@ -352,6 +352,9 @@ public:
     std::vector<bool>    ar_beams_invisible;    //!< Used only by the exporter (for rendering, invisible beams simply get no mesh).
     std::vector<bool>    ar_beams_user_defined; //!< True for 'beams', false for wheels/cinecam/hooknode/wings/rotators etc...
 
+    // aggregate beam data
+    BeamRangesByOrigin   ar_beam_ranges_by_origin; //!< Filled at spawn
+
     std::vector<beam_t*> ar_inter_beams;       //!< Beams connecting 2 actors
     shock_t*             ar_shocks = nullptr;            //!< Shock absorbers
     int                  ar_num_shocks = 0;        //!< Number of shock absorbers
@@ -569,7 +572,8 @@ private:
     void              CalcAircraftForces(bool doUpdate);   
     void              CalcForcesEulerCompute(bool doUpdate, int num_steps); 
     void              CalcAnimators(hydrobeam_t const& hydrobeam, float &cstate, int &div);
-    void              CalcBeams(bool trigger_hooks);       
+    void              CalcUnboundedBeams(const BeamID_t start, const BeamID_t end);
+    void              CalcOtherBeams(const BeamID_t start, const BeamID_t end, bool doUpdate);
     void              CalcBeamsInterActor();               
     void              CalcBuoyance(bool doUpdate);         
     void              CalcCommands(bool doUpdate);         
@@ -585,9 +589,11 @@ private:
     void              CalcReplay();                        
     void              CalcRopes();                         
     void              CalcShocks(bool doUpdate, int num_steps); 
+public:
     void              CalcShocks2(int i, Ogre::Real difftoBeamL, Ogre::Real &k, Ogre::Real &d, Ogre::Real v);
     void              CalcShocks3(int i, Ogre::Real difftoBeamL, Ogre::Real &k, Ogre::Real &d, Ogre::Real v);
     void              CalcTriggers(int i, Ogre::Real difftoBeamL, bool update_hooks);
+private:
     void              CalcTies();                          
     void              CalcTruckEngine(bool doUpdate);      
     void              CalcWheels(bool doUpdate, int num_steps); 
