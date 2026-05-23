@@ -303,6 +303,9 @@ private:
     void                          InitializeRig();
     void                          FinalizeRig();
     void                          AddBaseFlare(RigDef::FlareBase& flare_def);
+    void                          _ProcessBeamIfUnbounded(RigDef::Beam & def); // Skips beams with flags 'r' or 's'
+    void                          _ProcessBeamIfRope(RigDef::Beam& def); // Skips beams without flag 'r'
+    void                          _ProcessBeamIfSupport(RigDef::Beam& def); // Skips beams without flag 's'
     /// @}
 
     /// @name Actor building utilities

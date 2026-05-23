@@ -155,18 +155,7 @@ void ActorSpawner::ProcessNewActor(ActorPtr actor, ActorSpawnRequest rq, RigDef:
         AddExhaust(m_actor->ar_exhaust_pos_node, m_actor->ar_exhaust_dir_node);
     }
 
-    // Flush hookbeams (beams created for nodes with 'h' flag)
-    for (auto& pair : m_queued_hookbeams)
-    {
-        AddHook(pair.first, pair.second);
-    }
-    m_queued_hookbeams.clear();
-
-    // ---------------------------- Node generating sections ----------------------------
-
-    PROCESS_ELEMENT(RigDef::Keyword::CINECAM, cinecam, ProcessCinecam);
-
-    // ---------------------------- Wheels (also generate nodes) ----------------------------
+    // ---------------------------- Wheels (generate nodes and beams) ----------------------------
 
     PROCESS_ELEMENT(RigDef::Keyword::WHEELS, wheels, ProcessWheel);
     PROCESS_ELEMENT(RigDef::Keyword::WHEELS2, wheels2, ProcessWheel2);
@@ -178,10 +167,25 @@ void ActorSpawner::ProcessNewActor(ActorPtr actor, ActorSpawnRequest rq, RigDef:
 
     PROCESS_ELEMENT(RigDef::Keyword::WHEELDETACHERS, wheeldetachers, ProcessWheelDetacher);
 
+    // ---------------------------- Cinecam (generates nodes and beams) ----------------------------
+
+    PROCESS_ELEMENT(RigDef::Keyword::CINECAM, cinecam, ProcessCinecam);
+
     // ---------------------------- User-defined beams ----------------------------
     //              (may reference any generated/user-defined node)
 
-    PROCESS_ELEMENT(RigDef::Keyword::BEAMS, beams, ProcessBeam);
+    PROCESS_ELEMENT(RigDef::Keyword::BEAMS, beams, _ProcessBeamIfUnbounded); // partial processing of 'beams' for performance
+
+    // ---------------------------- Other beam types ----------------------------
+    //              (may reference any generated/user-defined node)
+
+    // Flush hookbeams (beams created for nodes with 'h' flag)
+    for (auto& pair : m_queued_hookbeams)
+    {
+        AddHook(pair.first, pair.second);
+    }
+    m_queued_hookbeams.clear();
+
     PROCESS_ELEMENT(RigDef::Keyword::SHOCKS, shocks, ProcessShock);
     PROCESS_ELEMENT(RigDef::Keyword::SHOCKS2, shocks2, ProcessShock2);
     PROCESS_ELEMENT(RigDef::Keyword::SHOCKS3, shocks3, ProcessShock3);
@@ -189,8 +193,10 @@ void ActorSpawner::ProcessNewActor(ActorPtr actor, ActorSpawnRequest rq, RigDef:
     PROCESS_ELEMENT(RigDef::Keyword::HYDROS, hydros, ProcessHydro);
     PROCESS_ELEMENT(RigDef::Keyword::TRIGGERS, triggers, ProcessTrigger);
     PROCESS_ELEMENT(RigDef::Keyword::ROPES, ropes, ProcessRope);
+    PROCESS_ELEMENT(RigDef::Keyword::BEAMS, beams, _ProcessBeamIfRope);
+    PROCESS_ELEMENT(RigDef::Keyword::BEAMS, beams, _ProcessBeamIfSupport);
 
-    // ---------------------------- Other ----------------------------
+    // ---------------------------- No nodes/beams generated beyond this point ----------------------------
 
     PROCESS_ELEMENT(RigDef::Keyword::ANTILOCKBRAKES, antilockbrakes, ProcessAntiLockBrakes);
     PROCESS_ELEMENT(RigDef::Keyword::FLARES2, flares2, ProcessFlare2);
