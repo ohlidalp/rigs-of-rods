@@ -340,7 +340,7 @@ bool ActorManager::LoadScene(Ogre::String save_filename)
             {
                 if (x_actors[index] == player_actor)
                 {
-                    App::GetGameContext()->PushMessage(Message(MSG_SIM_SEAT_PLAYER_REQUESTED, nullptr));
+                    App::GetGameContext()->PushMessage(Message(MSG_SIM_SEAT_PLAYER_REQUESTED, new ActorPtr()));
                 }
                 else if (x_actors[index] == prev_player_actor)
                 {
@@ -384,7 +384,7 @@ bool ActorManager::LoadScene(Ogre::String save_filename)
     {
         if (x_actors[index] == player_actor)
         {
-            App::GetGameContext()->PushMessage(Message(MSG_SIM_SEAT_PLAYER_REQUESTED, nullptr));
+            App::GetGameContext()->PushMessage(Message(MSG_SIM_SEAT_PLAYER_REQUESTED, new ActorPtr()));
         }
         else if (x_actors[index] == prev_player_actor)
         {
