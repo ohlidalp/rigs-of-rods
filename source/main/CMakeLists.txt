@@ -227,6 +227,7 @@ set(SOURCE_FILES
         utils/WriteTextToTexture.{h,cpp}
         utils/memory/RefCountingObject.h
         utils/memory/RefCountingObjectPtr.h
+        utils/memory/AlignedAllocator.h
         utils/bbcode/BBDocument.{h,cpp}
         )
 

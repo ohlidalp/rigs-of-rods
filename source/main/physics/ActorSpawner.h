@@ -357,6 +357,7 @@ private:
     node_t*                       GetNodePointer(RigDef::Node::Ref const & node_ref);
     node_t*                       GetNodePointerOrThrow(RigDef::Node::Ref const & node_ref);
     beam_t&                       GetBeam(unsigned int index);
+    bbeam_t&                      GetBBeam(unsigned int index);
     beam_t*                       FindBeamInRig(NodeNum_t node_a, NodeNum_t node_b);
     NodeNum_t                     GetNodeIndexOrThrow(RigDef::Node::Ref const & id);
     /// @}

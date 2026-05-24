@@ -651,8 +651,9 @@ void VehicleInfoTPanel::UpdateStats(float dt, ActorPtr actor)
             beambroken++;
         }
         beamstress += std::abs(beam->stress);
-        float current_deformation = fabs(beam->L - beam->refL);
-        if (fabs(current_deformation) > 0.0001f && beam->bm_type != BEAM_HYDRO)
+        bbeam_t& bbeam = actor->ar_bbeams[beam->bm_id];
+        float current_deformation = fabs(beam->L - bbeam.refL);
+        if (fabs(current_deformation) > 0.0001f && bbeam.bm_type != BEAM_HYDRO)
         {
             beamdeformed++;
         }

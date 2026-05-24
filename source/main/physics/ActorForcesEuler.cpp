@@ -90,9 +90,10 @@ void Actor::CalcForceFeedback(bool doUpdate)
         for (hydrobeam_t& hydrobeam: ar_hydros)
         {
             beam_t* beam = &ar_beams[hydrobeam.hb_beam_index];
+            bbeam_t* bbeam = &ar_bbeams[hydrobeam.hb_beam_index];
             if ((hydrobeam.hb_flags & (HYDRO_FLAG_DIR | HYDRO_FLAG_SPEED)) && !beam->bm_broken)
             {
-                m_force_sensors.accu_hydros_forces += hydrobeam.hb_speed * beam->refL * beam->stress;
+                m_force_sensors.accu_hydros_forces += hydrobeam.hb_speed * bbeam->refL * beam->stress;
             }
         }
     }
@@ -576,9 +577,9 @@ void Actor::CalcShocks(bool doUpdate, int num_steps)
         {
             // active shocks now
             if (ar_shocks[i].flags & SHOCK_FLAG_RACTIVE)
-                ar_beams[ar_shocks[i].beamid].L = ar_beams[ar_shocks[i].beamid].refL * (1.0 + m_stabilizer_shock_ratio);
+                ar_beams[ar_shocks[i].beamid].L = ar_bbeams[ar_shocks[i].beamid].refL * (1.0 + m_stabilizer_shock_ratio);
             else if (ar_shocks[i].flags & SHOCK_FLAG_LACTIVE)
-                ar_beams[ar_shocks[i].beamid].L = ar_beams[ar_shocks[i].beamid].refL * (1.0 - m_stabilizer_shock_ratio);
+                ar_beams[ar_shocks[i].beamid].L = ar_bbeams[ar_shocks[i].beamid].refL * (1.0 - m_stabilizer_shock_ratio);
         }
     }
     //auto shock adjust
@@ -800,10 +801,10 @@ void Actor::CalcHydros()
             // check and apply animators limits if set
             if (hydrobeam.hb_anim_flags)
             {
-                if (factor < 1.0f - ar_beams[beam_idx].shortbound)
-                    factor = 1.0f - ar_beams[beam_idx].shortbound;
-                if (factor > 1.0f + ar_beams[beam_idx].longbound)
-                    factor = 1.0f + ar_beams[beam_idx].longbound;
+                if (factor < 1.0f - ar_bbeams[beam_idx].shortbound)
+                    factor = 1.0f - ar_bbeams[beam_idx].shortbound;
+                if (factor > 1.0f + ar_bbeams[beam_idx].longbound)
+                    factor = 1.0f + ar_bbeams[beam_idx].longbound;
             }
 
             ar_beams[beam_idx].L = hydrobeam.hb_ref_length * factor;
@@ -898,10 +899,10 @@ void Actor::CalcCommands(bool doUpdate)
                 if (cmd_beam.cmb_is_autocentering && !cmd_beam.cmb_state->auto_move_lock)
                 {
                     // check for some error
-                    if (ar_beams[bbeam].refL == 0 || ar_beams[bbeam].L == 0)
+                    if (ar_bbeams[bbeam].refL == 0 || ar_beams[bbeam].L == 0)
                         continue;
 
-                    float current = (ar_beams[bbeam].L / ar_beams[bbeam].refL);
+                    float current = (ar_beams[bbeam].L / ar_bbeams[bbeam].refL);
 
                     if (fabs(current - cmd_beam.cmb_center_length) < 0.0001)
                     {
@@ -921,15 +922,15 @@ void Actor::CalcCommands(bool doUpdate)
                         // avoid overshooting
                         if (mode != 0 && mode != cmd_beam.cmb_state->auto_moving_mode)
                         {
-                            ar_beams[bbeam].L = cmd_beam.cmb_center_length * ar_beams[bbeam].refL;
+                            ar_beams[bbeam].L = cmd_beam.cmb_center_length * ar_bbeams[bbeam].refL;
                             cmd_beam.cmb_state->auto_moving_mode = 0;
                         }
                     }
                 }
 
-                if (ar_beams[bbeam].refL != 0 && ar_beams[bbeam].L != 0)
+                if (ar_bbeams[bbeam].refL != 0 && ar_beams[bbeam].L != 0)
                 {
-                    float clen = ar_beams[bbeam].L / ar_beams[bbeam].refL;
+                    float clen = ar_beams[bbeam].L / ar_bbeams[bbeam].refL;
                     if ((bbeam_dir > 0 && clen < cmd_beam.cmb_boundary_length) || (bbeam_dir < 0 && clen > cmd_beam.cmb_boundary_length))
                     {
                         float dl = ar_beams[bbeam].L;
@@ -1136,10 +1137,11 @@ void Actor::CalcTies()
             continue;
 
         // division through zero guard
-        if (it->ti_beam->refL == 0 || it->ti_beam->L == 0)
+        bbeam_t& ti_bbeam = ar_bbeams[it->ti_beam->bm_id];
+        if (ti_bbeam.refL == 0 || it->ti_beam->L == 0)
             continue;
 
-        float clen = it->ti_beam->L / it->ti_beam->refL;
+        float clen = it->ti_beam->L / ti_bbeam.refL;
         if (clen > it->ti_min_length)
         {
             it->ti_beam->L *= (1.0 - it->ti_contract_speed * PHYSICS_DT / it->ti_beam->L);
@@ -1273,8 +1275,9 @@ inline void CalcBeamsCommonPrologue(node_t* const node1, node_t* const node2, co
 void CalcBeamsCommonDeformation(Actor* actor, BeamID_t i, const float k, float& len, float& slen, const float difftoBeamL)
 {
     beam_t& beam = actor->ar_beams[i];
+    bbeam_t& bbeam = actor->ar_bbeams[i];
 
-    if (beam.bm_type == BEAM_NORMAL && beam.bounded != SHOCK1 && k != 0.0f)
+    if (bbeam.bm_type == BEAM_NORMAL && bbeam.bounded != SHOCK1 && k != 0.0f)
     {
         // Actual deformation tests
         if (slen > beam.maxposstress && difftoBeamL < 0.0f) // compression
@@ -1334,6 +1337,7 @@ void CalcBeamsCommonDeformation(Actor* actor, BeamID_t i, const float k, float& 
 void CalcBeamsCommonBreaking(Actor* actor, BeamID_t i, const float k, float& len, float& slen, const float difftoBeamL)
 {
     beam_t& beam = actor->ar_beams[i];
+    bbeam_t& bbeam = actor->ar_bbeams[i];
 
     // Test if the beam should break
     if (len > beam.strength)
@@ -1362,34 +1366,34 @@ void CalcBeamsCommonBreaking(Actor* actor, BeamID_t i, const float k, float& len
 
             // detachergroup check: beam[i] is already broken, check detacher group# == 0/default skip the check ( performance bypass for beams with default setting )
             // only perform this check if this is a master detacher beams (positive detacher group id > 0)
-            if (beam.detacher_group > 0)
+            if (bbeam.detacher_group > 0)
             {
                 // cycle once through the other beams
                 for (int j = 0; j < actor->ar_num_beams; j++)
                 {
                     // beam[i] detacher group# == checked beams detacher group# -> delete & disable checked beam
                     // do this with all master(positive id) and minor(negative id) beams of this detacher group
-                    if (abs(actor->ar_beams[j].detacher_group) == beam.detacher_group)
+                    if (abs(actor->ar_bbeams[j].detacher_group) == bbeam.detacher_group)
                     {
                         actor->ar_beams[j].bm_broken = true;
                         actor->ar_beams[j].bm_disabled = true;
                         if (actor->ar_beam_break_debug_enabled)
                         {
                             App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE,
-                                "Deleting Detacher BeamID: " + TOSTRING(j) + ", Detacher Group: " + TOSTRING(beam.detacher_group)+ ", actor ID: " + TOSTRING(actor->ar_instance_id));
+                                "Deleting Detacher BeamID: " + TOSTRING(j) + ", Detacher Group: " + TOSTRING(bbeam.detacher_group)+ ", actor ID: " + TOSTRING(actor->ar_instance_id));
                         }
                     }
                 }
                 // cycle once through all wheeldetachers
                 for (wheeldetacher_t const& wheeldetacher: actor->ar_wheeldetachers)
                 {
-                    if (wheeldetacher.wd_detacher_group == beam.detacher_group)
+                    if (wheeldetacher.wd_detacher_group == bbeam.detacher_group)
                     {
                         actor->ar_wheels[wheeldetacher.wd_wheel_id].wh_is_detached = true;
                         if (actor->ar_beam_break_debug_enabled)
                         {
                             App::GetConsole()->putMessage(Console::CONSOLE_MSGTYPE_ACTOR, Console::CONSOLE_SYSTEM_NOTICE,
-                                "Detaching wheel ID: " + TOSTRING(wheeldetacher.wd_wheel_id) + ", Detacher Group: " + TOSTRING(beam.detacher_group)+ ", actor ID: " + TOSTRING(actor->ar_instance_id));
+                                "Detaching wheel ID: " + TOSTRING(wheeldetacher.wd_wheel_id) + ", Detacher Group: " + TOSTRING(bbeam.detacher_group)+ ", actor ID: " + TOSTRING(actor->ar_instance_id));
                         }
                     }
                 }
@@ -1465,15 +1469,15 @@ void Actor::CalcOtherBeams(const BeamID_t start, const BeamID_t end, bool trigge
             Real k = ar_beams[i].k;
             Real d = ar_beams[i].d;
 
-            if (ar_beams[i].bounded == SHOCK1)
+            if (ar_bbeams[i].bounded == SHOCK1)
             {
                 float interp_ratio = 0.0f;
 
                 // Following code interpolates between defined beam parameters and default beam parameters
-                if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L)
-                    interp_ratio = difftoBeamL - ar_beams[i].longbound * ar_beams[i].L;
-                else if (difftoBeamL < -ar_beams[i].shortbound * ar_beams[i].L)
-                    interp_ratio = -difftoBeamL - ar_beams[i].shortbound * ar_beams[i].L;
+                if (difftoBeamL > ar_bbeams[i].longbound * ar_beams[i].L)
+                    interp_ratio = difftoBeamL - ar_bbeams[i].longbound * ar_beams[i].L;
+                else if (difftoBeamL < -ar_bbeams[i].shortbound * ar_beams[i].L)
+                    interp_ratio = -difftoBeamL - ar_bbeams[i].shortbound * ar_beams[i].L;
 
                 if (interp_ratio != 0.0f)
                 {
@@ -1482,39 +1486,39 @@ void Actor::CalcOtherBeams(const BeamID_t start, const BeamID_t end, bool trigge
                     float tdamp = DEFAULT_DAMP;
 
                     // Skip camera, wheels or any other shocks which are not generated in a shocks or shocks2 section
-                    if (ar_beams[i].bm_type == BEAM_HYDRO)
+                    if (ar_bbeams[i].bm_type == BEAM_HYDRO)
                     {
-                        tspring = ar_beams[i].shock->sbd_spring;
-                        tdamp = ar_beams[i].shock->sbd_damp;
+                        tspring = ar_bbeams[i].shock->sbd_spring;
+                        tdamp = ar_bbeams[i].shock->sbd_damp;
                     }
 
                     k += (tspring - k) * interp_ratio;
                     d += (tdamp - d) * interp_ratio;
                 }
             }
-            else if (ar_beams[i].bounded == TRIGGER)
+            else if (ar_bbeams[i].bounded == TRIGGER)
             {
                 this->CalcTriggers(i, difftoBeamL, trigger_hooks);
             }
-            else if (ar_beams[i].bounded == SHOCK2)
+            else if (ar_bbeams[i].bounded == SHOCK2)
             {
                 this->CalcShocks2(i, difftoBeamL, k, d, v);
             }
-            else if (ar_beams[i].bounded == SHOCK3)
+            else if (ar_bbeams[i].bounded == SHOCK3)
             {
                 this->CalcShocks3(i, difftoBeamL, k, d, v);
             }
-            else if (ar_beams[i].bounded == SUPPORTBEAM)
+            else if (ar_bbeams[i].bounded == SUPPORTBEAM)
             {
                 if (difftoBeamL > 0.0f)
                 {
                     k = 0.0f;
                     d *= 0.1f;
                     float break_limit = SUPPORT_BEAM_LIMIT_DEFAULT;
-                    if (ar_beams[i].longbound > 0.0f)
+                    if (ar_bbeams[i].longbound > 0.0f)
                     {
                         // This is a supportbeam with a user set break limit, get the user set limit
-                        break_limit = ar_beams[i].longbound;
+                        break_limit = ar_bbeams[i].longbound;
                     }
 
                     // If support beam is extended the originallength * break_limit, break and disable it
@@ -1533,7 +1537,7 @@ void Actor::CalcOtherBeams(const BeamID_t start, const BeamID_t end, bool trigge
                     }
                 }
             }
-            else if (ar_beams[i].bounded == ROPE)
+            else if (ar_bbeams[i].bounded == ROPE)
             {
                 if (difftoBeamL < 0.0f)
                 {
@@ -1542,11 +1546,11 @@ void Actor::CalcOtherBeams(const BeamID_t start, const BeamID_t end, bool trigge
                 }
             }
 
-            if (trigger_hooks && ar_beams[i].bounded && ar_beams[i].bm_type == BEAM_HYDRO)
+            if (trigger_hooks && ar_bbeams[i].bounded && ar_bbeams[i].bm_type == BEAM_HYDRO)
             {
-                ar_beams[i].debug_k = k * std::abs(difftoBeamL);
-                ar_beams[i].debug_d = d * std::abs(v);
-                ar_beams[i].debug_v = std::abs(v);
+                ar_bbeams[i].debug_k = k * std::abs(difftoBeamL);
+                ar_bbeams[i].debug_d = d * std::abs(v);
+                ar_bbeams[i].debug_v = std::abs(v);
             }
 
             float slen = -k * difftoBeamL - d * v;
@@ -1586,7 +1590,7 @@ void Actor::CalcBeamsInterActor()
             Real k = ar_inter_beams[i]->k;
             Real d = ar_inter_beams[i]->d;
 
-            if (ar_inter_beams[i]->bounded == ROPE && difftoBeamL < 0.0f)
+            if (ar_bbeams[ar_inter_beams[i]->bm_id].bounded == ROPE && difftoBeamL < 0.0f)
             {
                 k = 0.0f;
                 d *= 0.1f;
@@ -1602,7 +1606,7 @@ void Actor::CalcBeamsInterActor()
             float len = std::abs(slen);
             if (len > ar_inter_beams[i]->minmaxposnegstress)
             {
-                if (ar_inter_beams[i]->bm_type == BEAM_NORMAL && ar_inter_beams[i]->bounded != SHOCK1 && k != 0.0f)
+                if (ar_bbeams[ar_inter_beams[i]->bm_id].bm_type == BEAM_NORMAL && ar_bbeams[ar_inter_beams[i]->bm_id].bounded != SHOCK1 && k != 0.0f)
                 {
                     // Actual deformation tests
                     if (slen > ar_inter_beams[i]->maxposstress && difftoBeamL < 0.0f) // compression

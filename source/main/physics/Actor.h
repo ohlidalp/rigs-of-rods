@@ -347,6 +347,7 @@ public:
 
     // Beam data (split to layers)
     beam_t*              ar_beams = nullptr;
+    bbeam_t*             ar_bbeams = nullptr; //!< Data for bounded beams (shocks, hydros, triggers etc..)
     int                  ar_num_beams = 0;
     std::vector<std::pair<float, float>> ar_initial_beam_defaults;
     std::vector<bool>    ar_beams_invisible;    //!< Used only by the exporter (for rendering, invisible beams simply get no mesh).

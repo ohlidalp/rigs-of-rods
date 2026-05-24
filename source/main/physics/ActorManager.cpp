@@ -220,8 +220,8 @@ ActorPtr ActorManager::CreateNewActor(ActorSpawnRequest rq, RigDef::DocumentPtr 
     // Set beam defaults
     for (int i = 0; i < actor->ar_num_beams; i++)
     {
-        actor->ar_beams[i].initial_beam_strength       = actor->ar_beams[i].strength;
-        actor->ar_beams[i].default_beam_deform         = actor->ar_beams[i].minmaxposnegstress;
+        actor->ar_bbeams[i].initial_beam_strength       = actor->ar_beams[i].strength;
+        actor->ar_bbeams[i].default_beam_deform         = actor->ar_beams[i].minmaxposnegstress;
         actor->ar_initial_beam_defaults[i]             = std::make_pair(actor->ar_beams[i].k, actor->ar_beams[i].d);
     }
 

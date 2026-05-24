@@ -322,27 +322,53 @@ struct BeamRangesByOrigin // Partitions of the `Actor::ar_beams` array, filled a
 /// Simulation: An edge in the softbody structure
 struct beam_t
 {
-    beam_t();
-    ~beam_t();
+    beam_t()
+    : bm_inter_actor(false)
+    , bm_broken(false)
+    , bm_disabled(false)
+    {}
 
+    // Data below are hot for CalcUnboundedBeams()
+    bool            bm_inter_actor:1;      //!< in case p2 is on another actor
+    bool            bm_disabled:1;
+    bool            bm_broken:1;
+    // ~~ 8 bytes ~~
     node_t*         p1 = nullptr;
     node_t*         p2 = nullptr;
+    // ~~ 24 bytes ~~
     float           k = 0.f;                     //!< tensile spring
     float           d = 0.f;                     //!< damping factor
     float           L = 0.f;                     //!< length
+    float           stress = 0.f;
     float           minmaxposnegstress = 0.f;
+    // ~~ 44 bytes ~~
+
+    // Data below are cold for CalcUnboundedBeams() unless there is deformation:
     float           maxposstress = 0.f;
     float           maxnegstress = 0.f;
     float           strength = 0.f;
-    float           stress = 0.f;
     float           plastic_coef = 0.f;
+    // ~~ 60 bytes ~~
+
+    BeamID_t        bm_id = BEAMID_INVALID;      //!< This beam's index in Actor::ar_beams array.
+    // ~~ 64 bytes ~~
+};
+static_assert(sizeof(beam_t) <= 64, "beam_t should fit into 64 bytes for cache efficiency");
+
+struct bbeam_t // Bounded beam data - not fitting to 64b cacheline
+{
+    bbeam_t();
+    ~bbeam_t();
+
+    // Data below are cold for CalcUnboundedBeams() unless there is breaking:
+    
     int             detacher_group = DEFAULT_DETACHER_GROUP; //!< Attribute: detacher group number (integer)
+
     SpecialBeam     bounded = SpecialBeam::NOSHOCK;
     BeamType        bm_type = BeamType::BEAM_NORMAL;
-    bool            bm_inter_actor = false;      //!< in case p2 is on another actor
+
     ActorPtr        bm_locked_actor;             //!< in case p2 is on another actor
-    bool            bm_disabled = false;
-    bool            bm_broken = false;
+
 
     float           shortbound = 0.f;
     float           longbound = 0.f;

@@ -48,25 +48,25 @@ static RigDef::Node::Ref BuildNodeRef(Actor* actor, NodeNum_t n)
     }
 }
 
-static bool IsActuallyShockBeam(const beam_t& beam)
+static bool IsActuallyShockBeam(const bbeam_t& bbeam)
 {
     // Beams with attributes {SHOCK1 && BEAM_NORMAL} are actually wheel beams ~ don't ask.
-    return beam.bm_type == BEAM_HYDRO 
-        && (beam.bounded == SHOCK1 || beam.bounded == SHOCK2 || beam.bounded == SHOCK3);
+    return bbeam.bm_type == BEAM_HYDRO 
+        && (bbeam.bounded == SHOCK1 || bbeam.bounded == SHOCK2 || bbeam.bounded == SHOCK3);
 }
 
 static void UpdateSetBeamDefaults(std::shared_ptr<BeamDefaults>& beam_defaults, Actor* actor, int i)
 {
     float b_spring = actor->ar_beams[i].k;
     float b_damp = actor->ar_beams[i].d;
-    float b_deform = actor->ar_beams[i].default_beam_deform;
-    float b_break = actor->ar_beams[i].initial_beam_strength;
-    float b_diameter = actor->ar_beams[i].default_beam_diameter;
-    if (IsActuallyShockBeam(actor->ar_beams[i]))
+    float b_deform = actor->ar_bbeams[i].default_beam_deform;
+    float b_break = actor->ar_bbeams[i].initial_beam_strength;
+    float b_diameter = actor->ar_bbeams[i].default_beam_diameter;
+    if (IsActuallyShockBeam(actor->ar_bbeams[i]))
     {
-        b_spring = actor->ar_beams[i].shock->sbd_spring;
-        b_damp = actor->ar_beams[i].shock->sbd_damp;
-        b_break = actor->ar_beams[i].shock->sbd_break;
+        b_spring = actor->ar_bbeams[i].shock->sbd_spring;
+        b_damp = actor->ar_bbeams[i].shock->sbd_damp;
+        b_break = actor->ar_bbeams[i].shock->sbd_break;
     }
 
     if (beam_defaults->springiness != b_spring
@@ -228,23 +228,23 @@ void Actor::propagateNodeBeamChangesToDef()
         UpdateSetBeamDefaults(beam_defaults, this, i);
 
         // Check if 'detacher_group' needs update.
-        if (detacher_group != ar_beams[i].detacher_group)
+        if (detacher_group != ar_bbeams[i].detacher_group)
         {
-            detacher_group = ar_beams[i].detacher_group;
+            detacher_group = ar_bbeams[i].detacher_group;
         }
 
         // Build the beam
         RigDef::Beam beam;
         beam.defaults = beam_defaults;
         beam.detacher_group = detacher_group;
-        beam.extension_break_limit = ar_beams[i].longbound;
+        beam.extension_break_limit = ar_bbeams[i].longbound;
         
-        if (ar_beams[i].bounded == SUPPORTBEAM)
+        if (ar_bbeams[i].bounded == SUPPORTBEAM)
         {
             beam._has_extension_break_limit = true;
             beam.options |= RigDef::Beam::OPTION_s_SUPPORT;
         }
-        else if (ar_beams[i].bounded == ROPE)
+        else if (ar_bbeams[i].bounded == ROPE)
         {
             beam.options |= RigDef::Beam::OPTION_r_ROPE;
         }
@@ -502,11 +502,12 @@ void Actor::propagateNodeBeamChangesToDef()
     for (int i = 0; i < ar_num_beams; i++)
     {
         const beam_t& beam = ar_beams[i];
-        switch (beam.bounded)
+        const bbeam_t& bbeam = ar_bbeams[i];
+        switch (bbeam.bounded)
         {
         case SpecialBeam::SHOCK1:
         {
-            if (!IsActuallyShockBeam(beam))
+            if (!IsActuallyShockBeam(bbeam))
             {
                 // This is actually a wheel beam - skip it.
                 continue;
@@ -518,20 +519,20 @@ void Actor::propagateNodeBeamChangesToDef()
             def.beam_defaults = beam_defaults;
             def.nodes[0] = BuildNodeRef(this, beam.p1->pos);
             def.nodes[1] = BuildNodeRef(this, beam.p2->pos);
-            def.short_bound = beam.shortbound;
-            def.long_bound = beam.longbound;
-            def.precompression = beam.shock->shock_precompression;
+            def.short_bound = bbeam.shortbound;
+            def.long_bound = bbeam.longbound;
+            def.precompression = bbeam.shock->shock_precompression;
 
             // shock1-specific
             def.spring_rate = beam.k;
             def.damping = beam.d;
 
             // options
-            if (BITMASK_IS_1(beam.shock->flags, SHOCK_FLAG_LACTIVE))
+            if (BITMASK_IS_1(bbeam.shock->flags, SHOCK_FLAG_LACTIVE))
             {
                 BITMASK_SET_1(def.options, RigDef::Shock::OPTION_L_ACTIVE_LEFT);
             }
-            if (BITMASK_IS_1(beam.shock->flags, SHOCK_FLAG_RACTIVE))
+            if (BITMASK_IS_1(bbeam.shock->flags, SHOCK_FLAG_RACTIVE))
             {
                 BITMASK_SET_1(def.options, RigDef::Shock::OPTION_R_ACTIVE_RIGHT);
             }
@@ -552,21 +553,22 @@ void Actor::propagateNodeBeamChangesToDef()
             def.beam_defaults = beam_defaults;
             def.nodes[0] = BuildNodeRef(this, beam.p1->pos);
             def.nodes[1] = BuildNodeRef(this, beam.p2->pos);
-            def.short_bound = beam.shortbound;
-            def.long_bound = beam.longbound;
-            def.precompression = beam.shock->shock_precompression;
+            def.short_bound = bbeam.shortbound;
+            def.long_bound = bbeam.longbound;
+            def.precompression = bbeam.shock->shock_precompression;
 
             // shock2-specific
-            def.beam_defaults->springiness      = beam.shock->sbd_spring;
-            def.beam_defaults->damping_constant = beam.shock->sbd_damp  ;
-            def.spring_in                       = beam.shock->springin  ;
-            def.damp_in                         = beam.shock->dampin    ;
-            def.spring_out                      = beam.shock->springout ;
-            def.damp_out                        = beam.shock->dampout   ;
-            def.progress_factor_spring_in       = beam.shock->sprogin   ;
-            def.progress_factor_damp_in         = beam.shock->dprogin   ;
-            def.progress_factor_spring_out      = beam.shock->sprogout  ;
-            def.progress_factor_damp_out        = beam.shock->dprogout  ;
+            shock_t* shock = bbeam.shock;
+            def.beam_defaults->springiness      = shock->sbd_spring;
+            def.beam_defaults->damping_constant = shock->sbd_damp  ;
+            def.spring_in                       = shock->springin  ;
+            def.damp_in                         = shock->dampin    ;
+            def.spring_out                      = shock->springout ;
+            def.damp_out                        = shock->dampout   ;
+            def.progress_factor_spring_in       = shock->sprogin   ;
+            def.progress_factor_damp_in         = shock->dprogin   ;
+            def.progress_factor_spring_out      = shock->sprogout  ;
+            def.progress_factor_damp_out        = shock->dprogout  ;
 
             // options
             if (ar_beams_invisible[i])
@@ -586,25 +588,25 @@ void Actor::propagateNodeBeamChangesToDef()
             def.beam_defaults = beam_defaults;
             def.nodes[0] = BuildNodeRef(this, beam.p1->pos);
             def.nodes[1] = BuildNodeRef(this, beam.p2->pos);
-            def.short_bound = beam.shortbound;
-            def.long_bound = beam.longbound;
-            def.precompression = beam.shock->shock_precompression;
+            def.short_bound = bbeam.shortbound;
+            def.long_bound = bbeam.longbound;
+            def.precompression = bbeam.shock->shock_precompression;
 
             // same as shock2
-            def.beam_defaults->springiness = beam.shock->sbd_spring;
-            def.beam_defaults->damping_constant = beam.shock->sbd_damp;
-            def.spring_in = beam.shock->springin;
-            def.damp_in = beam.shock->dampin;
-            def.spring_out = beam.shock->springout;
-            def.damp_out = beam.shock->dampout;
+            def.beam_defaults->springiness = bbeam.shock->sbd_spring;
+            def.beam_defaults->damping_constant = bbeam.shock->sbd_damp;
+            def.spring_in = bbeam.shock->springin;
+            def.damp_in = bbeam.shock->dampin;
+            def.spring_out = bbeam.shock->springout;
+            def.damp_out = bbeam.shock->dampout;
 
             // shock3-specific
-            def.split_vel_in  = beam.shock->splitin  ;
-            def.damp_in_slow  = beam.shock->dslowin  ;
-            def.damp_in_fast  = beam.shock->dfastin  ;
-            def.split_vel_out = beam.shock->splitout ;
-            def.damp_out_slow = beam.shock->dslowout ;
-            def.damp_out_fast = beam.shock->dfastout ;
+            def.split_vel_in  = bbeam.shock->splitin  ;
+            def.damp_in_slow  = bbeam.shock->dslowin  ;
+            def.damp_in_fast  = bbeam.shock->dfastin  ;
+            def.split_vel_out = bbeam.shock->splitout ;
+            def.damp_out_slow = bbeam.shock->dslowout ;
+            def.damp_out_fast = bbeam.shock->dfastout ;
 
             // options
             if (ar_beams_invisible[i])
@@ -626,7 +628,7 @@ void Actor::propagateNodeBeamChangesToDef()
     {
         int i = hydrobeam.hb_beam_index;
         const beam_t& beam = ar_beams[i];
-        if (beam.bm_type != BEAM_HYDRO)
+        if (ar_bbeams[i].bm_type != BEAM_HYDRO)
         {
             continue; // Should never happen.
         }

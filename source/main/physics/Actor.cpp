@@ -23,6 +23,7 @@
 
 #include "AirBrake.h"
 #include "Airfoil.h"
+#include "AlignedAllocator.h"
 #include "Application.h"
 #include "AutoPilot.h"
 #include "SimData.h"
@@ -298,7 +299,8 @@ void Actor::dispose()
     delete[] ar_nodes;
     ar_num_nodes = 0;
     m_wheel_node_count = 0;
-    delete[] ar_beams;
+    aligned_delete(ar_beams);
+    delete[] ar_bbeams;
     ar_num_beams = 0;
     delete[] ar_shocks;
     ar_num_shocks = 0;
@@ -326,7 +328,7 @@ void Actor::scaleTruck(float value)
         //ar_beams[i].k *= value;
         ar_beams[i].d *= value;
         ar_beams[i].L *= value;
-        ar_beams[i].refL *= value;
+        ar_bbeams[i].refL *= value;
     }
     // scale hydros
     for (hydrobeam_t& hbeam: ar_hydros)
@@ -747,9 +749,9 @@ void Actor::recalculateNodeMasses()
     Real len = 0.0f;
     for (int i = 0; i < ar_num_beams; i++)
     {
-        if (ar_beams[i].bm_type != BEAM_VIRTUAL)
+        if (ar_bbeams[i].bm_type != BEAM_VIRTUAL)
         {
-            Real half_newlen = ar_beams[i].refL / 2.0;
+            Real half_newlen = ar_bbeams[i].refL / 2.0;
             if (!ar_beams[i].p1->nd_tyre_node)
                 len += half_newlen;
             if (!ar_beams[i].p2->nd_tyre_node)
@@ -759,9 +761,9 @@ void Actor::recalculateNodeMasses()
 
     for (int i = 0; i < ar_num_beams; i++)
     {
-        if (ar_beams[i].bm_type != BEAM_VIRTUAL)
+        if (ar_bbeams[i].bm_type != BEAM_VIRTUAL)
         {
-            Real half_mass = ar_beams[i].refL * ar_dry_mass / len / 2.0f;
+            Real half_mass = ar_bbeams[i].refL * ar_dry_mass / len / 2.0f;
             if (!ar_beams[i].p1->nd_tyre_node)
                 ar_beams[i].p1->mass += half_mass;
             if (!ar_beams[i].p2->nd_tyre_node)
@@ -1694,11 +1696,11 @@ void Actor::SyncReset(bool reset_position)
 
     for (int i = 0; i < ar_num_beams; i++)
     {
-        ar_beams[i].maxposstress    = ar_beams[i].default_beam_deform;
-        ar_beams[i].maxnegstress    = -ar_beams[i].default_beam_deform;
-        ar_beams[i].minmaxposnegstress = ar_beams[i].default_beam_deform;
-        ar_beams[i].strength        = ar_beams[i].initial_beam_strength;
-        ar_beams[i].L               = ar_beams[i].refL;
+        ar_beams[i].maxposstress    = ar_bbeams[i].default_beam_deform;
+        ar_beams[i].maxnegstress    = -ar_bbeams[i].default_beam_deform;
+        ar_beams[i].minmaxposnegstress = ar_bbeams[i].default_beam_deform;
+        ar_beams[i].strength        = ar_bbeams[i].initial_beam_strength;
+        ar_beams[i].L               = ar_bbeams[i].refL;
         ar_beams[i].stress          = 0.0;
         ar_beams[i].bm_broken       = false;
         ar_beams[i].bm_disabled     = false;
@@ -1821,7 +1823,7 @@ void Actor::applyNodeBeamScales()
             ar_beams[i].k = ar_initial_beam_defaults[i].first * ar_nb_wheels_scale.first;
             ar_beams[i].d = ar_initial_beam_defaults[i].second * ar_nb_wheels_scale.second;
         }
-        else if (ar_beams[i].bounded == SHOCK1 || ar_beams[i].bounded == SHOCK2 || ar_beams[i].bounded == SHOCK3)
+        else if (ar_bbeams[i].bounded == SHOCK1 || ar_bbeams[i].bounded == SHOCK2 || ar_bbeams[i].bounded == SHOCK3)
         {
             ar_beams[i].k = ar_initial_beam_defaults[i].first * ar_nb_shocks_scale.first;;
             ar_beams[i].d = ar_initial_beam_defaults[i].second * ar_nb_shocks_scale.second;
@@ -2580,216 +2582,216 @@ void Actor::CalcShocks2(int i, Real difftoBeamL, Real& k, Real& d, Real v)
 {
     if (v > 0) // Extension
     {
-        k = ar_beams[i].shock->springout;
-        d = ar_beams[i].shock->dampout;
+        k = ar_bbeams[i].shock->springout;
+        d = ar_bbeams[i].shock->dampout;
         // add progression
         float logafactor = 1.0f;
-        if (ar_beams[i].longbound != 0.0f)
+        if (ar_bbeams[i].longbound != 0.0f)
         {
-            logafactor = difftoBeamL / (ar_beams[i].longbound * ar_beams[i].L);
+            logafactor = difftoBeamL / (ar_bbeams[i].longbound * ar_beams[i].L);
             logafactor = std::min(logafactor * logafactor, 1.0f);
         }
-        k += ar_beams[i].shock->sprogout * k * logafactor;
-        d += ar_beams[i].shock->dprogout * d * logafactor;
+        k += ar_bbeams[i].shock->sprogout * k * logafactor;
+        d += ar_bbeams[i].shock->dprogout * d * logafactor;
     }
     else // Compression
     {
-        k = ar_beams[i].shock->springin;
-        d = ar_beams[i].shock->dampin;
+        k = ar_bbeams[i].shock->springin;
+        d = ar_bbeams[i].shock->dampin;
         // add progression
         float logafactor = 1.0f;
-        if (ar_beams[i].shortbound != 0.0f)
+        if (ar_bbeams[i].shortbound != 0.0f)
         {
-            logafactor = difftoBeamL / (ar_beams[i].shortbound * ar_beams[i].L);
+            logafactor = difftoBeamL / (ar_bbeams[i].shortbound * ar_beams[i].L);
             logafactor = std::min(logafactor * logafactor, 1.0f);
         }
-        k += ar_beams[i].shock->sprogin * k * logafactor;
-        d += ar_beams[i].shock->dprogin * d * logafactor;
+        k += ar_bbeams[i].shock->sprogin * k * logafactor;
+        d += ar_bbeams[i].shock->dprogin * d * logafactor;
     }
-    if (ar_beams[i].shock->flags & SHOCK_FLAG_SOFTBUMP)
+    if (ar_bbeams[i].shock->flags & SHOCK_FLAG_SOFTBUMP)
     {
         // soft bump shocks
         float beamsLep = ar_beams[i].L * 0.8f;
-        float longboundprelimit = ar_beams[i].longbound * beamsLep;
-        float shortboundprelimit = -ar_beams[i].shortbound * beamsLep;
+        float longboundprelimit = ar_bbeams[i].longbound * beamsLep;
+        float shortboundprelimit = -ar_bbeams[i].shortbound * beamsLep;
         if (difftoBeamL > longboundprelimit)
         {
             // reset to longbound progressive values (oscillating beam workaround)
-            k = ar_beams[i].shock->springout;
-            d = ar_beams[i].shock->dampout;
+            k = ar_bbeams[i].shock->springout;
+            d = ar_bbeams[i].shock->dampout;
             // add progression
             float logafactor = 1.0f;
-            if (ar_beams[i].longbound != 0.0f)
+            if (ar_bbeams[i].longbound != 0.0f)
             {
-                logafactor = difftoBeamL / (ar_beams[i].longbound * ar_beams[i].L);
+                logafactor = difftoBeamL / (ar_bbeams[i].longbound * ar_beams[i].L);
                 logafactor = std::min(logafactor * logafactor, 1.0f);
             }
-            k += ar_beams[i].shock->sprogout * k * logafactor;
-            d += ar_beams[i].shock->dprogout * d * logafactor;
+            k += ar_bbeams[i].shock->sprogout * k * logafactor;
+            d += ar_bbeams[i].shock->dprogout * d * logafactor;
             // add shortbump progression
             logafactor = 1.0f;
-            if (ar_beams[i].longbound != 0.0f)
+            if (ar_bbeams[i].longbound != 0.0f)
             {
-                logafactor = ((difftoBeamL - longboundprelimit) * 5.0f) / (ar_beams[i].longbound * ar_beams[i].L);
+                logafactor = ((difftoBeamL - longboundprelimit) * 5.0f) / (ar_bbeams[i].longbound * ar_beams[i].L);
                 logafactor = std::min(logafactor * logafactor, 1.0f);
             }
-            k += (k + 100.0f) * ar_beams[i].shock->sprogout * logafactor;
-            d += (d + 100.0f) * ar_beams[i].shock->dprogout * logafactor;
+            k += (k + 100.0f) * ar_bbeams[i].shock->sprogout * logafactor;
+            d += (d + 100.0f) * ar_bbeams[i].shock->dprogout * logafactor;
             if (v < 0)
             // rebound mode..get new values
             {
-                k = ar_beams[i].shock->springin;
-                d = ar_beams[i].shock->dampin;
+                k = ar_bbeams[i].shock->springin;
+                d = ar_bbeams[i].shock->dampin;
             }
         }
         else if (difftoBeamL < shortboundprelimit)
         {
             // reset to shortbound progressive values (oscillating beam workaround)
-            k = ar_beams[i].shock->springin;
-            d = ar_beams[i].shock->dampin;
+            k = ar_bbeams[i].shock->springin;
+            d = ar_bbeams[i].shock->dampin;
             // add progression
             float logafactor = 1.0f;
-            if (ar_beams[i].shortbound != 0.0f)
+            if (ar_bbeams[i].shortbound != 0.0f)
             {
-                logafactor = difftoBeamL / (ar_beams[i].shortbound * ar_beams[i].L);
+                logafactor = difftoBeamL / (ar_bbeams[i].shortbound * ar_beams[i].L);
                 logafactor = std::min(logafactor * logafactor, 1.0f);
             }
-            k += ar_beams[i].shock->sprogin * k * logafactor;
-            d += ar_beams[i].shock->dprogin * d * logafactor;
+            k += ar_bbeams[i].shock->sprogin * k * logafactor;
+            d += ar_bbeams[i].shock->dprogin * d * logafactor;
             // add shortbump progression
             logafactor = 1.0f;
-            if (ar_beams[i].shortbound != 0.0f)
+            if (ar_bbeams[i].shortbound != 0.0f)
             {
-                logafactor = ((difftoBeamL - shortboundprelimit) * 5.0f) / (ar_beams[i].shortbound * ar_beams[i].L);
+                logafactor = ((difftoBeamL - shortboundprelimit) * 5.0f) / (ar_bbeams[i].shortbound * ar_beams[i].L);
                 logafactor = std::min(logafactor * logafactor, 1.0f);
             }
-            k += (k + 100.0f) * ar_beams[i].shock->sprogout * logafactor;
-            d += (d + 100.0f) * ar_beams[i].shock->dprogout * logafactor;
+            k += (k + 100.0f) * ar_bbeams[i].shock->sprogout * logafactor;
+            d += (d + 100.0f) * ar_bbeams[i].shock->dprogout * logafactor;
             if (v > 0)
             // rebound mode..get new values
             {
-                k = ar_beams[i].shock->springout;
-                d = ar_beams[i].shock->dampout;
+                k = ar_bbeams[i].shock->springout;
+                d = ar_bbeams[i].shock->dampout;
             }
         }
-        if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L || difftoBeamL < -ar_beams[i].shortbound * ar_beams[i].L)
+        if (difftoBeamL > ar_bbeams[i].longbound * ar_beams[i].L || difftoBeamL < -ar_bbeams[i].shortbound * ar_beams[i].L)
         {
             // block reached...hard bump in soft mode with 4x default damping
-            k = std::max(k, ar_beams[i].shock->sbd_spring);
-            d = std::max(d, ar_beams[i].shock->sbd_damp);
+            k = std::max(k, ar_bbeams[i].shock->sbd_spring);
+            d = std::max(d, ar_bbeams[i].shock->sbd_damp);
         }
     }
-    else if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L || difftoBeamL < -ar_beams[i].shortbound * ar_beams[i].L)
+    else if (difftoBeamL > ar_bbeams[i].longbound * ar_beams[i].L || difftoBeamL < -ar_bbeams[i].shortbound * ar_beams[i].L)
     {
         // hard (normal) shock bump
-        k = ar_beams[i].shock->sbd_spring;
-        d = ar_beams[i].shock->sbd_damp;
+        k = ar_bbeams[i].shock->sbd_spring;
+        d = ar_bbeams[i].shock->sbd_damp;
     }
 }
 
 void Actor::CalcShocks3(int i, Real difftoBeamL, Real &k, Real& d, Real v)
 {
-    if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L)
+    if (difftoBeamL > ar_bbeams[i].longbound * ar_beams[i].L)
     {
-        float interp_ratio =  difftoBeamL - ar_beams[i].longbound  * ar_beams[i].L;
-        k += (ar_beams[i].shock->sbd_spring - k) * interp_ratio;
-        d += (ar_beams[i].shock->sbd_damp   - d) * interp_ratio;
+        float interp_ratio =  difftoBeamL - ar_bbeams[i].longbound  * ar_beams[i].L;
+        k += (ar_bbeams[i].shock->sbd_spring - k) * interp_ratio;
+        d += (ar_bbeams[i].shock->sbd_damp   - d) * interp_ratio;
     }
-    else if (difftoBeamL < -ar_beams[i].shortbound * ar_beams[i].L)
+    else if (difftoBeamL < -ar_bbeams[i].shortbound * ar_beams[i].L)
     {
-        float interp_ratio = -difftoBeamL - ar_beams[i].shortbound * ar_beams[i].L;
-        k += (ar_beams[i].shock->sbd_spring - k) * interp_ratio;
-        d += (ar_beams[i].shock->sbd_damp   - d) * interp_ratio;
+        float interp_ratio = -difftoBeamL - ar_bbeams[i].shortbound * ar_beams[i].L;
+        k += (ar_bbeams[i].shock->sbd_spring - k) * interp_ratio;
+        d += (ar_bbeams[i].shock->sbd_damp   - d) * interp_ratio;
     }
     else if (v > 0) // Extension
     {
         v = Math::Clamp(std::abs(v), +0.15f, +20.0f);
-        k = ar_beams[i].shock->springout;
-        d = ar_beams[i].shock->dampout * ar_beams[i].shock->dslowout * std::min(v,        ar_beams[i].shock->splitout) +
-            ar_beams[i].shock->dampout * ar_beams[i].shock->dfastout * std::max(0.0f, v - ar_beams[i].shock->splitout);
+        k = ar_bbeams[i].shock->springout;
+        d = ar_bbeams[i].shock->dampout * ar_bbeams[i].shock->dslowout * std::min(v,        ar_bbeams[i].shock->splitout) +
+            ar_bbeams[i].shock->dampout * ar_bbeams[i].shock->dfastout * std::max(0.0f, v - ar_bbeams[i].shock->splitout);
         d /= v;
     }
     else if (v < 0) // Compression
     {
         v = Math::Clamp(std::abs(v), +0.15f, +20.0f);
-        k = ar_beams[i].shock->springin;
-        d = ar_beams[i].shock->dampin  * ar_beams[i].shock->dslowin  * std::min(v,        ar_beams[i].shock->splitin ) +
-            ar_beams[i].shock->dampin  * ar_beams[i].shock->dfastin  * std::max(0.0f, v - ar_beams[i].shock->splitin );
+        k = ar_bbeams[i].shock->springin;
+        d = ar_bbeams[i].shock->dampin  * ar_bbeams[i].shock->dslowin  * std::min(v,        ar_bbeams[i].shock->splitin ) +
+            ar_bbeams[i].shock->dampin  * ar_bbeams[i].shock->dfastin  * std::max(0.0f, v - ar_bbeams[i].shock->splitin );
         d /= v;
     }
 }
 
 void Actor::CalcTriggers(int i, Real difftoBeamL, bool trigger_hooks)
 {
-    if ((ar_beams[i].shock->flags & SHOCK_FLAG_ISTRIGGER) && ar_beams[i].shock->trigger_enabled) // this is a trigger and its enabled
+    if ((ar_bbeams[i].shock->flags & SHOCK_FLAG_ISTRIGGER) && ar_bbeams[i].shock->trigger_enabled) // this is a trigger and its enabled
     {
         const float dt = PHYSICS_DT;
 
-        if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L || difftoBeamL < -ar_beams[i].shortbound * ar_beams[i].L) // that has hit boundary
+        if (difftoBeamL > ar_bbeams[i].longbound * ar_beams[i].L || difftoBeamL < -ar_bbeams[i].shortbound * ar_beams[i].L) // that has hit boundary
         {
-            ar_beams[i].shock->trigger_switch_state -= dt;
-            if (ar_beams[i].shock->trigger_switch_state <= 0.0f) // emergency release for dead-switched trigger
-                ar_beams[i].shock->trigger_switch_state = 0.0f;
-            if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_BLOCKER) // this is an enabled blocker and past boundary
+            ar_bbeams[i].shock->trigger_switch_state -= dt;
+            if (ar_bbeams[i].shock->trigger_switch_state <= 0.0f) // emergency release for dead-switched trigger
+                ar_bbeams[i].shock->trigger_switch_state = 0.0f;
+            if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_BLOCKER) // this is an enabled blocker and past boundary
             {
-                for (int scount = i + 1; scount <= i + ar_beams[i].shock->trigger_cmdshort; scount++) // (cycle blockerbeamID +1) to (blockerbeamID + beams to lock)
+                for (int scount = i + 1; scount <= i + ar_bbeams[i].shock->trigger_cmdshort; scount++) // (cycle blockerbeamID +1) to (blockerbeamID + beams to lock)
                 {
-                    if (ar_beams[scount].shock && (ar_beams[scount].shock->flags & SHOCK_FLAG_ISTRIGGER)) // don't mess anything up if the user set the number too big
+                    if (ar_bbeams[scount].shock && (ar_bbeams[scount].shock->flags & SHOCK_FLAG_ISTRIGGER)) // don't mess anything up if the user set the number too big
                     {
-                        if (m_trigger_debug_enabled && !ar_beams[scount].shock->trigger_enabled && ar_beams[i].shock->last_debug_state != 1)
+                        if (m_trigger_debug_enabled && !ar_bbeams[scount].shock->trigger_enabled && ar_bbeams[i].shock->last_debug_state != 1)
                         {
                             LOG(" Trigger disabled. Blocker BeamID " + TOSTRING(i) + " enabled trigger " + TOSTRING(scount));
-                            ar_beams[i].shock->last_debug_state = 1;
+                            ar_bbeams[i].shock->last_debug_state = 1;
                         }
-                        ar_beams[scount].shock->trigger_enabled = false; // disable the trigger
+                        ar_bbeams[scount].shock->trigger_enabled = false; // disable the trigger
                     }
                 }
             }
-            else if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_BLOCKER_A) // this is an enabled inverted blocker and inside boundary
+            else if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_BLOCKER_A) // this is an enabled inverted blocker and inside boundary
             {
-                for (int scount = i + 1; scount <= i + ar_beams[i].shock->trigger_cmdlong; scount++) // (cycle blockerbeamID + 1) to (blockerbeamID + beams to release)
+                for (int scount = i + 1; scount <= i + ar_bbeams[i].shock->trigger_cmdlong; scount++) // (cycle blockerbeamID + 1) to (blockerbeamID + beams to release)
                 {
-                    if (ar_beams[scount].shock && (ar_beams[scount].shock->flags & SHOCK_FLAG_ISTRIGGER)) // don't mess anything up if the user set the number too big
+                    if (ar_bbeams[scount].shock && (ar_bbeams[scount].shock->flags & SHOCK_FLAG_ISTRIGGER)) // don't mess anything up if the user set the number too big
                     {
-                        if (m_trigger_debug_enabled && ar_beams[scount].shock->trigger_enabled && ar_beams[i].shock->last_debug_state != 9)
+                        if (m_trigger_debug_enabled && ar_bbeams[scount].shock->trigger_enabled && ar_bbeams[i].shock->last_debug_state != 9)
                         {
                             LOG(" Trigger enabled. Inverted Blocker BeamID " + TOSTRING(i) + " disabled trigger " + TOSTRING(scount));
-                            ar_beams[i].shock->last_debug_state = 9;
+                            ar_bbeams[i].shock->last_debug_state = 9;
                         }
-                        ar_beams[scount].shock->trigger_enabled = true; // enable the triggers
+                        ar_bbeams[scount].shock->trigger_enabled = true; // enable the triggers
                     }
                 }
             }
-            else if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_CMD_BLOCKER) // this an enabled cmd-key-blocker and past a boundary
+            else if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_CMD_BLOCKER) // this an enabled cmd-key-blocker and past a boundary
             {
-                ar_command_key[ar_beams[i].shock->trigger_cmdshort].trigger_cmdkeyblock_state = false; // Release the cmdKey
-                if (m_trigger_debug_enabled && ar_beams[i].shock->last_debug_state != 2)
+                ar_command_key[ar_bbeams[i].shock->trigger_cmdshort].trigger_cmdkeyblock_state = false; // Release the cmdKey
+                if (m_trigger_debug_enabled && ar_bbeams[i].shock->last_debug_state != 2)
                 {
-                    LOG(" F-key trigger block released. Blocker BeamID " + TOSTRING(i) + " Released F" + TOSTRING(ar_beams[i].shock->trigger_cmdshort));
-                    ar_beams[i].shock->last_debug_state = 2;
+                    LOG(" F-key trigger block released. Blocker BeamID " + TOSTRING(i) + " Released F" + TOSTRING(ar_bbeams[i].shock->trigger_cmdshort));
+                    ar_bbeams[i].shock->last_debug_state = 2;
                 }
             }
-            else if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_CMD_SWITCH) // this is an enabled cmdkey switch and past a boundary
+            else if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_CMD_SWITCH) // this is an enabled cmdkey switch and past a boundary
             {
-                if (!ar_beams[i].shock->trigger_switch_state)// this switch is triggered first time in this boundary
+                if (!ar_bbeams[i].shock->trigger_switch_state)// this switch is triggered first time in this boundary
                 {
                     for (int scount = 0; scount < ar_num_shocks; scount++)
                     {
-                        int short1 = ar_beams[ar_shocks[scount].beamid].shock->trigger_cmdshort; // cmdshort of checked trigger beam
-                        int short2 = ar_beams[i].shock->trigger_cmdshort; // cmdshort of switch beam
-                        int long1 = ar_beams[ar_shocks[scount].beamid].shock->trigger_cmdlong; // cmdlong of checked trigger beam
-                        int long2 = ar_beams[i].shock->trigger_cmdlong; // cmdlong of switch beam
-                        int tmpi = ar_beams[ar_shocks[scount].beamid].shock->beamid; // beamID global of checked trigger beam
+                        int short1 = ar_bbeams[ar_shocks[scount].beamid].shock->trigger_cmdshort; // cmdshort of checked trigger beam
+                        int short2 = ar_bbeams[i].shock->trigger_cmdshort; // cmdshort of switch beam
+                        int long1 = ar_bbeams[ar_shocks[scount].beamid].shock->trigger_cmdlong; // cmdlong of checked trigger beam
+                        int long2 = ar_bbeams[i].shock->trigger_cmdlong; // cmdlong of switch beam
+                        int tmpi = ar_bbeams[ar_shocks[scount].beamid].shock->beamid; // beamID global of checked trigger beam
                         if (((short1 == short2 && long1 == long2) || (short1 == long2 && long1 == short2)) && i != tmpi) // found both command triggers then swap if its not the switching trigger
                         {
-                            int tmpcmdkey = ar_beams[ar_shocks[scount].beamid].shock->trigger_cmdlong;
-                            ar_beams[ar_shocks[scount].beamid].shock->trigger_cmdlong = ar_beams[ar_shocks[scount].beamid].shock->trigger_cmdshort;
-                            ar_beams[ar_shocks[scount].beamid].shock->trigger_cmdshort = tmpcmdkey;
-                            ar_beams[i].shock->trigger_switch_state = ar_beams[i].shock->trigger_boundary_t; //prevent trigger switching again before leaving boundaries or timeout
-                            if (m_trigger_debug_enabled && ar_beams[i].shock->last_debug_state != 3)
+                            int tmpcmdkey = ar_bbeams[ar_shocks[scount].beamid].shock->trigger_cmdlong;
+                            ar_bbeams[ar_shocks[scount].beamid].shock->trigger_cmdlong = ar_bbeams[ar_shocks[scount].beamid].shock->trigger_cmdshort;
+                            ar_bbeams[ar_shocks[scount].beamid].shock->trigger_cmdshort = tmpcmdkey;
+                            ar_bbeams[i].shock->trigger_switch_state = ar_bbeams[i].shock->trigger_boundary_t; //prevent trigger switching again before leaving boundaries or timeout
+                            if (m_trigger_debug_enabled && ar_bbeams[i].shock->last_debug_state != 3)
                             {
-                                LOG(" Trigger F-key commands switched. Switch BeamID " + TOSTRING(i)+ " switched commands of Trigger BeamID " + TOSTRING(ar_beams[ar_shocks[scount].beamid].shock->beamid) + " to cmdShort: F" + TOSTRING(ar_beams[ar_shocks[scount].beamid].shock->trigger_cmdshort) + ", cmdlong: F" + TOSTRING(ar_beams[ar_shocks[scount].beamid].shock->trigger_cmdlong));
-                                ar_beams[i].shock->last_debug_state = 3;
+                                LOG(" Trigger F-key commands switched. Switch BeamID " + TOSTRING(i)+ " switched commands of Trigger BeamID " + TOSTRING(ar_bbeams[ar_shocks[scount].beamid].shock->beamid) + " to cmdShort: F" + TOSTRING(ar_bbeams[ar_shocks[scount].beamid].shock->trigger_cmdshort) + ", cmdlong: F" + TOSTRING(ar_bbeams[ar_shocks[scount].beamid].shock->trigger_cmdlong));
+                                ar_bbeams[i].shock->last_debug_state = 3;
                             }
                         }
                     }
@@ -2797,103 +2799,103 @@ void Actor::CalcTriggers(int i, Real difftoBeamL, bool trigger_hooks)
             }
             else
             { // just a trigger, check high/low boundary and set action
-                if (difftoBeamL > ar_beams[i].longbound * ar_beams[i].L) // trigger past longbound
+                if (difftoBeamL > ar_bbeams[i].longbound * ar_beams[i].L) // trigger past longbound
                 {
-                    if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_HOOK_UNLOCK)
+                    if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_HOOK_UNLOCK)
                     {
                         if (trigger_hooks)
                         {
                             //autolock hooktoggle unlock
-                            //hookToggle(ar_beams[i].shock->trigger_cmdlong, HOOK_UNLOCK, NODENUM_INVALID);
+                            //hookToggle(ar_bbeams[i].shock->trigger_cmdlong, HOOK_UNLOCK, NODENUM_INVALID);
                             ActorLinkingRequest* rq = new ActorLinkingRequest();
                             rq->alr_type = ActorLinkingRequestType::HOOK_UNLOCK;
                             rq->alr_actor_instance_id = ar_instance_id;
-                            rq->alr_hook_group = ar_beams[i].shock->trigger_cmdlong;
+                            rq->alr_hook_group = ar_bbeams[i].shock->trigger_cmdlong;
                             App::GetGameContext()->PushMessage(Message(MSG_SIM_ACTOR_LINKING_REQUESTED, rq));
                         }
                     }
-                    else if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_HOOK_LOCK)
+                    else if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_HOOK_LOCK)
                     {
                         if (trigger_hooks)
                         {
                             //autolock hooktoggle lock
-                            //hookToggle(ar_beams[i].shock->trigger_cmdlong, HOOK_LOCK, NODENUM_INVALID);
+                            //hookToggle(ar_bbeams[i].shock->trigger_cmdlong, HOOK_LOCK, NODENUM_INVALID);
                             ActorLinkingRequest* rq = new ActorLinkingRequest();
                             rq->alr_type = ActorLinkingRequestType::HOOK_LOCK;
                             rq->alr_actor_instance_id = ar_instance_id;
-                            rq->alr_hook_group = ar_beams[i].shock->trigger_cmdlong;
+                            rq->alr_hook_group = ar_bbeams[i].shock->trigger_cmdlong;
                             App::GetGameContext()->PushMessage(Message(MSG_SIM_ACTOR_LINKING_REQUESTED, rq));
                         }
                     }
-                    else if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_ENGINE)
+                    else if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_ENGINE)
                     {
-                        engineTriggerHelper(ar_beams[i].shock->trigger_cmdshort, EngineTriggerType(ar_beams[i].shock->trigger_cmdlong), 1.0f);
+                        engineTriggerHelper(ar_bbeams[i].shock->trigger_cmdshort, EngineTriggerType(ar_bbeams[i].shock->trigger_cmdlong), 1.0f);
                     }
                     else
                     {
                         //just a trigger
-                        if (!ar_command_key[ar_beams[i].shock->trigger_cmdlong].trigger_cmdkeyblock_state) // related cmdkey is not blocked
+                        if (!ar_command_key[ar_bbeams[i].shock->trigger_cmdlong].trigger_cmdkeyblock_state) // related cmdkey is not blocked
                         {
-                            if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_CONTINUOUS)
-                                ar_command_key[ar_beams[i].shock->trigger_cmdshort].triggerInputValue = 1; // continuous trigger only operates on trigger_cmdshort
+                            if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_CONTINUOUS)
+                                ar_command_key[ar_bbeams[i].shock->trigger_cmdshort].triggerInputValue = 1; // continuous trigger only operates on trigger_cmdshort
                             else
-                                ar_command_key[ar_beams[i].shock->trigger_cmdlong].triggerInputValue = 1;
-                            if (m_trigger_debug_enabled && ar_beams[i].shock->last_debug_state != 4)
+                                ar_command_key[ar_bbeams[i].shock->trigger_cmdlong].triggerInputValue = 1;
+                            if (m_trigger_debug_enabled && ar_bbeams[i].shock->last_debug_state != 4)
                             {
-                                LOG(" Trigger Longbound activated. Trigger BeamID " + TOSTRING(i) + " Triggered F" + TOSTRING(ar_beams[i].shock->trigger_cmdlong));
-                                ar_beams[i].shock->last_debug_state = 4;
+                                LOG(" Trigger Longbound activated. Trigger BeamID " + TOSTRING(i) + " Triggered F" + TOSTRING(ar_bbeams[i].shock->trigger_cmdlong));
+                                ar_bbeams[i].shock->last_debug_state = 4;
                             }
                         }
                     }
                 }
                 else // trigger past short bound
                 {
-                    if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_HOOK_UNLOCK)
+                    if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_HOOK_UNLOCK)
                     {
                         if (trigger_hooks)
                         {
                             //autolock hooktoggle unlock
-                            //hookToggle(ar_beams[i].shock->trigger_cmdshort, HOOK_UNLOCK, NODENUM_INVALID);
+                            //hookToggle(ar_bbeams[i].shock->trigger_cmdshort, HOOK_UNLOCK, NODENUM_INVALID);
                             ActorLinkingRequest* rq = new ActorLinkingRequest();
                             rq->alr_type = ActorLinkingRequestType::HOOK_UNLOCK;
                             rq->alr_actor_instance_id = ar_instance_id;
-                            rq->alr_hook_group = ar_beams[i].shock->trigger_cmdshort;
+                            rq->alr_hook_group = ar_bbeams[i].shock->trigger_cmdshort;
                             App::GetGameContext()->PushMessage(Message(MSG_SIM_ACTOR_LINKING_REQUESTED, rq));
                         }
                     }
-                    else if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_HOOK_LOCK)
+                    else if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_HOOK_LOCK)
                     {
                         if (trigger_hooks)
                         {
                             //autolock hooktoggle lock
-                            //hookToggle(ar_beams[i].shock->trigger_cmdshort, HOOK_LOCK, NODENUM_INVALID);
+                            //hookToggle(ar_bbeams[i].shock->trigger_cmdshort, HOOK_LOCK, NODENUM_INVALID);
                             ActorLinkingRequest* rq = new ActorLinkingRequest();
                             rq->alr_type = ActorLinkingRequestType::HOOK_LOCK;
                             rq->alr_actor_instance_id = ar_instance_id;
-                            rq->alr_hook_group = ar_beams[i].shock->trigger_cmdshort;
+                            rq->alr_hook_group = ar_bbeams[i].shock->trigger_cmdshort;
                             App::GetGameContext()->PushMessage(Message(MSG_SIM_ACTOR_LINKING_REQUESTED, rq));
                         }
                     }
-                    else if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_ENGINE)
+                    else if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_ENGINE)
                     {
-                        bool triggerValue = !(ar_beams[i].shock->flags & SHOCK_FLAG_TRG_CONTINUOUS); // 0 if trigger is continuous, 1 otherwise
+                        bool triggerValue = !(ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_CONTINUOUS); // 0 if trigger is continuous, 1 otherwise
 
-                        engineTriggerHelper(ar_beams[i].shock->trigger_cmdshort, EngineTriggerType(ar_beams[i].shock->trigger_cmdlong), triggerValue);
+                        engineTriggerHelper(ar_bbeams[i].shock->trigger_cmdshort, EngineTriggerType(ar_bbeams[i].shock->trigger_cmdlong), triggerValue);
                     }
                     else
                     {
                         //just a trigger
-                        if (!ar_command_key[ar_beams[i].shock->trigger_cmdshort].trigger_cmdkeyblock_state) // related cmdkey is not blocked
+                        if (!ar_command_key[ar_bbeams[i].shock->trigger_cmdshort].trigger_cmdkeyblock_state) // related cmdkey is not blocked
                         {
-                            if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_CONTINUOUS)
-                                ar_command_key[ar_beams[i].shock->trigger_cmdshort].triggerInputValue = 0; // continuous trigger only operates on trigger_cmdshort
+                            if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_CONTINUOUS)
+                                ar_command_key[ar_bbeams[i].shock->trigger_cmdshort].triggerInputValue = 0; // continuous trigger only operates on trigger_cmdshort
                             else
-                                ar_command_key[ar_beams[i].shock->trigger_cmdshort].triggerInputValue = 1;
+                                ar_command_key[ar_bbeams[i].shock->trigger_cmdshort].triggerInputValue = 1;
 
-                            if (m_trigger_debug_enabled && ar_beams[i].shock->last_debug_state != 5)
+                            if (m_trigger_debug_enabled && ar_bbeams[i].shock->last_debug_state != 5)
                             {
-                                LOG(" Trigger Shortbound activated. Trigger BeamID " + TOSTRING(i) + " Triggered F" + TOSTRING(ar_beams[i].shock->trigger_cmdshort));
-                                ar_beams[i].shock->last_debug_state = 5;
+                                LOG(" Trigger Shortbound activated. Trigger BeamID " + TOSTRING(i) + " Triggered F" + TOSTRING(ar_bbeams[i].shock->trigger_cmdshort));
+                                ar_bbeams[i].shock->last_debug_state = 5;
                             }
                         }
                     }
@@ -2902,74 +2904,74 @@ void Actor::CalcTriggers(int i, Real difftoBeamL, bool trigger_hooks)
         }
         else // this is a trigger inside boundaries and its enabled
         {
-            if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_CONTINUOUS) // this is an enabled continuous trigger
+            if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_CONTINUOUS) // this is an enabled continuous trigger
             {
-                if (ar_beams[i].longbound - ar_beams[i].shortbound > 0.0f)
+                if (ar_bbeams[i].longbound - ar_bbeams[i].shortbound > 0.0f)
                 {
                     float diffPercentage = difftoBeamL / ar_beams[i].L;
-                    float triggerValue = (diffPercentage - ar_beams[i].shortbound) / (ar_beams[i].longbound - ar_beams[i].shortbound);
+                    float triggerValue = (diffPercentage - ar_bbeams[i].shortbound) / (ar_bbeams[i].longbound - ar_bbeams[i].shortbound);
 
                     triggerValue = std::max(0.0f, triggerValue);
                     triggerValue = std::min(triggerValue, 1.0f);
 
-                    if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_ENGINE) // this trigger controls an engine
+                    if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_ENGINE) // this trigger controls an engine
                     {
-                        engineTriggerHelper(ar_beams[i].shock->trigger_cmdshort, EngineTriggerType(ar_beams[i].shock->trigger_cmdlong), triggerValue);
+                        engineTriggerHelper(ar_bbeams[i].shock->trigger_cmdshort, EngineTriggerType(ar_bbeams[i].shock->trigger_cmdlong), triggerValue);
                     }
                     else
                     {
                         // normal trigger
-                        ar_command_key[ar_beams[i].shock->trigger_cmdshort].triggerInputValue = triggerValue;
-                        ar_command_key[ar_beams[i].shock->trigger_cmdlong].triggerInputValue = triggerValue;
+                        ar_command_key[ar_bbeams[i].shock->trigger_cmdshort].triggerInputValue = triggerValue;
+                        ar_command_key[ar_bbeams[i].shock->trigger_cmdlong].triggerInputValue = triggerValue;
                     }
                 }
             }
-            else if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_BLOCKER) // this is an enabled blocker and inside boundary
+            else if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_BLOCKER) // this is an enabled blocker and inside boundary
             {
-                for (int scount = i + 1; scount <= i + ar_beams[i].shock->trigger_cmdlong; scount++) // (cycle blockerbeamID + 1) to (blockerbeamID + beams to release)
+                for (int scount = i + 1; scount <= i + ar_bbeams[i].shock->trigger_cmdlong; scount++) // (cycle blockerbeamID + 1) to (blockerbeamID + beams to release)
                 {
-                    if (ar_beams[scount].shock && (ar_beams[scount].shock->flags & SHOCK_FLAG_ISTRIGGER)) // don't mess anything up if the user set the number too big
+                    if (ar_bbeams[scount].shock && (ar_bbeams[scount].shock->flags & SHOCK_FLAG_ISTRIGGER)) // don't mess anything up if the user set the number too big
                     {
-                        if (m_trigger_debug_enabled && ar_beams[scount].shock->trigger_enabled && ar_beams[i].shock->last_debug_state != 6)
+                        if (m_trigger_debug_enabled && ar_bbeams[scount].shock->trigger_enabled && ar_bbeams[i].shock->last_debug_state != 6)
                         {
                             LOG(" Trigger enabled. Blocker BeamID " + TOSTRING(i) + " disabled trigger " + TOSTRING(scount));
-                            ar_beams[i].shock->last_debug_state = 6;
+                            ar_bbeams[i].shock->last_debug_state = 6;
                         }
-                        ar_beams[scount].shock->trigger_enabled = true; // enable the triggers
+                        ar_bbeams[scount].shock->trigger_enabled = true; // enable the triggers
                     }
                 }
             }
-            else if (ar_beams[i].shock->flags & SHOCK_FLAG_TRG_BLOCKER_A) // this is an enabled reverse blocker and past boundary
+            else if (ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_BLOCKER_A) // this is an enabled reverse blocker and past boundary
             {
-                for (int scount = i + 1; scount <= i + ar_beams[i].shock->trigger_cmdshort; scount++) // (cylce blockerbeamID +1) to (blockerbeamID + beams tob lock)
+                for (int scount = i + 1; scount <= i + ar_bbeams[i].shock->trigger_cmdshort; scount++) // (cylce blockerbeamID +1) to (blockerbeamID + beams tob lock)
                 {
-                    if (ar_beams[scount].shock && (ar_beams[scount].shock->flags & SHOCK_FLAG_ISTRIGGER)) // dont mess anything up if the user set the number too big
+                    if (ar_bbeams[scount].shock && (ar_bbeams[scount].shock->flags & SHOCK_FLAG_ISTRIGGER)) // dont mess anything up if the user set the number too big
                     {
-                        if (m_trigger_debug_enabled && !ar_beams[scount].shock->trigger_enabled && ar_beams[i].shock->last_debug_state != 10)
+                        if (m_trigger_debug_enabled && !ar_bbeams[scount].shock->trigger_enabled && ar_bbeams[i].shock->last_debug_state != 10)
                         {
                             LOG(" Trigger disabled. Inverted Blocker BeamID " + TOSTRING(i) + " enabled trigger " + TOSTRING(scount));
-                            ar_beams[i].shock->last_debug_state = 10;
+                            ar_bbeams[i].shock->last_debug_state = 10;
                         }
-                        ar_beams[scount].shock->trigger_enabled = false; // disable the trigger
+                        ar_bbeams[scount].shock->trigger_enabled = false; // disable the trigger
                     }
                 }
             }
-            else if ((ar_beams[i].shock->flags & SHOCK_FLAG_TRG_CMD_SWITCH) && ar_beams[i].shock->trigger_switch_state) // this is a switch that was activated and is back inside boundaries again
+            else if ((ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_CMD_SWITCH) && ar_bbeams[i].shock->trigger_switch_state) // this is a switch that was activated and is back inside boundaries again
             {
-                ar_beams[i].shock->trigger_switch_state = 0.0f; //trigger_switch reset
-                if (m_trigger_debug_enabled && ar_beams[i].shock->last_debug_state != 7)
+                ar_bbeams[i].shock->trigger_switch_state = 0.0f; //trigger_switch reset
+                if (m_trigger_debug_enabled && ar_bbeams[i].shock->last_debug_state != 7)
                 {
                     LOG(" Trigger switch reset. Switch BeamID " + TOSTRING(i));
-                    ar_beams[i].shock->last_debug_state = 7;
+                    ar_bbeams[i].shock->last_debug_state = 7;
                 }
             }
-            else if ((ar_beams[i].shock->flags & SHOCK_FLAG_TRG_CMD_BLOCKER) && !ar_command_key[ar_beams[i].shock->trigger_cmdshort].trigger_cmdkeyblock_state) // this cmdkeyblocker is inside boundaries and cmdkeystate is diabled
+            else if ((ar_bbeams[i].shock->flags & SHOCK_FLAG_TRG_CMD_BLOCKER) && !ar_command_key[ar_bbeams[i].shock->trigger_cmdshort].trigger_cmdkeyblock_state) // this cmdkeyblocker is inside boundaries and cmdkeystate is diabled
             {
-                ar_command_key[ar_beams[i].shock->trigger_cmdshort].trigger_cmdkeyblock_state = true; // activate trigger blocking
-                if (m_trigger_debug_enabled && ar_beams[i].shock->last_debug_state != 8)
+                ar_command_key[ar_bbeams[i].shock->trigger_cmdshort].trigger_cmdkeyblock_state = true; // activate trigger blocking
+                if (m_trigger_debug_enabled && ar_bbeams[i].shock->last_debug_state != 8)
                 {
-                    LOG(" F-key trigger blocked. Blocker BeamID " + TOSTRING(i) + " Blocked F" + TOSTRING(ar_beams[i].shock->trigger_cmdshort));
-                    ar_beams[i].shock->last_debug_state = 8;
+                    LOG(" F-key trigger blocked. Blocker BeamID " + TOSTRING(i) + " Blocked F" + TOSTRING(ar_bbeams[i].shock->trigger_cmdshort));
+                    ar_bbeams[i].shock->last_debug_state = 8;
                 }
             }
         }
@@ -3369,7 +3371,7 @@ void Actor::updateVisual(float dt)
 void Actor::AddInterActorBeam(beam_t* beam, ActorPtr other, ActorLinkingRequestType type)
 {
     // We can't assert the beam setup here because ropes do it differently (not actually using inter-beams, just exhibiting the same gamelogic).
-    beam->bm_locked_actor = other; // This isn't entirely valid for 'ropes' either, but for compatibility I won't touch it now ~ ohlidalp, 2024
+    ar_bbeams[beam->bm_id].bm_locked_actor = other; // This isn't entirely valid for 'ropes' either, but for compatibility I won't touch it now ~ ohlidalp, 2024
 
     auto pos = std::find(ar_inter_beams.begin(), ar_inter_beams.end(), beam);
     ROR_ASSERT(pos == ar_inter_beams.end());
@@ -3409,10 +3411,11 @@ void Actor::AddInterActorBeam(beam_t* beam, ActorPtr other, ActorLinkingRequestT
 
 void Actor::RemoveInterActorBeam(beam_t* beam, ActorLinkingRequestType type)
 {
-    ROR_ASSERT(beam->bm_locked_actor);
-    ROR_ASSERT(beam->bm_locked_actor->ar_state != ActorState::DISPOSED);
-    ActorPtr other = beam->bm_locked_actor;
-    beam->bm_locked_actor = nullptr;
+    bbeam_t& bbeam = ar_bbeams[beam->bm_id];
+    ROR_ASSERT(bbeam.bm_locked_actor);
+    ROR_ASSERT(bbeam.bm_locked_actor->ar_state != ActorState::DISPOSED);
+    ActorPtr other = bbeam.bm_locked_actor;
+    bbeam.bm_locked_actor = nullptr;
 
     auto pos = std::find(ar_inter_beams.begin(), ar_inter_beams.end(), beam);
     ROR_ASSERT(pos != ar_inter_beams.end());
@@ -3539,7 +3542,7 @@ void Actor::tieToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_t
             if (!it->ti_tied)
             {
                 // tie is unlocked and should get locked, search new remote ropable to lock to
-                float mindist = it->ti_beam->refL;
+                float mindist = ar_bbeams[it->ti_beam->bm_id].refL;
                 node_t* nearest_node = 0;
                 ActorPtr nearest_actor = 0;
                 ropable_t* locktedto = 0;
@@ -3584,7 +3587,7 @@ void Actor::tieToggle(int group, ActorLinkingRequestType mode, ActorInstanceID_t
                     it->ti_beam->p2 = nearest_node;
                     it->ti_beam->bm_inter_actor = nearest_actor != this;
                     it->ti_beam->stress = 0;
-                    it->ti_beam->L = it->ti_beam->refL;
+                    it->ti_beam->L = ar_bbeams[it->ti_beam->bm_id].refL;
                     it->ti_tied = true;
                     it->ti_tying = true;
                     it->ti_locked_ropable = locktedto;
@@ -3920,7 +3923,7 @@ int Actor::GetNumActiveConnectedBeams(int nodeid)
     int totallivebeams = 0;
     for (unsigned int ni = 0; ni < ar_node_to_beam_connections[nodeid].size(); ++ni)
     {
-        if (!ar_beams[ar_node_to_beam_connections[nodeid][ni]].bm_disabled && !ar_beams[ar_node_to_beam_connections[nodeid][ni]].bounded)
+        if (!ar_beams[ar_node_to_beam_connections[nodeid][ni]].bm_disabled && !ar_bbeams[ar_node_to_beam_connections[nodeid][ni]].bounded)
             totallivebeams++;
     }
     return totallivebeams;
@@ -4835,11 +4838,11 @@ void Actor::WriteDiagnosticDump(std::string const& fileName)
             << "  "                  << std::setw(4) << i // actual pos in beam buffer
             << ", node1:"            << std::setw(3) << ((ar_beams[i].p1) ? ar_nodes_id[ar_beams[i].p1->pos] : -1)
             << ", node2:"            << std::setw(3) << ((ar_beams[i].p2) ? ar_nodes_id[ar_beams[i].p2->pos] : -1)
-            << ", refLen:"           << std::setw(9) << ar_beams[i].refL
+            << ", refLen:"           << std::setw(9) << ar_bbeams[i].refL
             << " (set_beam_defaults/scale)"
             << " spring:"            << std::setw(8) << ar_beams[i].k //param1 default_spring
             << ", damp:"             << std::setw(8) << ar_beams[i].d //param2 default_damp
-            << ", default_deform:"   << std::setw(8) << ar_beams[i].default_beam_deform //param3 default_deform
+            << ", default_deform:"   << std::setw(8) << ar_bbeams[i].default_beam_deform //param3 default_deform
             << ", strength:"         << std::setw(8) << ar_beams[i].strength //param4 default_break
                                         //param5 default_beam_diameter ~ only visual
                                         //param6 default_beam_material2 ~ only visual
@@ -4923,7 +4926,7 @@ float Actor::getShockSpringRate(int shock_number)
 {
     if (shock_number >= 0 && shock_number < ar_num_shocks)
     {
-        return ar_beams[ar_shocks[shock_number].beamid].debug_k;
+        return ar_bbeams[ar_shocks[shock_number].beamid].debug_k;
     }
     return -1.f;
 }
@@ -4932,7 +4935,7 @@ float Actor::getShockDamping(int shock_number)
 {
     if (shock_number >= 0 && shock_number < ar_num_shocks)
     {
-        return ar_beams[ar_shocks[shock_number].beamid].debug_d;
+        return ar_bbeams[ar_shocks[shock_number].beamid].debug_d;
     }
     return -1.f;
 }
@@ -4941,7 +4944,7 @@ float Actor::getShockVelocity(int shock_number)
 {
     if (shock_number >= 0 && shock_number < ar_num_shocks)
     {
-        return ar_beams[ar_shocks[shock_number].beamid].debug_v;
+        return ar_bbeams[ar_shocks[shock_number].beamid].debug_v;
     }
     return -1.f;
 }

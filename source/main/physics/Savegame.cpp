@@ -755,7 +755,7 @@ bool ActorManager::SaveScene(Ogre::String filename)
             j_beam.PushBack(actor->ar_beams[i].bm_broken, j_doc.GetAllocator());
             j_beam.PushBack(actor->ar_beams[i].bm_disabled, j_doc.GetAllocator());
             j_beam.PushBack(actor->ar_beams[i].bm_inter_actor, j_doc.GetAllocator());
-            ActorPtr locked_actor = actor->ar_beams[i].bm_locked_actor;
+            ActorPtr locked_actor = actor->ar_bbeams[i].bm_locked_actor;
             j_beam.PushBack(locked_actor ? vector_index_lookup[locked_actor->ar_vector_index] : -1, j_doc.GetAllocator());
 
             j_beams.PushBack(j_beam, j_doc.GetAllocator());
