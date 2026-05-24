@@ -5395,7 +5395,7 @@ unsigned int ActorSpawner::AddWheelBeam(
     std::shared_ptr<RigDef::BeamDefaults> beam_defaults,
     float max_contraction,   /* Default: -1.f */
     float max_extension,     /* Default: -1.f */
-    BeamType type            /* Default: BEAM_INVISIBLE */
+    BeamType type            /* Default: BEAM_NORMAL */
 )
 {
     unsigned int index = m_actor->ar_num_beams;

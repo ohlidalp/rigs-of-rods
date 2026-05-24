@@ -1454,6 +1454,13 @@ void Actor::CalcUnboundedBeams(const BeamID_t start, const BeamID_t end)
     }
 }
 
+// wheel beams:
+// 'wheels' ~ BuildWheelBeams() ~ type=BEAM_NORMAL except rigidity (BEAM_VIRTUAL), bounded=NOSHOCK except tirewall (SHOCK1)
+// 'wheels2' ~ _SectionWheels2AddBeam ~ type=BEAM_NORMAL except rigidity (BEAM_VIRTUAL), bounded=NOSHOCK (even if shortbound=0.66, probably bug)
+// 'meshwheels' ~ BuildWheelBeams() 
+// 'meshwheels2'~ BuildWheelBeams() 
+// 'flexbodywheels' ~ type=BEAM_NORMAL except rigidity (BEAM_VIRTUAL), bounded=NOSHOCK except "tiretread anti collapse reinforc." (SHOCK1)
+ 
 void Actor::CalcOtherBeams(const BeamID_t start, const BeamID_t end, bool trigger_hooks)
 {
     for (int i = start; i < end; i++)
