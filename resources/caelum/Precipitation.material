@@ -2,52 +2,52 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution.
 
-fragment_program Caelum/PrecipitationFP cg
+fragment_program Caelum/PrecipitationFP glsl hlsl
 {
-	source Precipitation.cg
-	entry_point MainFP
-	profiles ps_3_0 fp40 arbfp1
-	
-	default_params
-	{
-	}
+    source Precipitation_fp.glsl
+    profiles ps_3_0 fp40 arbfp1
+    
+    default_params
+    {
+    }
 }
 
-vertex_program Caelum/PrecipitationVP cg
+vertex_program Caelum/PrecipitationVP glsl hlsl
 {
-	source Precipitation.cg
-	entry_point MainVP
-	profiles vs_3_0 vp40 arbvp1
-	
-	default_params
-	{
-		param_named_auto worldviewproj_matrix worldviewproj_matrix
-	}
+    source Precipitation_vp.glsl
+    profiles vs_3_0 vp40 arbvp1
+    
+    default_params
+    {
+        param_named_auto worldviewproj_matrix worldviewproj_matrix
+    }
 }
 
 material Caelum/PrecipitationMaterial
 {
-	technique Default
-	{
-		pass Main
-		{			
-			vertex_program_ref Caelum/PrecipitationVP
-			{
-			}
-			
-			fragment_program_ref Caelum/PrecipitationFP
-			{
-			}
-			
-			texture_unit Scene
-			{			
-			}
-			
-			texture_unit Precipitation
-			{
+    technique Default
+    {
+        pass Main
+        {
+            vertex_program_ref Caelum/Precipitation_vp
+            {
+            }
+            
+            fragment_program_ref Caelum/Precipitation_fp
+            {
+                param_named samplerScene int 0
+                param_named samplerPrec  int 1
+            }
+            
+            texture_unit Scene
+            {           
+            }
+            
+            texture_unit Precipitation
+            {
                 texture precipitation_drizzle.png
                 filtering trilinear
-			}
-		}
-	}
+            }
+        }
+    }
 }
