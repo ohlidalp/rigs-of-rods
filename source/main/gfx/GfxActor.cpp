@@ -2995,7 +2995,9 @@ void RoR::GfxActor::UpdatePropAnimations(float dt)
                 float limiter = 0.0f;
                 // This code was formerly executed within a fixed timestep of 0.5ms and finetuned accordingly.
                 // This is now taken into account by factoring in the respective fraction of the variable timestep.
-                float const dt_frac = dt * 2000.f;
+                const float dt_frac = dt * PHYSICS_RATE;
+                const float upper_limit_frac = anim.upper_limit * PHYSICS_RATE;
+                const float lower_limit_frac = anim.lower_limit * PHYSICS_RATE;
                 if (anim.animMode & PROP_ANIM_MODE_AUTOANIMATE)
                 {
                     if (anim.animMode & PROP_ANIM_MODE_ROTA_X)
@@ -3027,30 +3029,30 @@ void RoR::GfxActor::UpdatePropAnimations(float dt)
                 bool limiterchanged = false;
                 // check if a positive custom limit is set to evaluate/calc flip back
 
-                if (limiter > anim.upper_limit)
+                if (limiter > upper_limit_frac)
                 {
                     if (anim.animMode & PROP_ANIM_MODE_NOFLIP)
                     {
-                        limiter = anim.upper_limit; // stop at limit
+                        limiter = upper_limit_frac; // stop at limit
                         anim.animOpt5 *= -1.0f; // change cstate multiplier if bounce is set
                     }
                     else
                     {
-                        limiter = anim.lower_limit; // flip to other side at limit
+                        limiter = lower_limit_frac; // flip to other side at limit
                     }
                     limiterchanged = true;
                 }
 
-                if (limiter < anim.lower_limit)
+                if (limiter < lower_limit_frac)
                 {
                     if (anim.animMode & PROP_ANIM_MODE_NOFLIP)
                     {
-                        limiter = anim.lower_limit; // stop at limit
+                        limiter = lower_limit_frac; // stop at limit
                         anim.animOpt5 *= -1.0f; // change cstate multiplier if active
                     }
                     else
                     {
-                        limiter = anim.upper_limit; // flip to other side at limit
+                        limiter = upper_limit_frac; // flip to other side at limit
                     }
                     limiterchanged = true;
                 }
@@ -3084,32 +3086,34 @@ void RoR::GfxActor::UpdatePropAnimations(float dt)
                 {
                     // This code was formerly executed within a fixed timestep of 0.5ms and finetuned accordingly.
                     // This is now taken into account by factoring in the respective fraction of the variable timestep.
-                    float const dt_frac = dt * 2000.f;
+                    const float dt_frac = dt * PHYSICS_RATE;
+                    const float upper_limit_frac = anim.upper_limit * PHYSICS_RATE;
+                    const float lower_limit_frac = anim.lower_limit * PHYSICS_RATE;
                     autooffset = offset + cstate * dt_frac;
 
-                    if (autooffset > anim.upper_limit)
+                    if (autooffset > upper_limit_frac)
                     {
                         if (anim.animMode & PROP_ANIM_MODE_NOFLIP)
                         {
-                            autooffset = anim.upper_limit; // stop at limit
+                            autooffset = upper_limit_frac; // stop at limit
                             anim.animOpt5 *= -1.0f; // change cstate multiplier if active
                         }
                         else
                         {
-                            autooffset = anim.lower_limit; // flip to other side at limit
+                            autooffset = lower_limit_frac; // flip to other side at limit
                         }
                     }
 
-                    if (autooffset < anim.lower_limit)
+                    if (autooffset < lower_limit_frac)
                     {
                         if (anim.animMode & PROP_ANIM_MODE_NOFLIP)
                         {
-                            autooffset = anim.lower_limit; // stop at limit
+                            autooffset = lower_limit_frac; // stop at limit
                             anim.animOpt5 *= -1.0f; // change cstate multiplier if active
                         }
                         else
                         {
-                            autooffset = anim.upper_limit; // flip to other side at limit
+                            autooffset = upper_limit_frac; // flip to other side at limit
                         }
                     }
                 }
