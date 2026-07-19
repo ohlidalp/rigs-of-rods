@@ -856,7 +856,7 @@ GfxScene*            GetGfxScene();
 SoundScriptManager*  GetSoundScriptManager();
 LanguageEngine*      GetLanguageEngine();
 ScriptEngine*        GetScriptEngine();
-ServerScriptEngine* GetServerScriptEngine();
+ServerScriptSequencer* GetServerScript();
 Network*             GetNetwork();
 GameContext*         GetGameContext();
 OutGauge*            GetOutGauge();
@@ -872,7 +872,7 @@ void CreateCameraManager();
 void CreateGfxScene();
 void CreateSoundScriptManager();
 void CreateScriptEngine();
-void CreateServerScriptEngine();
+void CreateServerScript();
 
 // Cleanups
 void DestroyOverlayWrapper();
