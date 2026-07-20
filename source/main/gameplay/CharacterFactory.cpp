@@ -25,6 +25,7 @@
 #include "Application.h"
 #include "Character.h"
 #include "GfxScene.h"
+#include "NetUtils.h"
 #include "Utils.h"
 
 using namespace RoR;
@@ -105,29 +106,31 @@ void CharacterFactory::DeleteAllCharacters()
 }
 
 #ifdef USE_SOCKETW
-void CharacterFactory::handleStreamData(std::vector<RoR::NetRecvPacket> packet_buffer)
+void CharacterFactory::HandleStreamData(std::vector<RoR::NetRecvPacket> packet_buffer)
 {
     for (auto packet : packet_buffer)
     {
-        if (packet.header.command == RoRnet::MSG2_STREAM_REGISTER)
+        for (auto& c : m_remote_characters)
         {
-            RoRnet::StreamRegister* reg = (RoRnet::StreamRegister *)packet.buffer;
-            if (reg->type == 1)
-            {
-                createRemoteInstance(packet.header.source, packet.header.streamid);
-            }
+            c->receiveStreamData(packet.header.command, packet.header.source, packet.header.streamid, packet.buffer);
         }
-        else if (packet.header.command == RoRnet::MSG2_USER_LEAVE)
+    }
+}
+
+void CharacterFactory::HandleBroadcastPacketDispatched(ENetPacket* packet)
+{
+    RoRnet::Header* packet_header = GetRoRnetHeader(packet);
+    if (packet_header->command == RoRnet::MSG2_STREAM_REGISTER)
+    {
+        RoRnet::StreamRegister* reg = (RoRnet::StreamRegister *)GetRoRnetBuffer(packet);
+        if (reg->type == 1)
         {
-            removeStreamSource(packet.header.source);
+            createRemoteInstance(packet_header->source, packet_header->streamid);
         }
-        else
-        {
-            for (auto& c : m_remote_characters)
-            {
-                c->receiveStreamData(packet.header.command, packet.header.source, packet.header.streamid, packet.buffer);
-            }
-        }
+    }
+    else if (packet_header->command == RoRnet::MSG2_USER_LEAVE)
+    {
+        removeStreamSource(packet_header->source);
     }
 }
 #endif // USE_SOCKETW

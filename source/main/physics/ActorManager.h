@@ -107,6 +107,7 @@ public:
     /// @{
 #ifdef USE_SOCKETW
     void           HandleActorStreamData(std::vector<RoR::NetRecvPacket> packet);
+    void           HandleBroadcastPacketDispatched(ENetPacket* packet); //!< Handles everything but `MSG2_STREAM_DATA`
 #endif
     unsigned long  GetNetTime() { return m_net_timer.getMilliseconds(); };
     int            GetNetTimeOffset(int sourceid);

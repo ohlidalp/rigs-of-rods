@@ -705,6 +705,29 @@ int main(int argc, char *argv[])
                     break;
                 }
 
+                case MSG_NET_BCAST_PACKET_DISPATCHED:
+                {
+                    ENetPacket* packet = static_cast<ENetPacket*>(m.payload);
+                    try
+                    {
+#ifdef USE_SOCKETW
+                        // Process incoming network traffic
+                        if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED
+                            && App::app_state->getEnum<AppState>() == AppState::SIMULATION)
+                        {
+                            App::GetGameContext()->GetActorManager()->HandleBroadcastPacketDispatched(packet);
+                            App::GetGameContext()->GetCharacterFactory()->HandleBroadcastPacketDispatched(packet);
+                        }
+#endif // USE_SOCKETW
+                    }
+                    catch (...)
+                    {
+                        HandleMsgQueueException(m.type);
+                    }
+                    enet_packet_destroy(packet);
+                    break;
+                }
+
                 case MSG_NET_REFRESH_SERVERLIST_SUCCESS:
                 {
                     GUI::MpServerInfoVec* data = static_cast<GUI::MpServerInfoVec*>(m.payload);
@@ -2009,7 +2032,7 @@ int main(int argc, char *argv[])
                     if (App::app_state->getEnum<AppState>() == AppState::SIMULATION)
                     {
                         App::GetGameContext()->GetActorManager()->HandleActorStreamData(packets);
-                        App::GetGameContext()->GetCharacterFactory()->handleStreamData(packets); // Update characters last (or else beam coupling might fail)
+                        App::GetGameContext()->GetCharacterFactory()->HandleStreamData(packets); // Update characters last (or else beam coupling might fail)
                     }
                 }
             }

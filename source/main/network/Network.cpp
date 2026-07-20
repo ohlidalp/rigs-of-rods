@@ -336,20 +336,27 @@ void Network::OnPacketReceived(ENetPacket* packet)
         RoRnet::StreamRegister *reg = (RoRnet::StreamRegister *)buffer;
 
         LOG(" * received stream registration: " + TOSTRING(header.source) + ": " + TOSTRING(header.streamid) + ", type: " + TOSTRING(reg->type));
+        App::GetGameContext()->PushMessage(Message(MSG_NET_BCAST_PACKET_DISPATCHED, packet));
+        return;
     }
     else if (header.command == MSG2_STREAM_REGISTER_RESULT)
     {
         RoRnet::StreamRegister *reg = (RoRnet::StreamRegister *)buffer;
         LOG(" * received stream registration result: " + TOSTRING(header.source) + ": " + TOSTRING(header.streamid) + ", status: " + TOSTRING(reg->status));
+        App::GetGameContext()->PushMessage(Message(MSG_NET_BCAST_PACKET_DISPATCHED, packet));
+        return;
     }
     else if (header.command == MSG2_STREAM_UNREGISTER)
     {
         LOG(" * received stream deregistration: " + TOSTRING(header.source) + ": " + TOSTRING(header.streamid));
+        App::GetGameContext()->PushMessage(Message(MSG_NET_BCAST_PACKET_DISPATCHED, packet));
+        return;
     }
     else if (header.command == MSG2_UTF8_CHAT || header.command == MSG2_UTF8_PRIVCHAT)
     {
         // Console is threadsafe
         ChatSystem::ReceiveStreamData(header.command, header.source, buffer);
+        return;
     }
     else if (header.command == MSG2_NETQUALITY && header.source == -1)
     {
@@ -400,6 +407,8 @@ void Network::OnPacketReceived(ENetPacket* packet)
                 m_users.erase(user);
             }
         }
+        App::GetGameContext()->PushMessage(Message(MSG_NET_BCAST_PACKET_DISPATCHED, packet));
+        return;
     }
     else if (header.command == MSG2_USER_INFO || header.command == MSG2_USER_JOIN)
     {
@@ -444,9 +453,10 @@ void Network::OnPacketReceived(ENetPacket* packet)
 #endif // USE_ANGELSCRIPT
         return;
     }
-
-    QueueStreamData(header, buffer, RORNET_MAX_MESSAGE_LENGTH);
-
+    else // MSG2_STREAM_DATA
+    {
+        QueueStreamData(header, buffer, RORNET_MAX_MESSAGE_LENGTH);
+    }
 }
 
 

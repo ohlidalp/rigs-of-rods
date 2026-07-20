@@ -46,7 +46,8 @@ public:
     void UndoRemoteActorCoupling(ActorPtr actor);
     void Update(float dt);
 #ifdef USE_SOCKETW
-    void handleStreamData(std::vector<RoR::NetRecvPacket> packet);
+    void HandleStreamData(std::vector<RoR::NetRecvPacket> packet);
+    void HandleBroadcastPacketDispatched(ENetPacket* packet); //!< Handles everything but `MSG2_STREAM_DATA`
 #endif // USE_SOCKETW
 
 private:

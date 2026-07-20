@@ -44,6 +44,7 @@
 #include "InputEngine.h"
 #include "Language.h"
 #include "MovableText.h"
+#include "NetUtils.h"
 #include "Network.h"
 #include "PointColDetector.h"
 #include "Replay.h"
@@ -449,109 +450,111 @@ void ActorManager::HandleActorStreamData(std::vector<RoR::NetRecvPacket> packet_
     packet_buffer.erase(packet_buffer.begin(), it.base());
     for (auto& packet : packet_buffer)
     {
-        if (packet.header.command == RoRnet::MSG2_STREAM_REGISTER)
+        for (ActorPtr& actor : m_actors)
         {
-            RoRnet::StreamRegister* reg = (RoRnet::StreamRegister *)packet.buffer;
-            if (reg->type == 0)
+            if (actor->ar_state != ActorState::NETWORKED_OK)
+                continue;
+            if (packet.header.source == actor->ar_net_source_id && packet.header.streamid == actor->ar_net_stream_id)
             {
-                reg->name[127] = 0;
-                // NOTE: The filename is by default in "Bundle-qualified" format, i.e. "mybundle.zip:myactor.truck"
-                std::string filename_maybe_bundlequalified = SanitizeUtf8CString(reg->name);
-                std::string filename;
-                std::string bundlename;
-                SplitBundleQualifiedFilename(filename_maybe_bundlequalified, /*out:*/ bundlename, /*out:*/ filename);
+                actor->pushNetwork(packet.buffer, packet.header.size);
+                break;
+            }
+        }
+    }
+}
 
-                RoRnet::UserInfo info;
-                BitMask_t peeropts = BitMask_t(0);
-                if (!App::GetNetwork()->GetUserInfo(reg->origin_sourceid, info)
-                    || !App::GetNetwork()->GetUserPeerOpts(reg->origin_sourceid, peeropts))
+void ActorManager::HandleBroadcastPacketDispatched(ENetPacket * packet)
+{
+    RoRnet::Header* packet_header = GetRoRnetHeader(packet);
+    if (packet_header->command == RoRnet::MSG2_STREAM_REGISTER)
+    {
+        RoRnet::StreamRegister* reg = (RoRnet::StreamRegister*)GetRoRnetBuffer(packet);
+        if (reg->type == 0)
+        {
+            reg->name[127] = 0;
+            // NOTE: The filename is by default in "Bundle-qualified" format, i.e. "mybundle.zip:myactor.truck"
+            std::string filename_maybe_bundlequalified = SanitizeUtf8CString(reg->name);
+            std::string filename;
+            std::string bundlename;
+            SplitBundleQualifiedFilename(filename_maybe_bundlequalified, /*out:*/ bundlename, /*out:*/ filename);
+
+            RoRnet::UserInfo info;
+            BitMask_t peeropts = BitMask_t(0);
+            if (!App::GetNetwork()->GetUserInfo(reg->origin_sourceid, info)
+                || !App::GetNetwork()->GetUserPeerOpts(reg->origin_sourceid, peeropts))
+            {
+                RoR::LogFormat("[RoR] Invalid STREAM_REGISTER, user id %d does not exist", reg->origin_sourceid);
+                reg->status = -1;
+            }
+            else if (filename.empty())
+            {
+                RoR::LogFormat("[RoR] Invalid STREAM_REGISTER (user '%s', ID %d), filename is empty string", info.username, reg->origin_sourceid);
+                reg->status = -1;
+            }
+            else
+            {
+                auto actor_reg = reinterpret_cast<RoRnet::ActorStreamRegister*>(reg);
+                Str<200> text;
+                text << _L("spawned a new vehicle: ") << filename;
+                App::GetConsole()->putNetMessage(
+                    reg->origin_sourceid, Console::CONSOLE_SYSTEM_NOTICE, text.ToCStr());
+
+                LOG("[RoR] Creating remote actor for " + TOSTRING(reg->origin_sourceid) + ":" + TOSTRING(reg->origin_streamid));
+
+                // Based on negative user feedback we don't check the bundle in multiplayer.
+                CacheEntryPtr actor_entry = App::GetCacheSystem()->FindEntryByFilename(LT_AllBeam, /*partial:*/false, filename);
+
+                if (!actor_entry)
                 {
-                    RoR::LogFormat("[RoR] Invalid STREAM_REGISTER, user id %d does not exist", reg->origin_sourceid);
-                    reg->status = -1;
-                }
-                else if (filename.empty())
-                {
-                    RoR::LogFormat("[RoR] Invalid STREAM_REGISTER (user '%s', ID %d), filename is empty string", info.username, reg->origin_sourceid);
+                    App::GetConsole()->putMessage(
+                        Console::CONSOLE_MSGTYPE_INFO, Console::CONSOLE_SYSTEM_WARNING,
+                        _L("Mod not installed: ") + filename);
+                    RoR::LogFormat("[RoR] Cannot create remote actor (not installed), filename: '%s'", filename_maybe_bundlequalified.c_str());
+                    this->AddStreamMismatch(actor_reg);
                     reg->status = -1;
                 }
                 else
                 {
-                    auto actor_reg = reinterpret_cast<RoRnet::ActorStreamRegister*>(reg);
-                    Str<200> text;
-                    text << _L("spawned a new vehicle: ") << filename;
-                    App::GetConsole()->putNetMessage(
-                        reg->origin_sourceid, Console::CONSOLE_SYSTEM_NOTICE, text.ToCStr());
-
-                    LOG("[RoR] Creating remote actor for " + TOSTRING(reg->origin_sourceid) + ":" + TOSTRING(reg->origin_streamid));
-
-                    // Based on negative user feedback we don't check the bundle in multiplayer.
-                    CacheEntryPtr actor_entry = App::GetCacheSystem()->FindEntryByFilename(LT_AllBeam, /*partial:*/false, filename);
-
-                    if (!actor_entry)
-                    {
-                        App::GetConsole()->putMessage(
-                            Console::CONSOLE_MSGTYPE_INFO, Console::CONSOLE_SYSTEM_WARNING,
-                            _L("Mod not installed: ") + filename);
-                        RoR::LogFormat("[RoR] Cannot create remote actor (not installed), filename: '%s'", filename_maybe_bundlequalified.c_str());
-                        this->AddStreamMismatch(actor_reg);
-                        reg->status = -1;
-                    }
-                    else
-                    {
-                        RoR::LogFormat("[RoR] Creating remote actor (user id %d, stream id %d) with filename '%s'",
-                            reg->origin_sourceid, reg->origin_streamid, filename_maybe_bundlequalified.c_str());
-                        this->RequestSpawnRemoteActor(actor_reg, actor_entry, info, peeropts);
-                        reg->status = 1; // success
-                    }
+                    RoR::LogFormat("[RoR] Creating remote actor (user id %d, stream id %d) with filename '%s'",
+                        reg->origin_sourceid, reg->origin_streamid, filename_maybe_bundlequalified.c_str());
+                    this->RequestSpawnRemoteActor(actor_reg, actor_entry, info, peeropts);
+                    reg->status = 1; // success
                 }
-
-                App::GetNetwork()->AddPacket(reg->origin_streamid, RoRnet::MSG2_STREAM_REGISTER_RESULT, sizeof(RoRnet::StreamRegister), (char *)reg);
             }
+
+            App::GetNetwork()->AddPacket(reg->origin_streamid, RoRnet::MSG2_STREAM_REGISTER_RESULT, sizeof(RoRnet::StreamRegister), (char *)reg);
         }
-        else if (packet.header.command == RoRnet::MSG2_STREAM_REGISTER_RESULT)
+    }
+    else if (packet_header->command == RoRnet::MSG2_STREAM_REGISTER_RESULT)
+    {
+        RoRnet::StreamRegister* reg = (RoRnet::StreamRegister*)GetRoRnetBuffer(packet);
+        for (ActorPtr& actor: m_actors)
         {
-            RoRnet::StreamRegister* reg = (RoRnet::StreamRegister *)packet.buffer;
-            for (ActorPtr& actor: m_actors)
+            if (actor->ar_net_source_id == reg->origin_sourceid && actor->ar_net_stream_id == reg->origin_streamid)
             {
-                if (actor->ar_net_source_id == reg->origin_sourceid && actor->ar_net_stream_id == reg->origin_streamid)
-                {
-                    int sourceid = packet.header.source;
-                    actor->ar_net_stream_results[sourceid] = reg->status;
+                int sourceid = packet_header->source;
+                actor->ar_net_stream_results[sourceid] = reg->status;
 
-                    String message = "";
-                    switch (reg->status)
-                    {
-                        case  1: message = "successfully loaded stream"; break;
-                        case -2: message = "detected mismatch stream"; break;
-                        default: message = "could not load stream"; break;
-                    }
-                    LOG("Client " + TOSTRING(sourceid) + " " + message + " " + TOSTRING(reg->origin_streamid) +
-                            " with name '" + reg->name + "', result code: " + TOSTRING(reg->status));
-                    break;
-                }
-            }
-        }
-        else if (packet.header.command == RoRnet::MSG2_STREAM_UNREGISTER)
-        {
-            this->RemoveStream(packet.header.source, packet.header.streamid);
-        }
-        else if (packet.header.command == RoRnet::MSG2_USER_LEAVE)
-        {
-            this->RemoveStreamSource(packet.header.source);
-        }
-        else if (packet.header.command == RoRnet::MSG2_STREAM_DATA)
-        {
-            for (ActorPtr& actor: m_actors)
-            {
-                if (actor->ar_state != ActorState::NETWORKED_OK)
-                    continue;
-                if (packet.header.source == actor->ar_net_source_id && packet.header.streamid == actor->ar_net_stream_id)
+                String message = "";
+                switch (reg->status)
                 {
-                    actor->pushNetwork(packet.buffer, packet.header.size);
-                    break;
+                    case  1: message = "successfully loaded stream"; break;
+                    case -2: message = "detected mismatch stream"; break;
+                    default: message = "could not load stream"; break;
                 }
+                LOG("Client " + TOSTRING(sourceid) + " " + message + " " + TOSTRING(reg->origin_streamid) +
+                        " with name '" + reg->name + "', result code: " + TOSTRING(reg->status));
+                break;
             }
         }
+    }
+    else if (packet_header->command == RoRnet::MSG2_STREAM_UNREGISTER)
+    {
+        this->RemoveStream(packet_header->source, packet_header->streamid);
+    }
+    else if (packet_header->command == RoRnet::MSG2_USER_LEAVE)
+    {
+        this->RemoveStreamSource(packet_header->source);
     }
 }
 #endif // USE_SOCKETW
