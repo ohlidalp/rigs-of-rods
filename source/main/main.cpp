@@ -2029,12 +2029,14 @@ int main(int argc, char *argv[])
 
 #ifdef USE_SOCKETW
             // Process incoming network traffic
-            if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED
-                && App::app_state->getEnum<AppState>() == AppState::SIMULATION)
+            if (App::mp_state->getEnum<MpState>() == MpState::CONNECTED)
             {
-                // NOTE: remote actors are updated directly in physics loop
-                App::GetGameContext()->GetCharacterFactory()->HandleCharacterStreamData(); // Update characters last (or else beam coupling might fail)
                 App::GetGuiManager()->MpClientList.UpdateClientTimeoffsetStats();
+                if (App::app_state->getEnum<AppState>() == AppState::SIMULATION)
+                {
+                    // NOTE: remote actors are updated directly in physics loop
+                    App::GetGameContext()->GetCharacterFactory()->HandleCharacterStreamData(); // Update characters last (or else beam coupling might fail)
+                }
             }
 #endif // USE_SOCKETW
 
