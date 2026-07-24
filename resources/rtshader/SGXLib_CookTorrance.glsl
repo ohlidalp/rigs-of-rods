@@ -80,7 +80,7 @@ float V_SmithGGXCorrelated(float roughness, float NoV, float NoL) {
 }
 
 // https://google.github.io/filament/Filament.md.html#materialsystem/specularbrdf/normaldistributionfunction(speculard)
-float D_GGX(float roughness, float NoH, const vec3 h, const vec3 n) {
+float D_GGX(float roughness, float32_t NoH, const vec3 h, const vec3 n) {
     // Walter et al. 2007, "Microfacet Models for Refraction through Rough Surfaces"
 
     // In mediump, there are two problems computing 1.0 - NoH^2
@@ -108,16 +108,16 @@ float D_GGX(float roughness, float NoH, const vec3 h, const vec3 n) {
 }
 
 vec3 evaluateLight(
-                in vec3 vNormal,
+                in f32vec3 vNormal,
                 in vec3 viewPos,
-                in vec4 lightPos,
+                in f32vec4 lightPos,
                 in vec3 lightColor,
                 in vec4 pointParams,
                 in vec4 vLightDirView,
                 in vec4 spotParams,
                 in PixelParams pixel)
 {
-    vec3 vLightView = lightPos.xyz;
+    f32vec3 vLightView = lightPos.xyz;
     float fLightD = 0.0;
 
     if (lightPos.w != 0.0)
@@ -131,7 +131,7 @@ vec3 evaluateLight(
 
 	vLightView		   = normalize(vLightView);
 
-	vec3 vNormalView = normalize(vNormal);
+	f32vec3 vNormalView = normalize(vNormal);
 	float NoL		 = saturate(dot(vNormalView, vLightView));
 
     if(NoL <= 0.0)
@@ -169,7 +169,6 @@ vec3 evaluateLight(
 
 void PBR_MakeParams(in vec3 baseColor, in vec2 mrParam, inout PixelParams pixel)
 {
-    baseColor = pow(baseColor, vec3_splat(2.2));
     pixel.baseColor = baseColor;
 
     float perceptualRoughness = mrParam.x;
@@ -179,7 +178,7 @@ void PBR_MakeParams(in vec3 baseColor, in vec2 mrParam, inout PixelParams pixel)
     pixel.roughness = perceptualRoughnessToRoughness(pixel.perceptualRoughness);
 
     float metallic = saturate(mrParam.y);
-    pixel.f0 = computeF0(baseColor, metallic, 0.04);
+    pixel.f0 = computeF0(baseColor, metallic, 0.04); // using fixed IOR of 1.5 as per glTF spec
     pixel.diffuseColor = computeDiffuseColor(baseColor, metallic);
 
     pixel.dfg = vec3_splat(0.5); // use full f0 for energy compensation
@@ -198,16 +197,14 @@ void PBR_Lights(
                 in vec3 vNormal,
                 in vec3 viewPos,
                 in vec4 ambient,
-                in vec4 lightPos[LIGHT_COUNT],
-                in vec4 lightColor[LIGHT_COUNT],
-                in vec4 pointParams[LIGHT_COUNT],
-                in vec4 vLightDirView[LIGHT_COUNT],
-                in vec4 spotParams[LIGHT_COUNT],
+                in f32vec4 lightPos[LIGHT_COUNT],
+                in f32vec4 lightColor[LIGHT_COUNT],
+                in f32vec4 pointParams[LIGHT_COUNT],
+                in f32vec4 vLightDirView[LIGHT_COUNT],
+                in f32vec4 spotParams[LIGHT_COUNT],
                 in PixelParams pixel,
                 inout vec3 vOutColour)
 {
-    vOutColour = pow(vOutColour, vec3_splat(2.2)); // gamma to linear
-
     // Energy compensation for multiple scattering in a microfacet model
     // See "Multiple-Scattering Microfacet BSDFs with the Smith Model"
     pixel.energyCompensation = 1.0 + pixel.f0 * (1.0 / pixel.dfg.y - 1.0);
@@ -236,11 +233,6 @@ void PBR_Lights(
         vOutColour += lightVal;
     }
 
-    vOutColour += pixel.baseColor * pow(ambient.rgb, vec3_splat(2.2));
-
-    // linear to gamma
-    vOutColour = pow(vOutColour, vec3_splat(1.0/2.2));
-
-    vOutColour = saturate(vOutColour);
+    vOutColour += pixel.baseColor * ambient.rgb;
 }
 #endif

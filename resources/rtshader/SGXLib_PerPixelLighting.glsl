@@ -40,6 +40,12 @@ THE SOFTWARE.
 #include "RTSLib_LTC.glsl"
 #endif
 
+#ifdef USE_LINEAR_COLOURS
+#define FFP_SATURATE(x) x
+#else
+#define FFP_SATURATE(x) saturate(x)
+#endif
+
 #ifdef OGRE_HLSL
 void SGX_Flip_Backface_Normal(in float triArea, in float targetFlipped, inout vec3 normal)
 {
@@ -60,7 +66,7 @@ void SGX_Flip_Backface_Normal(in bool frontFacing, in float targetFlipped, inout
 
 void evaluateLight(
 				in vec3 vNormal,
-				in vec3 vViewPos,
+				in f32vec3 vViewPos,
 				in vec4 vLightPos,
 				in vec4 vAttParams,
 				in vec4 vLightDirView,
@@ -117,10 +123,10 @@ void evaluateLight(
 
 		// linear to gamma
 		dcol = pow(dcol, vec3_splat(1.0/2.2));
-		vOutDiffuse.rgb = saturate(vOutDiffuse.rgb + dcol);
+		vOutDiffuse.rgb = FFP_SATURATE(vOutDiffuse.rgb + dcol);
 #ifdef USE_SPECULAR
 		scol = pow(scol, vec3_splat(1.0/2.2));
-		vOutSpecular.rgb = saturate(vOutSpecular.rgb + scol);
+		vOutSpecular.rgb = FFP_SATURATE(vOutSpecular.rgb + scol);
 #endif
 		return;
 	}
@@ -128,14 +134,19 @@ void evaluateLight(
 
     if (vLightPos.w != 0.0)
     {
-        vLightView -= vViewPos; // to light
-        fLightD     = length(vLightView);
+		f32vec3 tmp = vLightPos.xyz - vViewPos;
+        fLightD     = length(tmp);
 
         if(fLightD > vAttParams.x)
             return;
-    }
 
-	vLightView		   = normalize(vLightView);
+		vLightView = tmp / fLightD; // normalize
+    }
+	else
+	{
+		vLightView = normalize(vLightView);
+	}
+
 	vec3 vNormalView = normalize(vNormal);
 	float nDotL		   = saturate(dot(vNormalView, vLightView));
 	
@@ -154,12 +165,12 @@ void evaluateLight(
     }
 
 	vOutDiffuse  += vDiffuseColour.rgb * nDotL * fAtten;
-	vOutDiffuse = saturate(vOutDiffuse);
+	vOutDiffuse = FFP_SATURATE(vOutDiffuse);
 
 #ifdef USE_SPECULAR
-	vec3 vView       = -normalize(vViewPos);
-	vec3 vHalfWay    = normalize(vView + vLightView);
-	float nDotH        = saturate(dot(vNormalView, vHalfWay));
+	f32vec3 vView       = -normalize(vViewPos);
+	f32vec3 vHalfWay    = normalize(vView + vLightView);
+	float32_t nDotH  = saturate(dot(vNormalView, vHalfWay));
 #ifdef TVC_SPECULAR
 	vSpecularColour *= vInVertexColour;
 #endif
@@ -167,6 +178,6 @@ void evaluateLight(
 	vSpecularColour *= (fSpecularPower + 8.0)/(8.0 * M_PI);
 #endif
 	vOutSpecular += vSpecularColour.rgb * pow(nDotH, fSpecularPower) * fAtten;
-	vOutSpecular = saturate(vOutSpecular);
+	vOutSpecular = FFP_SATURATE(vOutSpecular);
 #endif
 }
