@@ -96,4 +96,16 @@ void ShadowManager::processPSSM()
 
 }
 
+void ShadowManager::applyToTerrain(Ogre::TerrainMaterialGeneratorA::SM2Profile* matProfile)
+{
+    if (pssmSetup)
+    {
+        LOG("[RoR|Terrain] Enabling PSSM...");
+        matProfile->setReceiveDynamicShadowsEnabled(true);
+        matProfile->setReceiveDynamicShadowsPSSM(pssmSetup);
+        matProfile->setLightmapEnabled(false);
+        App::GetGfxScene()->GetSceneManager()->setShadowTextureSelfShadow(false);
+    }
+}
+
 

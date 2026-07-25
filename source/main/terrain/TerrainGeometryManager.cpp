@@ -467,16 +467,7 @@ void TerrainGeometryManager::configureTerrainDefaults()
                 matProfile->setLayerSpecularMappingEnabled(m_spec->spec_map_enabled);
             }
 
-            // PSSM setup
-            Ogre::PSSMShadowCameraSetup* pssmSetup = App::GetGameContext()->GetTerrain()->getShadowManager()->pssmSetup;
-            if (pssmSetup)
-            {
-                LOG("[RoR|Terrain] Enabling PSSM...");
-                matProfile->setReceiveDynamicShadowsEnabled(true);
-                matProfile->setReceiveDynamicShadowsPSSM(pssmSetup);
-                matProfile->setLightmapEnabled(false);
-                App::GetGfxScene()->GetSceneManager()->setShadowTextureSelfShadow(false);
-            }
+            terrainManager->getShadowManager()->applyToTerrain(matProfile);
         }
     }
 

@@ -191,8 +191,6 @@ int main(int argc, char *argv[])
         App::GetContentManager()->AddResourcePack("overlays");
         App::GetContentManager()->AddResourcePack("rtshader");
         App::GetContentManager()->AddResourcePack("character");
-        // Always load PSSM shared params to RGN_DEFAULT
-        Ogre::String managed_materials_dir = PathCombine(App::sys_resources_dir->getStr(), "managed_materials");
         
         Ogre::ResourceGroupManager::getSingleton().createResourceGroup(RGN_UI_ICONS, /*inGlobalPool:*/ false); // 'inGlobalPool=false' is default for OGRE_RESOURCEMANAGER_STRICT>0
         App::GetContentManager()->AddResourcePack("icons", RGN_UI_ICONS);

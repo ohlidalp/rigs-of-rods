@@ -26,6 +26,7 @@
 
 #include <Terrain/OgreTerrain.h>
 #include <OgreShadowCameraSetupPSSM.h>
+#include <OgreTerrainMaterialGeneratorA.h>
 #include "Application.h"
 
 namespace RoR {
@@ -38,6 +39,7 @@ class ShadowManager
 public:
 
     void setupShadows();
+    void applyToTerrain(Ogre::TerrainMaterialGeneratorA::SM2Profile* matProfile);
 
     Ogre::PSSMShadowCameraSetup* pssmSetup = nullptr;
 
