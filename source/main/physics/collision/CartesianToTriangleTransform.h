@@ -125,7 +125,7 @@ public:
 
     Ogre::Vector3 TriangleToWorld(const TriangleCoord& tricoord) const
     {
-        return m_tri2world_matrix * Ogre::Vector3(tricoord.barycentric.alpha, tricoord.barycentric.beta, tricoord.barycentric.gamma);
+        return m_triangle.c + (m_tri2world_matrix * Ogre::Vector3(tricoord.barycentric.alpha, tricoord.barycentric.beta, tricoord.barycentric.gamma));
     }
 
 private:

@@ -241,7 +241,7 @@ void Character::update(float dt)
             Triangle cab_worldpos = FetchCabTriangle(m_last_contact_info.contacting_actor, m_last_contact_info.contacting_cab);
             const Ogre::Vector3 projected_worldoffset = CartesianToTriangleTransform(cab_worldpos).TriangleToWorld(m_last_contact_info.chara_localpos);
             const Ogre::Vector3 last_worldoffset = CartesianToTriangleTransform(m_last_contact_info.cab_cached_worldpos).TriangleToWorld(m_last_contact_info.chara_localpos);
-            const Ogre::Vector3 cab_translation = (cab_worldpos.a - m_last_contact_info.cab_cached_worldpos.a) + (projected_worldoffset - last_worldoffset);
+            const Ogre::Vector3 cab_translation = (projected_worldoffset - last_worldoffset);
 
             position += cab_translation;
 
