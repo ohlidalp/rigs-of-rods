@@ -160,7 +160,16 @@ CharacterCabContactInfo Character::FindContactingCab(const Ogre::Vector3& positi
         for (int i = 0; i < actor->ar_num_collcabs; i++)
         {
             Triangle triangle = FetchCabTriangle(actor, i);
-            auto result = Math::intersects(Ray(position, Vector3::UNIT_Y), triangle.a, triangle.b, triangle.c);
+            // NOTE: this ray points _upwards_ ~ it's primary function is to make character 'step up' to the elevated cab when coming from ground.
+            //       Let's add negative bias to the ray, to avoid losing contact when already on the cab.
+            const float y_bias = -0.05f; // 5cm
+            auto result = Math::intersects(Ray(position+Vector3(0.f,y_bias,0.f), Vector3::UNIT_Y), triangle.a, triangle.b, triangle.c);
+            result.second+=y_bias;
+            if (result.first)
+            {
+                contact_info.dbg_intersect_cab=i;
+                contact_info.dbg_intersect_depth=result.second;
+            }
             if (result.first && result.second < 1.8f && result.second > contact_info.depth)
             {
                 contact_info.contacting_actor = actor->ar_instance_id;
@@ -639,6 +648,9 @@ void Character::DrawDebugUI()
         ImGui::Text("Contacting actor: %d", m_last_contact_info.contacting_actor);
         ImGui::Text("Contacting depth: %.3f", m_last_contact_info.depth);
         ImGui::Text("Inertia (bool): %d", (int)m_inertia);
+        ImGui::Separator();
+        ImGui::Text("DBG intersected cab: %d", m_last_contact_info.dbg_intersect_cab);
+        ImGui::Text("DBG intersected depth: %6.3f", m_last_contact_info.dbg_intersect_depth);
         ImGui::End();
     }
 }

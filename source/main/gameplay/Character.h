@@ -46,6 +46,8 @@ struct CharacterCabContactInfo
     TriangleCoord     chara_localpos;
     Ogre::Radian      vehicle_rotation = Ogre::Radian(0.f);
     float             depth = 0.f;
+    CollisionCabID_t  dbg_intersect_cab = COLLISIONCABID_INVALID;
+    float             dbg_intersect_depth = 0.f;
 };
 
 class Character
