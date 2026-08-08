@@ -457,8 +457,7 @@ public:
     std::deque<float> cc_accs;            //!< Cruise Control
     bool              sl_enabled = false;         //!< Speed limiter;
     float             sl_speed_limit = 0.f;     //!< Speed limiter;
-    ExtCameraMode     ar_extern_camera_mode = ExtCameraMode::CLASSIC;
-    NodeNum_t         ar_extern_camera_node = NODENUM_INVALID;
+
     NodeNum_t         ar_exhaust_pos_node   = 0;   //!< Old-format exhaust (one per vehicle) emitter node
     NodeNum_t         ar_exhaust_dir_node   = 0;   //!< Old-format exhaust (one per vehicle) backwards direction node
     ActorInstanceID_t ar_instance_id = ACTORINSTANCEID_INVALID;              //!< Static attr; session-unique ID
@@ -530,16 +529,19 @@ public:
     std::vector<std::pair<collision_box_t*, NodeNum_t>> m_active_eventboxes;
     std::unique_ptr<Buoyance> m_buoyance;
 
-    // Player camera 'cameras & cinecam'
+    // Player camera ('cameras, cinecam, extcamera')
     // * 'cinecam#' creates dedicated node to dictate camera position + 6 attachment beams.
     // * 'camera#' specifies a reference frame for the cinecam by referencing 3 preexisting nodes: ref, x, y.
     // NOTE camera#0 is special - serves a general orientation frame for the whole actor. Cinecam#0 isn't required to exist, but camera#0 is.
-    CineCameraID_t    ar_current_cinecam = CINECAMERAID_INVALID; //!< Sim state; index of current CineCam (`CINECAMERAID_INVALID` if using 3rd-person camera)
-    NodeNum_t         ar_custom_camera_node = NODENUM_INVALID; //!< Sim state; custom tracking node for 3rd-person camera
+    CineCameraID_t    ar_current_cinecam = CINECAMERAID_INVALID;        //!< Sim state; index of current CineCam (`CINECAMERAID_INVALID` if using 3rd-person camera)
+    NodeNum_t         ar_custom_camera_node = NODENUM_INVALID;          //!< Sim state; custom tracking node for 3rd-person camera
     ActorCameraMode   ar_camera_mode = ACTORCAMERAMODE_EXTERNAL;
-    CineCameraID_t    ar_forced_cinecam = CINECAMERAID_INVALID; //!< Sim state; index of CineCam forced by script (`CINECAMERAID_INVALID` if not forced)
-    BitMask_t         ar_forced_cinecam_flags = 0; //!< Sim state; flags for forced CineCam supplied by script
-
+    CineCameraID_t    ar_forced_cinecam = CINECAMERAID_INVALID;         //!< Sim state; index of CineCam forced by script (`CINECAMERAID_INVALID` if not forced)
+    BitMask_t         ar_forced_cinecam_flags = 0;                      //!< Sim state; flags for forced CineCam supplied by script
+    ExtCameraMode     ar_extcamera_mode = ExtCameraMode::CLASSIC;       //!< Sim attr, 'extcamera' arg%1
+    NodeNum_t         ar_extcamera_node = NODENUM_INVALID;              //!< Sim attr, 'extcamera' arg%2 ~ The node to follow in mode 2 (`RoR::ExtCameraMode::Node`)
+    float             ar_extcamera_smoothing = 0.f;                     //!< Sim attr, `extcamera` faux arg (`setSimAttribute()` only) ~ Smoothes the camera target node position
+    float             ar_extcamera_antijitter = 0.002f;                 //!< Sim attr, `extcamera` faux arg (`setSimAttribute()` only) ~ Distance in meters the smoothed cam node must move to affect camera.
 
     // TractionControl
     float             tc_ratio = 0.f;                   //!< Regulating force

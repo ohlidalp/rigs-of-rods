@@ -126,6 +126,11 @@ void RoR::RegisterActor(asIScriptEngine *engine)
     result = engine->RegisterEnumValue("ActorSimAttr", "ACTORSIMATTR_PROPENGINE_MAX_POWER", (int)ACTORSIMATTR_PROPENGINE_MAX_POWER); ROR_ASSERT(result >= 0);
     // ... Screwprops
     result = engine->RegisterEnumValue("ActorSimAttr", "ACTORSIMATTR_SCREWPROP_MAX_POWER", (int)ACTORSIMATTR_SCREWPROP_MAX_POWER); ROR_ASSERT(result >= 0);
+    // ... Screwprops
+    result = engine->RegisterEnumValue("ActorSimAttr", "ACTORSIMATTR_EXTCAMERA_MODE", (int)ACTORSIMATTR_EXTCAMERA_MODE); ROR_ASSERT(result >= 0);
+    result = engine->RegisterEnumValue("ActorSimAttr", "ACTORSIMATTR_EXTCAMERA_NODE", (int)ACTORSIMATTR_EXTCAMERA_NODE); ROR_ASSERT(result >= 0);
+    result = engine->RegisterEnumValue("ActorSimAttr", "ACTORSIMATTR_EXTCAMERA_SMOOTHING", (int)ACTORSIMATTR_EXTCAMERA_SMOOTHING); ROR_ASSERT(result >= 0);
+    result = engine->RegisterEnumValue("ActorSimAttr", "ACTORSIMATTR_EXTCAMERA_ANTIJITTER", (int)ACTORSIMATTR_EXTCAMERA_ANTIJITTER); ROR_ASSERT(result >= 0);
 
     // class Actor (historically Beam)
     Actor::RegisterRefCountingObject(engine, "BeamClass");

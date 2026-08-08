@@ -1258,10 +1258,10 @@ void ActorSpawner::ProcessCameraRail(RigDef::CameraRail & def)
 
 void ActorSpawner::ProcessExtCamera(RigDef::ExtCamera & def)
 {
-    m_actor->ar_extern_camera_mode = def.mode;
+    m_actor->ar_extcamera_mode = def.mode;
     if (def.node.IsValidAnyState())
     {
-        m_actor->ar_extern_camera_node = GetNodeIndexOrThrow(def.node);
+        m_actor->ar_extcamera_node = GetNodeIndexOrThrow(def.node);
     }
 }
 

@@ -975,6 +975,12 @@ enum ActorSimAttr
 
     // Screwprops
     ACTORSIMATTR_SCREWPROP_MAX_POWER, //!< - Param #4 of 'screwprops' (indexed)
+
+    // Extcamera
+    ACTORSIMATTR_EXTCAMERA_MODE,        //!< Sim attr, 'extcamera' arg%1
+    ACTORSIMATTR_EXTCAMERA_NODE,        //!< Sim attr, 'extcamera' arg%2 ~ The node to follow in mode 2 (`RoR::ExtCameraMode::Node`)
+    ACTORSIMATTR_EXTCAMERA_SMOOTHING,   //!< Sim attr, `extcamera` faux arg (`setSimAttribute()` only) ~ Smoothes the camera target node position (0.0 - 0.9, using 1.0 would stop the camera dead!).
+    ACTORSIMATTR_EXTCAMERA_ANTIJITTER,  //!< Sim attr, `extcamera` faux arg (`setSimAttribute()` only) ~ Distance in meters the smoothed cam node must move to affect camera.
 };
 const char* ActorSimAttrToString(ActorSimAttr attr);
 

@@ -1166,19 +1166,20 @@ void Actor::resolveCollisions(float max_distance, bool consider_up)
 void Actor::calculateAveragePosition()
 {
     // calculate average position
+    Ogre::Vector3 cur_avg_node_position;
     if (ar_custom_camera_node != NODENUM_INVALID)
     {
-        m_avg_node_position = ar_nodes[ar_custom_camera_node].AbsPosition;
+        cur_avg_node_position = ar_nodes[ar_custom_camera_node].AbsPosition;
     }
-    else if (ar_extern_camera_mode == ExtCameraMode::CINECAM && ar_num_cinecams > 0)
+    else if (ar_extcamera_mode == ExtCameraMode::CINECAM && ar_num_cinecams > 0)
     {
         // the new (strange) approach: reuse the cinecam node
-        m_avg_node_position = ar_nodes[ar_cinecam_node[0]].AbsPosition;
+        cur_avg_node_position = ar_nodes[ar_cinecam_node[0]].AbsPosition;
     }
-    else if (ar_extern_camera_mode == ExtCameraMode::NODE && ar_extern_camera_node != NODENUM_INVALID)
+    else if (ar_extcamera_mode == ExtCameraMode::NODE && ar_extcamera_node != NODENUM_INVALID)
     {
         // the new (strange) approach #2: reuse a specified node
-        m_avg_node_position = ar_nodes[ar_extern_camera_node].AbsPosition;
+        cur_avg_node_position = ar_nodes[ar_extcamera_node].AbsPosition;
     }
     else
     {
@@ -1188,7 +1189,16 @@ void Actor::calculateAveragePosition()
         {
             aposition += ar_nodes[n].AbsPosition;
         }
-        m_avg_node_position = aposition / ar_num_nodes;
+        cur_avg_node_position = aposition / ar_num_nodes;
+    }
+
+    // Apply 'extcamera' smoothing
+    cur_avg_node_position = (1.f - ar_extcamera_smoothing) * cur_avg_node_position + ar_extcamera_smoothing * m_avg_node_position;
+
+    // Apply 'extcamera' antijitter movement threshold
+    if (cur_avg_node_position.squaredDistance(m_avg_node_position) >= ar_extcamera_antijitter*ar_extcamera_smoothing)
+    {
+        m_avg_node_position = cur_avg_node_position;
     }
 }
 
@@ -5174,6 +5184,11 @@ void Actor::setSimAttribute(ActorSimAttr attr, float val)
         case ACTORSIMATTR_ENGTURBO2_ANTILAG_MIN_RPM:     if (ar_engine && ar_engine->m_turbo_ver == 2) { ar_engine->m_antilag_min_rpm = val; } return;
         case ACTORSIMATTR_ENGTURBO2_ANTILAG_POWER:       if (ar_engine && ar_engine->m_turbo_ver == 2) { ar_engine->m_antilag_power_factor = val; } return;
 
+        // Extcamera
+        case ACTORSIMATTR_EXTCAMERA_MODE:                ar_extcamera_mode = static_cast<ExtCameraMode>(val); return;
+        case ACTORSIMATTR_EXTCAMERA_NODE:                ar_extcamera_node = static_cast<NodeNum_t>(val); return;
+        case ACTORSIMATTR_EXTCAMERA_SMOOTHING:           ar_extcamera_smoothing = val; return;
+        case ACTORSIMATTR_EXTCAMERA_ANTIJITTER:          ar_extcamera_antijitter = val; return;
         default: return;
         }
     }
@@ -5246,6 +5261,12 @@ float Actor::getSimAttribute(ActorSimAttr attr)
     case ACTORSIMATTR_ENGTURBO2_ANTILAG_CHANCE:        if (ar_engine && ar_engine->m_turbo_ver == 2) { return ar_engine->m_antilag_rand_chance; } return 0.f;
     case ACTORSIMATTR_ENGTURBO2_ANTILAG_MIN_RPM:       if (ar_engine && ar_engine->m_turbo_ver == 2) { return ar_engine->m_antilag_min_rpm; } return 0.f;
     case ACTORSIMATTR_ENGTURBO2_ANTILAG_POWER:         if (ar_engine && ar_engine->m_turbo_ver == 2) { return ar_engine->m_antilag_power_factor; } return 0.f;
+
+    // Extcamera
+    case ACTORSIMATTR_EXTCAMERA_MODE:                  return (float)ar_extcamera_mode;
+    case ACTORSIMATTR_EXTCAMERA_NODE:                  return (float)ar_extcamera_node;
+    case ACTORSIMATTR_EXTCAMERA_SMOOTHING:             return ar_extcamera_smoothing;
+    case ACTORSIMATTR_EXTCAMERA_ANTIJITTER:            return ar_extcamera_antijitter;
 
     default: return 0.f;
     }
