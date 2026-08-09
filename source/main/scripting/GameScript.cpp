@@ -189,14 +189,19 @@ bool GameScript::getCaelumAvailable()
     return result;
 }
 
-void GameScript::stopTimer()
+void GameScript::stopTimer(int actorID)
 {
-    App::GetGameContext()->GetRaceSystem().StopRaceTimer();
+    App::GetGameContext()->GetRaceSystem().StopRaceTimer(actorID);
 }
 
-void GameScript::startTimer(int id)
+void GameScript::startTimer(int raceID, int actorID)
 {
-    App::GetGameContext()->GetRaceSystem().StartRaceTimer(id);
+    App::GetGameContext()->GetRaceSystem().StartRaceTimer(raceID, actorID);
+}
+
+void GameScript::setTimer(int actorID, float time, bool raceIsInProgress)
+{
+    App::GetGameContext()->GetRaceSystem().SetRaceTimer(actorID, time, raceIsInProgress);
 }
 
 void GameScript::setTimeDiff(float diff)
