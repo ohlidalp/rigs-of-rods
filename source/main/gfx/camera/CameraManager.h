@@ -114,7 +114,6 @@ protected:
     Ogre::Degree         m_cct_rot_scale;
     Ogre::Real           m_cct_dt;
     Ogre::Real           m_cct_trans_scale;
-    float                m_cct_sim_speed; // TODO: duplicates `ActorManager::m_simulation_speed`
     // Old `CameraBehaviorOrbit` attributes
     Ogre::Radian         m_cam_rot_x;
     Ogre::Radian         m_cam_rot_y;

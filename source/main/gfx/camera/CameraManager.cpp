@@ -84,7 +84,6 @@ CameraManager::CameraManager() :
       m_current_behavior(CAMERA_BEHAVIOR_INVALID)
     , m_cct_dt(0.0f)
     , m_cct_trans_scale(1.0f)
-    , m_cct_sim_speed(1.0f)
     , m_cam_before_toggled(CAMERA_BEHAVIOR_INVALID)
     , m_prev_toggled_cam(CAMERA_BEHAVIOR_INVALID)
     , m_charactercam_is_3rdperson(true)
@@ -248,7 +247,6 @@ void CameraManager::UpdateInputEvents(float dt) // Called every frame
     }
 
     m_cct_player_actor = App::GetGameContext()->GetPlayerActor();
-    m_cct_sim_speed    = App::GetGameContext()->GetActorManager()->GetSimulationSpeed();
     m_cct_dt           = dt;
     m_cct_rot_scale    = Degree(TRANS_SPEED * dt);
     m_cct_trans_scale  = ROTATE_SPEED * dt;
@@ -723,7 +721,7 @@ void CameraManager::UpdateCameraBehaviorStatic()
             m_staticcam_force_update |= m_cct_player_actor->getPosition().distance(m_staticcam_look_at) > 100.0f;
         }
         m_staticcam_look_at = m_cct_player_actor->getPosition();
-        velocity = m_cct_player_actor->ar_nodes[0].Velocity * m_cct_sim_speed;
+        velocity = m_cct_player_actor->ar_nodes[0].Velocity * App::GetGameContext()->GetActorManager()->GetSimulationSpeed();
         if (App::GetGameContext()->GetPlayerActor()->ar_driveable != AIRPLANE)
         {
             radius = m_cct_player_actor->getMinCameraRadius();
