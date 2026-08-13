@@ -152,7 +152,7 @@ bool CameraManager::EvaluateSwitchBehavior()
     }
 }
 
-void CameraManager::UpdateCurrentBehavior()
+void CameraManager::UpdateCurrentBehavior(float dt)
 {
     switch(m_current_behavior)
     {
@@ -163,19 +163,19 @@ void CameraManager::UpdateCurrentBehavior()
         Ogre::Vector3 offset = (!m_charactercam_is_3rdperson) ? CHARACTERCAM_OFFSET_1ST_PERSON : CHARACTERCAM_OFFSET_3RD_PERSON;
         m_cam_look_at = App::GetGameContext()->GetPlayerCharacter()->getPosition() + offset;
 
-        CameraManager::CameraBehaviorOrbitUpdate();
+        CameraManager::CameraBehaviorOrbitUpdate(dt);
         return;
     }
 
     case CAMERA_BEHAVIOR_STATIC:
         m_staticcam_fov_exponent = App::gfx_static_cam_fov_exp->getFloat();
-        this->UpdateCameraBehaviorStatic();
+        this->UpdateCameraBehaviorStatic(dt);
         return;
 
-    case CAMERA_BEHAVIOR_VEHICLE:         this->UpdateCameraBehaviorVehicle();  return;
-    case CAMERA_BEHAVIOR_VEHICLE_SPLINE:  this->CameraBehaviorVehicleSplineUpdate();  return;
+    case CAMERA_BEHAVIOR_VEHICLE:         this->UpdateCameraBehaviorVehicle(dt);  return;
+    case CAMERA_BEHAVIOR_VEHICLE_SPLINE:  this->CameraBehaviorVehicleSplineUpdate(dt);  return;
     case CAMERA_BEHAVIOR_VEHICLE_CINECAM: {
-        CameraManager::CameraBehaviorOrbitUpdate();
+        CameraManager::CameraBehaviorOrbitUpdate(dt);
 
         const NodeNum_t pos_node  = m_current_actor->ar_camera_node_pos [m_current_actor->ar_current_cinecam];
         const NodeNum_t dir_node  = m_current_actor->ar_camera_node_dir [m_current_actor->ar_current_cinecam];
@@ -200,8 +200,8 @@ void CameraManager::UpdateCurrentBehavior()
         this->GetCameraNode()->setOrientation(orientation);
         return;
     }
-    case CAMERA_BEHAVIOR_FREE:            this->UpdateCameraBehaviorFree(); return;
-    case CAMERA_BEHAVIOR_FIXED:           this->UpdateCameraBehaviorFixed(); return;
+    case CAMERA_BEHAVIOR_FREE:            this->UpdateCameraBehaviorFree(dt); return;
+    case CAMERA_BEHAVIOR_FIXED:           this->UpdateCameraBehaviorFixed(dt); return;
     case CAMERA_BEHAVIOR_ISOMETRIC:       return;
     case CAMERA_BEHAVIOR_INVALID:         return;
     default:                              return;
@@ -217,9 +217,6 @@ void CameraManager::UpdateInputEvents(float dt) // Called every frame
     }
 
     m_current_actor = App::GetGameContext()->GetPlayerActor();
-    m_cct_dt           = dt;
-    m_cct_rot_scale    = Degree(TRANS_SPEED * dt);
-    m_cct_trans_scale  = ROTATE_SPEED * dt;
 
     // Handle forced cinecam
     if (m_current_actor && m_current_actor->ar_forced_cinecam != CINECAMERAID_INVALID)
@@ -250,7 +247,7 @@ void CameraManager::UpdateInputEvents(float dt) // Called every frame
 
     if (m_current_behavior != CAMERA_BEHAVIOR_INVALID)
     {
-        this->UpdateCurrentBehavior();
+        this->UpdateCurrentBehavior(dt);
     }
     else
     {
@@ -677,7 +674,7 @@ void CameraManager::ToggleCameraBehavior(CameraBehaviors new_behavior) // Only a
     }
 }
 
-void CameraManager::UpdateCameraBehaviorStatic()
+void CameraManager::UpdateCameraBehaviorStatic(float dt)
 {
     Vector3 velocity = Vector3::ZERO;
     Radian angle = Degree(90);
@@ -796,7 +793,7 @@ bool CameraManager::CameraBehaviorStaticMouseMoved()
     return false;
 }
 
-void CameraManager::CameraBehaviorOrbitUpdate()
+void CameraManager::CameraBehaviorOrbitUpdate(float dt)
 {
     if (RoR::App::GetInputEngine()->getEventBoolValueBounce(EV_CAMERA_LOOKBACK))
     {
@@ -810,34 +807,36 @@ void CameraManager::CameraBehaviorOrbitUpdate()
         }
     }
 
+    const Degree rot_scale(ROTATE_SPEED * dt);
     if (App::io_invert_orbitcam->getBool() && this->GetCurrentBehavior() != CameraManager::CAMERA_BEHAVIOR_VEHICLE_CINECAM)
     {
-        m_cam_rot_x += (RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_LEFT) - RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_RIGHT)) * m_cct_rot_scale;
-        m_cam_rot_y += (RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_DOWN) - RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_UP)) * m_cct_rot_scale;
+        m_cam_rot_x += (RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_LEFT) - RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_RIGHT)) * rot_scale;
+        m_cam_rot_y += (RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_DOWN) - RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_UP)) * rot_scale;
     }
     else
     {
-        m_cam_rot_x += (RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_RIGHT) - RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_LEFT)) * m_cct_rot_scale;
-        m_cam_rot_y += (RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_UP) - RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_DOWN)) * m_cct_rot_scale;
+        m_cam_rot_x += (RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_RIGHT) - RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_LEFT)) * rot_scale;
+        m_cam_rot_y += (RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_UP) - RoR::App::GetInputEngine()->getEventValue(EV_CAMERA_ROTATE_DOWN)) * rot_scale;
     }
     m_cam_rot_y = std::max((Radian)Degree(-80), m_cam_rot_y);
     m_cam_rot_y = std::min(m_cam_rot_y, (Radian)Degree(88));
 
+    const float trans_scale(TRANS_SPEED * dt);
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CAMERA_ZOOM_IN) && m_cam_dist > 1)
     {
-        m_cam_dist -= m_cct_trans_scale;
+        m_cam_dist -= trans_scale;
     }
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CAMERA_ZOOM_IN_FAST) && m_cam_dist > 1)
     {
-        m_cam_dist -= m_cct_trans_scale * 10;
+        m_cam_dist -= trans_scale * 10;
     }
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CAMERA_ZOOM_OUT))
     {
-        m_cam_dist += m_cct_trans_scale;
+        m_cam_dist += trans_scale;
     }
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CAMERA_ZOOM_OUT_FAST))
     {
-        m_cam_dist += m_cct_trans_scale * 10;
+        m_cam_dist += trans_scale * 10;
     }
 
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CAMERA_RESET))
@@ -958,81 +957,80 @@ void CameraManager::CameraBehaviorOrbitReset()
     App::GetCameraManager()->GetCamera()->setFOVy(Degree(App::gfx_fov_external->getInt()));
 }
 
-void CameraManager::UpdateCameraBehaviorFree()
+void CameraManager::UpdateCameraBehaviorFree(float dt)
 {
-    Degree mRotX(0.0f);
-    Degree mRotY(0.0f);
-    Degree cct_rot_scale(m_cct_rot_scale * 5.0f * m_cct_dt);
-    Vector3 mTrans(Vector3::ZERO);
-    Real cct_trans_scale(m_cct_trans_scale * 5.0f * m_cct_dt);
-
+    float trans_scale(TRANS_SPEED * 5.0f * dt);
+    Degree rot_scale(ROTATE_SPEED * 5.0f * dt);
     if (RoR::App::GetInputEngine()->isKeyDown(OIS::KC_LSHIFT) || RoR::App::GetInputEngine()->isKeyDown(OIS::KC_RSHIFT))
     {
-        cct_rot_scale *= 3.0f;
-        cct_trans_scale *= 5.0f;
+        rot_scale *= 3.0f;
+        trans_scale *= 5.0f;
     }
     if (RoR::App::GetInputEngine()->isKeyDown(OIS::KC_LCONTROL))
     {
-        cct_rot_scale *= 6.0f;
-        cct_trans_scale *= 10.0f;
+        rot_scale *= 6.0f;
+        trans_scale *= 10.0f;
     }
     if (RoR::App::GetInputEngine()->isKeyDown(OIS::KC_LMENU))
     {
-        cct_rot_scale *= 0.2f;
-        cct_trans_scale *= 0.2f;
+        rot_scale *= 0.2f;
+        trans_scale *= 0.2f;
     }
 
+    Vector3 trans(Vector3::ZERO);
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CHARACTER_SIDESTEP_LEFT))
     {
-        mTrans.x -= cct_trans_scale;
+        trans.x -= trans_scale;
     }
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CHARACTER_SIDESTEP_RIGHT))
     {
-        mTrans.x += cct_trans_scale;
+        trans.x += trans_scale;
     }
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CHARACTER_FORWARD))
     {
-        mTrans.z -= cct_trans_scale;
+        trans.z -= trans_scale;
     }
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CHARACTER_BACKWARDS))
     {
-        mTrans.z += cct_trans_scale;
+        trans.z += trans_scale;
     }
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CAMERA_UP))
     {
-        mTrans.y += cct_trans_scale;
+        trans.y += trans_scale;
     }
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CAMERA_DOWN))
     {
-        mTrans.y -= cct_trans_scale;
+        trans.y -= trans_scale;
     }
 
+    Degree rot_x(0.0f);
+    Degree rot_y(0.0f);
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CHARACTER_RIGHT))
     {
-        mRotX -= cct_rot_scale;
+        rot_x -= rot_scale;
     }
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CHARACTER_LEFT))
     {
-        mRotX += cct_rot_scale;
+        rot_x += rot_scale;
     }
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CHARACTER_ROT_UP))
     {
-        mRotY += cct_rot_scale;
+        rot_y += rot_scale;
     }
     if (RoR::App::GetInputEngine()->getEventBoolValue(EV_CHARACTER_ROT_DOWN))
     {
-        mRotY -= cct_rot_scale;
+        rot_y -= rot_scale;
     }
 
-    App::GetCameraManager()->GetCameraNode()->yaw(mRotX, Ogre::Node::TS_WORLD);
-    App::GetCameraManager()->GetCameraNode()->pitch(mRotY);
+    App::GetCameraManager()->GetCameraNode()->yaw(rot_x, Ogre::Node::TS_WORLD);
+    App::GetCameraManager()->GetCameraNode()->pitch(rot_y);
 
-    Vector3 camPosition = this->GetCameraNode()->getPosition() + this->GetCameraNode()->getOrientation() * mTrans.normalisedCopy() * cct_trans_scale;
+    Vector3 camPosition = this->GetCameraNode()->getPosition() + this->GetCameraNode()->getOrientation() * trans.normalisedCopy() * trans_scale;
 
     this->GetCameraNode()->setPosition(camPosition);
 }
 
-void CameraManager::UpdateCameraBehaviorFixed()
+void CameraManager::UpdateCameraBehaviorFixed(float dt)
 {
 	if (App::gfx_fixed_cam_tracking->getBool())
     {
@@ -1041,7 +1039,7 @@ void CameraManager::UpdateCameraBehaviorFixed()
     }
 }
 
-void CameraManager::UpdateCameraBehaviorVehicle()
+void CameraManager::UpdateCameraBehaviorVehicle(float dt)
 {
 	Vector3 dir = m_current_actor->getDirection();
 
@@ -1053,13 +1051,13 @@ void CameraManager::UpdateCameraBehaviorVehicle()
 		m_cam_target_pitch = -asin(dir.dotProduct(Vector3::UNIT_Y));
 	}
 
-	m_cam_ratio = 1.0f / (m_cct_dt * 4.0f);
+	m_cam_ratio = 1.0f / (dt * 4.0f);
 
 	m_cam_dist_min = std::min(m_current_actor->getMinimalCameraRadius() * 2.0f, 33.0f);
 
 	m_cam_look_at = m_current_actor->getPosition();
 
-	CameraManager::CameraBehaviorOrbitUpdate();
+	CameraManager::CameraBehaviorOrbitUpdate(dt);
 }
 
 void CameraManager::CameraBehaviorVehicleReset()
@@ -1111,7 +1109,7 @@ bool CameraManager::CameraBehaviorVehicleMousePressed()
 	return false;
 }
 
-void CameraManager::CameraBehaviorVehicleSplineUpdate()
+void CameraManager::CameraBehaviorVehicleSplineUpdate(float dt)
 {
     if (m_current_actor->ar_num_camera_rails <= 0)
     {
@@ -1122,6 +1120,7 @@ void CameraManager::CameraBehaviorVehicleSplineUpdate()
     Vector3 dir = m_current_actor->getDirection();
 
     m_cam_target_pitch = 0.0f;
+    m_cam_ratio = 1.0f / (dt * 4.0f);
 
     if (App::gfx_extcam_mode->getEnum<GfxExtCamMode>() == GfxExtCamMode::PITCHING)
     {
@@ -1165,7 +1164,7 @@ void CameraManager::CameraBehaviorVehicleSplineUpdate()
         }
     }
 
-    CameraManager::CameraBehaviorOrbitUpdate();
+    CameraManager::CameraBehaviorOrbitUpdate(dt);
 }
 
 bool CameraManager::CameraBehaviorVehicleSplineMouseMoved(  )
@@ -1173,8 +1172,6 @@ bool CameraManager::CameraBehaviorVehicleSplineMouseMoved(  )
     // IMPORTANT: get mouse button state from InputEngine, not from OIS directly
     //  - that state may be dirty, see commentary in `InputEngine::getMouseState()`
     const OIS::MouseState ms = App::GetInputEngine()->getMouseState();
-
-    m_cam_ratio = 1.0f / (m_cct_dt * 4.0f);
 
     if (RoR::App::GetInputEngine()->isKeyDown(OIS::KC_LCONTROL) && ms.buttonDown(OIS::MB_Right))
     {

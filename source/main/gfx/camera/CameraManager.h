@@ -82,32 +82,32 @@ protected:
     void SwitchBehaviorOnVehicleChange(CameraBehaviors new_behavior, ActorPtr new_vehicle);
     void ToggleCameraBehavior(CameraBehaviors new_behavior); //!< Only accepts FREE and FREEFIX modes
     void ActivateNewBehavior(CameraBehaviors new_behavior, bool reset);
-    void UpdateCurrentBehavior();
+    void UpdateCurrentBehavior(float dt);
     void ResetCurrentBehavior();
     void DeactivateCurrentBehavior();
 
     // Orbit cam (helper)
     void CameraBehaviorOrbitReset();
     bool CameraBehaviorOrbitMouseMoved();
-    void CameraBehaviorOrbitUpdate();
+    void CameraBehaviorOrbitUpdate(float dt);
 
     // Static cam
-    void UpdateCameraBehaviorStatic();
+    void UpdateCameraBehaviorStatic(float dt);
     bool CameraBehaviorStaticMouseMoved();
 
     // Free cam
-    void UpdateCameraBehaviorFree();
+    void UpdateCameraBehaviorFree(float dt);
 
     // Free-fix cam
-    void UpdateCameraBehaviorFixed();
+    void UpdateCameraBehaviorFixed(float dt);
 
     // Vehicle cam
-    void UpdateCameraBehaviorVehicle();
+    void UpdateCameraBehaviorVehicle(float dt);
     void CameraBehaviorVehicleReset();
     bool CameraBehaviorVehicleMousePressed();
 
     // Vehicle-spline cam
-    void CameraBehaviorVehicleSplineUpdate();
+    void CameraBehaviorVehicleSplineUpdate(float dt);
     bool CameraBehaviorVehicleSplineMouseMoved();
     void CameraBehaviorVehicleSplineReset();
     void CameraBehaviorVehicleSplineCreateSpline();
@@ -125,11 +125,8 @@ protected:
 
     CameraBehaviors      m_cam_before_toggled {CAMERA_BEHAVIOR_INVALID};  //!< Toggled modes (FREE, FREEFIX) remember original state.
     CameraBehaviors      m_prev_toggled_cam {CAMERA_BEHAVIOR_INVALID};    //!< Switching toggled modes (FREE, FREEFIX) keeps 1-slot history.
-    // Old `CameraContext`
-    Ogre::Degree         m_cct_rot_scale;
-    Ogre::Real           m_cct_dt;
-    Ogre::Real           m_cct_trans_scale;
-    // Old `CameraBehaviorOrbit` attributes
+
+    // `CameraBehaviorOrbit` attributes
     Ogre::Radian         m_cam_rot_x {0.f};
     Ogre::Radian         m_cam_rot_y {0.3f};
     Ogre::Radian         m_cam_target_direction {0.f};
@@ -143,6 +140,7 @@ protected:
     Ogre::Vector3        m_cam_look_at_last {Ogre::Vector3::ZERO};
     Ogre::Vector3        m_cam_look_at_smooth {Ogre::Vector3::ZERO};
     Ogre::Vector3        m_cam_look_at_smooth_last {Ogre::Vector3::ZERO};
+
     // Static cam attributes
     bool                 m_staticcam_force_update {false};
     float                m_staticcam_fov_exponent {1.f};
@@ -150,8 +148,10 @@ protected:
     Ogre::Vector3        m_staticcam_look_at {Ogre::Vector3::ZERO};
     Ogre::Vector3        m_staticcam_position {Ogre::Vector3::ZERO};
     Ogre::Timer          m_staticcam_update_timer;
+
     // Character cam attributes
     bool                 m_charactercam_is_3rdperson {true};
+
     // Spline cam attributes
     Ogre::ManualObject*  m_splinecam_mo {nullptr};
     Ogre::SimpleSpline*  m_splinecam_spline {new Ogre::SimpleSpline()};
