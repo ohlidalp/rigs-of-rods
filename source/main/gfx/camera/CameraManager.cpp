@@ -157,8 +157,7 @@ void CameraManager::UpdateCurrentBehavior(float dt)
     switch(m_current_behavior)
     {
     case CAMERA_BEHAVIOR_CHARACTER: {
-        if (m_mouse_moved)
-            this->CameraBehaviorCharacterMouseMoved();
+        this->CameraBehaviorCharacterMouseMoved(dt); // Always update for smoothing to work.
         if (!App::GetGameContext()->GetPlayerCharacter())
             return;
         m_cam_target_direction = -App::GetGameContext()->GetPlayerCharacter()->getRotation() - Radian(Math::HALF_PI);
@@ -489,7 +488,8 @@ void CameraManager::DeactivateCurrentBehavior()
         return;
 
     case CAMERA_BEHAVIOR_FREE:
-        m_freecam_smooth_mousevec = Ogre::Vector2::ZERO;
+    case CAMERA_BEHAVIOR_CHARACTER:
+        m_mouselook_smooth_vec = Ogre::Vector2::ZERO;
         return;
 
     default:
@@ -575,25 +575,22 @@ bool CameraManager::handleMouseMoved()
     }
 }
 
-bool CameraManager::CameraBehaviorCharacterMouseMoved()
+bool CameraManager::CameraBehaviorCharacterMouseMoved(float dt)
 {
-    if (!App::GetGameContext()->GetPlayerCharacter())
+    Character* chara = App::GetGameContext()->GetPlayerCharacter();
+
+    if (!chara)
         return false;
+
     if (!m_charactercam_is_3rdperson)
     {
-        // IMPORTANT: get mouse button state from InputEngine, not from OIS directly
-        //  - that state may be dirty, see commentary in `InputEngine::getMouseState()`
-        const OIS::MouseState ms = App::GetInputEngine()->getMouseState();
+        this->UpdateMouseLook(dt);
 
-        Radian angle = App::GetGameContext()->GetPlayerCharacter()->getRotation();
+        chara->setRotation(chara->getRotation() - Degree(m_mouselook_smooth_vec.x));
 
-        m_cam_rot_y += Degree(ms.Y.rel * 0.13f);
-        angle += Degree(ms.X.rel * 0.13f);
-
+        m_cam_rot_y -= Degree(m_mouselook_smooth_vec.y);
         m_cam_rot_y = Radian(std::min(+Math::HALF_PI * 0.65f, m_cam_rot_y.valueRadians()));
         m_cam_rot_y = Radian(std::max(m_cam_rot_y.valueRadians(), -Math::HALF_PI * 0.9f));
-
-        App::GetGameContext()->GetPlayerCharacter()->setRotation(angle);
 
         RoR::App::GetGuiManager()->SetMouseCursorVisibility(RoR::GUIManager::MouseCursorVisibility::HIDDEN);
 
@@ -605,22 +602,27 @@ bool CameraManager::CameraBehaviorCharacterMouseMoved()
 
 bool CameraManager::CameraBehaviorFreeMouseMoved(float dt)
 {
-    // IMPORTANT: get mouse button state from InputEngine, not from OIS directly
-    //  - that state may be dirty, see commentary in `InputEngine::getMouseState()`
-    const OIS::MouseState ms = App::GetInputEngine()->getMouseState();
+    this->UpdateMouseLook(dt);
+
     Ogre::SceneNode* cam_node = App::GetCameraManager()->GetCameraNode();
-    const float cam_speed = App::io_freecam_mouse_speed->getFloat();
-    const float cam_smooth = App::io_freecam_mouse_smooth->getFloat();
-
-    const Ogre::Vector2 cur_mousevec(-ms.X.rel * cam_speed * dt, -ms.Y.rel * cam_speed * dt);
-    m_freecam_smooth_mousevec = cur_mousevec * (1.f - cam_smooth) + m_freecam_smooth_mousevec * cam_smooth;
-
-    cam_node->yaw(Degree(m_freecam_smooth_mousevec.x), Ogre::Node::TS_WORLD);
-    cam_node->pitch(Degree(m_freecam_smooth_mousevec.y));
+    cam_node->yaw(Degree(m_mouselook_smooth_vec.x), Ogre::Node::TS_WORLD);
+    cam_node->pitch(Degree(m_mouselook_smooth_vec.y));
 
     App::GetGuiManager()->SetMouseCursorVisibility(GUIManager::MouseCursorVisibility::HIDDEN);
 
     return true;
+}
+
+void CameraManager::UpdateMouseLook(float dt)
+{
+    // IMPORTANT: get mouse button state from InputEngine, not from OIS directly
+    //  - that state may be dirty, see commentary in `InputEngine::getMouseState()`
+    const OIS::MouseState ms = App::GetInputEngine()->getMouseState();
+    const float cam_speed = App::io_mouselook_speed->getFloat();
+    const float cam_smooth = App::io_mouselook_smoothing->getFloat();
+
+    const Ogre::Vector2 cur_mousevec(-ms.X.rel * cam_speed * dt, -ms.Y.rel * cam_speed * dt);
+    m_mouselook_smooth_vec = cur_mousevec * (1.f - cam_smooth) + m_mouselook_smooth_vec * cam_smooth;
 }
 
 bool CameraManager::handleMousePressed()

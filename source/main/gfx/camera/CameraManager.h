@@ -92,7 +92,7 @@ protected:
     void CameraBehaviorOrbitUpdate(float dt);
 
     // Character cam
-    bool CameraBehaviorCharacterMouseMoved();
+    bool CameraBehaviorCharacterMouseMoved(float dt);
 
     // Static cam
     void UpdateCameraBehaviorStatic(float dt);
@@ -120,6 +120,7 @@ protected:
 
     // Internal helpers
     void CreateCameraNode();
+    void UpdateMouseLook(float dt);
 
     Ogre::Camera*        m_camera {nullptr};
     Ogre::SceneNode*     m_camera_node {nullptr};
@@ -134,6 +135,8 @@ protected:
     // Note the actual mouse data are buffered by `InputEngine`.
     bool                 m_mouse_moved = false;
     bool                 m_mouse_pressed = false;
+    // Common mouse smoothing for freecam + 1st person charactercam.
+    Ogre::Vector2        m_mouselook_smooth_vec {Ogre::Vector2::ZERO};
 
     // `CameraBehaviorOrbit` attributes
     Ogre::Radian         m_cam_rot_x {0.f};
@@ -171,8 +174,6 @@ protected:
     std::deque<node_t*>  m_splinecam_spline_nodes;
     unsigned int         m_splinecam_num_linked_beams {0};
 
-    // Free camera attributes
-    Ogre::Vector2       m_freecam_smooth_mousevec {Ogre::Vector2::ZERO};
 };
 
 /// @} // addtogroup Camera
