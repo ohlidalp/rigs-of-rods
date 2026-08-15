@@ -91,12 +91,16 @@ protected:
     bool CameraBehaviorOrbitMouseMoved();
     void CameraBehaviorOrbitUpdate(float dt);
 
+    // Character cam
+    bool CameraBehaviorCharacterMouseMoved();
+
     // Static cam
     void UpdateCameraBehaviorStatic(float dt);
     bool CameraBehaviorStaticMouseMoved();
 
     // Free cam
     void UpdateCameraBehaviorFree(float dt);
+    bool CameraBehaviorFreeMouseMoved(float dt);
 
     // Free-fix cam
     void UpdateCameraBehaviorFixed(float dt);
@@ -125,6 +129,11 @@ protected:
 
     CameraBehaviors      m_cam_before_toggled {CAMERA_BEHAVIOR_INVALID};  //!< Toggled modes (FREE, FREEFIX) remember original state.
     CameraBehaviors      m_prev_toggled_cam {CAMERA_BEHAVIOR_INVALID};    //!< Switching toggled modes (FREE, FREEFIX) keeps 1-slot history.
+
+    // We defer processing mouse input (received via listener) until we have 'dt' (received via `UpdateInputEvents()`).
+    // Note the actual mouse data are buffered by `InputEngine`.
+    bool                 m_mouse_moved = false;
+    bool                 m_mouse_pressed = false;
 
     // `CameraBehaviorOrbit` attributes
     Ogre::Radian         m_cam_rot_x {0.f};
@@ -161,6 +170,9 @@ protected:
     bool                 m_splinecam_auto_tracking {false};
     std::deque<node_t*>  m_splinecam_spline_nodes;
     unsigned int         m_splinecam_num_linked_beams {0};
+
+    // Free camera attributes
+    Ogre::Vector2       m_freecam_smooth_mousevec {Ogre::Vector2::ZERO};
 };
 
 /// @} // addtogroup Camera

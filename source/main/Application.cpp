@@ -269,6 +269,8 @@ CVar* gfx_reduce_shadows;
 CVar* gfx_enable_rtshaders;
 CVar* gfx_alt_actor_materials;
 CVar* gfx_auto_lod;
+CVar* io_freecam_mouse_speed;
+CVar* io_freecam_mouse_smooth;
 
 // Flexbodies
 CVar* flexbody_defrag_enabled;
