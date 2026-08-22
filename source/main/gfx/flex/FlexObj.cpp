@@ -139,7 +139,7 @@ FlexObj::FlexObj(RoR::GfxActor* gfx_actor, node_t* all_nodes, std::vector<CabTex
         m_submeshes[j]->indexData->indexStart = 0;
     }
 
-    // Set bounding information (for culling)
+    // Set bounding information (for culling) - 100x100 is the size of actor-local physics space (relative to `ar_origin`)
     m_mesh->_setBounds(AxisAlignedBox(-100,-100,-100,100,100,100), true);
 
     // Notify Mesh object that it has been loaded

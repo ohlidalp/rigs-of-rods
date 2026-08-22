@@ -92,7 +92,7 @@ public:
 
     int getVertexCount() { return static_cast<int>(m_vertex_count); };
     Locator_t& getVertexLocator(int vert) { ROR_ASSERT((size_t)vert < m_vertex_count); return m_locators[vert]; }
-    Ogre::Vector3 getVertexPos(int vert) { ROR_ASSERT((size_t)vert < m_vertex_count); return m_dst_pos[vert] + m_flexit_center; }
+    Ogre::Vector3 getVertexPos(int vert); // returns world pos - only used by FlexbodyDebug UI
     Ogre::Entity* getEntity() { return m_scene_entity; }
     const std::string& getOrigMeshName() const { return m_orig_mesh_name; }
     std::vector<NodeNum_t>& getForsetNodes() { return m_forset_nodes; };
@@ -113,7 +113,6 @@ private:
 
     RoR::GfxActor*    m_gfx_actor = nullptr;
     size_t            m_vertex_count = 0;
-    Ogre::Vector3     m_flexit_center = Ogre::Vector3::ZERO; //!< Updated per frame
     FlexbodyID_t      m_id = FLEXBODYID_INVALID; // Filled by FlexFactory
     PlaceholderType   m_placeholder_type = PlaceholderType::NOT_A_PLACEHOLDER;
 

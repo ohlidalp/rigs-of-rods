@@ -479,22 +479,8 @@ FlexBody::FlexBody(
 
     } // if (preloaded_from_cache == nullptr)
 
-    //adjusting bounds
-    AxisAlignedBox aab=mesh->getBounds();
-    Vector3 v=aab.getMinimum();
-    float mi=v.x;
-    if (v.y<mi) mi=v.y;
-    if (v.z<mi) mi=v.z;
-    mi=fabs(mi);
-    v=aab.getMaximum();
-    float ma=v.x;
-    if (ma<v.y) ma=v.y;
-    if (ma<v.z) ma=v.z;
-    ma=fabs(ma);
-    if (mi>ma) ma=mi;
-    aab.setMinimum(Vector3(-ma,-ma,-ma));
-    aab.setMaximum(Vector3(ma,ma,ma));
-    mesh->_setBounds(aab, true);
+    // Set bounding information (for culling) - 100x100 is the size of actor-local physics space (relative to `ar_origin`)
+    m_scene_entity->getMesh()->_setBounds(AxisAlignedBox(-100,-100,-100,100,100,100), true);
 
     //okay, show the mesh now
     m_scene_node=App::GetGfxScene()->GetSceneManager()->getRootSceneNode()->createChildSceneNode();
@@ -623,32 +609,19 @@ void FlexBody::computeFlexbody()
 
     RoR::NodeSB* nodes = m_gfx_actor->GetSimNodeBuffer();
 
-    // compute the local center
-    if (m_node_center >= 0)
-    {
-        Vector3 diffX = nodes[m_node_x].AbsPosition - nodes[m_node_center].AbsPosition;
-        Vector3 diffY = nodes[m_node_y].AbsPosition - nodes[m_node_center].AbsPosition;
-        Ogre::Vector3 flexit_normal = fast_normalise(diffY.crossProduct(diffX));
-
-        m_flexit_center = nodes[m_node_center].AbsPosition + m_center_offset.x * diffX + m_center_offset.y * diffY;
-        m_flexit_center += m_center_offset.z * flexit_normal;
-    }
-    else
-    {
-        m_flexit_center = nodes[0].AbsPosition;
-    }
+    // The mesh origin is fixed at local physics origin, so we can build the mesh directly from node `RelPosition`-s.
 
     for (int i=0; i<(int)m_vertex_count; i++)
     {
-        Vector3 diffX = nodes[m_locators[i].nx].AbsPosition - nodes[m_locators[i].ref].AbsPosition;
-        Vector3 diffY = nodes[m_locators[i].ny].AbsPosition - nodes[m_locators[i].ref].AbsPosition;
+        Vector3 diffX = nodes[m_locators[i].nx].RelPosition - nodes[m_locators[i].ref].RelPosition;
+        Vector3 diffY = nodes[m_locators[i].ny].RelPosition - nodes[m_locators[i].ref].RelPosition;
         Vector3 nCross = fast_normalise(diffX.crossProduct(diffY)); //nCross.normalise();
 
         m_dst_pos[i].x = diffX.x * m_locators[i].coords.x + diffY.x * m_locators[i].coords.y + nCross.x * m_locators[i].coords.z;
         m_dst_pos[i].y = diffX.y * m_locators[i].coords.x + diffY.y * m_locators[i].coords.y + nCross.y * m_locators[i].coords.z;
         m_dst_pos[i].z = diffX.z * m_locators[i].coords.x + diffY.z * m_locators[i].coords.y + nCross.z * m_locators[i].coords.z;
 
-        m_dst_pos[i] += nodes[m_locators[i].ref].AbsPosition - m_flexit_center;
+        m_dst_pos[i] += nodes[m_locators[i].ref].RelPosition;
 
         m_dst_normals[i].x = diffX.x * m_src_normals[i].x + diffY.x * m_src_normals[i].y + nCross.x * m_src_normals[i].z;
         m_dst_normals[i].y = diffX.y * m_src_normals[i].x + diffY.y * m_src_normals[i].y + nCross.y * m_src_normals[i].z;
@@ -656,6 +629,7 @@ void FlexBody::computeFlexbody()
 
         m_dst_normals[i] = fast_normalise(m_dst_normals[i]);
     }
+
 }
 
 void FlexBody::updateFlexbodyVertexBuffers()
@@ -686,7 +660,8 @@ void FlexBody::updateFlexbodyVertexBuffers()
         m_blend_changed = false;
     }
 
-    m_scene_node->setPosition(m_flexit_center);
+    // The mesh origin is fixed at local physics origin, so we can build the mesh directly from node `RelPosition`-s.
+    m_scene_node->setPosition(m_gfx_actor->GetSimDataBuffer().simbuf_origin);
 }
 
 void FlexBody::reset()
@@ -893,4 +868,10 @@ void FlexBody::defragmentFlexbodyMesh()
             reorderIndexBuffer<uint32_t>(idx_data, new_index_lookup);
         }
     }
+}
+
+Ogre::Vector3 FlexBody::getVertexPos(int vert)  // returns world pos - only used by FlexbodyDebug UI
+{ 
+    ROR_ASSERT((size_t)vert < m_vertex_count);
+    return m_dst_pos[vert] + m_gfx_actor->GetSimDataBuffer().simbuf_origin;
 }
