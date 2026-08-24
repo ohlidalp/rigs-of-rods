@@ -305,7 +305,7 @@ struct FreeBeamGfxRequest
 struct WheelGfx
 {
     WheelID_t          wx_wheel_id         = WHEELID_INVALID;
-    Flexable*          wx_flex_mesh        = nullptr;
+    IFlexWheel*        wx_flex_mesh        = nullptr;
     Ogre::SceneNode*   wx_scenenode        = nullptr;
     WheelSide          wx_side             = WheelSide::INVALID;
     std::string        wx_rim_mesh_name;                         //!< Redundant, for Tuning UI. Only for 'meshwheels[2]' and 'flexbodywheels'

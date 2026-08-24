@@ -22,7 +22,7 @@
 #pragma once
 
 #include "ForwardDeclarations.h"
-#include "FlexMesh.h"
+#include "IFlexWheel.h"
 
 #include <Ogre.h>
 #include <string>
@@ -37,7 +37,7 @@ namespace RoR {
 /// @{
 
 /// Consists of static mesh, representing the rim, and dynamic mesh, representing the tire.
-class FlexMeshWheel: public Flexable
+class FlexMeshWheel: public IFlexWheel
 {
     friend class RoR::FlexFactory;
 
@@ -47,14 +47,10 @@ public:
 
     Ogre::Entity* GetTireEntity() { return m_tire_entity; }
 
-    Ogre::Vector3 updateVertices();
-
-    // Flexable
-    bool flexitPrepare();
-    void flexitCompute();
-    Ogre::Vector3 flexitFinal();
-
-    void setVisible(bool visible);
+    // IFlexWheel
+    void FlexitCompute() override;
+    void FlexitFinalize() override;
+    void FlexitSetVisible(bool visible) override;
 
 private:
 
@@ -74,6 +70,9 @@ private:
         bool rimreverse
     );
 
+    void UpdateVertices();
+    void UpdateRimMesh();
+
     struct FlexMeshWheelVertex
     {
         Ogre::Vector3 position;
@@ -90,7 +89,6 @@ private:
     int              m_start_node_idx; //!< First node (lowest index) belonging to this wheel.
 
     // Tire mesh
-    Ogre::Vector3    m_flexit_center;
     Ogre::MeshPtr    m_mesh;
     Ogre::SubMesh*   m_submesh;
     Ogre::Entity*    m_tire_entity; // Assigned by friend FlexFactory

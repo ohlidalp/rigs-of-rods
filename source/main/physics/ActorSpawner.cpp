@@ -49,7 +49,7 @@
 #include "FlexAirfoil.h"
 #include "FlexAirfoilMesh.h"
 #include "FlexBody.h"
-#include "FlexMesh.h"
+#include "FlexWheel.h"
 #include "FlexMeshWheel.h"
 #include "FlexObj.h"
 #include "GameContext.h"
@@ -5322,12 +5322,12 @@ void ActorSpawner::CreateWheelVisuals(
         WheelGfx visual_wheel;
 
         const std::string wheel_mesh_name = this->ComposeName("mesh @ wheel*", wheel_index);
-        visual_wheel.wx_flex_mesh = new FlexMesh(
+        visual_wheel.wx_flex_mesh = new FlexWheel(
             wheel_mesh_name,
             m_actor->m_gfx_actor.get(),
             wheel.wh_axis_node_0->pos,
             wheel.wh_axis_node_1->pos,
-            static_cast<NodeNum_t>(node_base_index), // FIXME - node_base_index should be also NodeNum_t
+            node_base_index,
             num_rays,
             face_material_name, face_material_rg,
             band_material_name, band_material_rg,
@@ -5345,7 +5345,7 @@ void ActorSpawner::CreateWheelVisuals(
     }
     catch (Ogre::Exception& e)
     {
-        AddMessage(Message::TYPE_ERROR, "Failed to create wheel visuals: " +  e.getFullDescription());
+        AddMessage(Message::TYPE_ERROR, "Failed to create wheel visuals: " +  e.getDescription());
     }
 }
 

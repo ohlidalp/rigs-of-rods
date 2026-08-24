@@ -19,7 +19,7 @@
     along with Rigs of Rods. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "FlexMesh.h"
+#include "FlexWheel.h"
 
 #include <Ogre.h>
 
@@ -30,7 +30,7 @@
 using namespace Ogre;
 using namespace RoR;
 
-FlexMesh::FlexMesh(
+FlexWheel::FlexWheel(
     Ogre::String const & name, 
     RoR::GfxActor* gfx_actor,
     NodeNum_t n1, 
@@ -160,7 +160,7 @@ FlexMesh::FlexMesh(
     }
 
     //update coords
-    updateVertices();
+    this->UpdateVertices();
 
     // Create vertex data structure for 8 vertices shared between submeshes
     m_mesh->sharedVertexData = new VertexData();
@@ -225,13 +225,13 @@ FlexMesh::FlexMesh(
     m_submesh_tiretread->indexData->indexCount = tiretread_num_indices;
     m_submesh_tiretread->indexData->indexStart = 0;
 
-    // Set bounding information (for culling)
-    m_mesh->_setBounds(AxisAlignedBox(-1,-1,0,1,1,0), true);
+    // Set bounding information (for culling) - 100x100 is the size of actor-local physics space (relative to `ar_origin`)
+    m_mesh->_setBounds(AxisAlignedBox(-100,-100,-100,100,100,100), true);
 
     m_mesh->load();
 }
 
-FlexMesh::~FlexMesh()
+FlexWheel::~FlexWheel()
 {
     if (m_mesh)
     {
@@ -240,39 +240,38 @@ FlexMesh::~FlexMesh()
     }
 }
 
-Vector3 FlexMesh::updateVertices()
+void FlexWheel::UpdateVertices()
 {
     RoR::NodeSB* all_nodes = m_gfx_actor->GetSimNodeBuffer();
-    Vector3 center = (all_nodes[m_vertex_nodes[0]].AbsPosition + all_nodes[m_vertex_nodes[1]].AbsPosition) / 2.0;
 
     //optimization possible here : just copy bands on face
 
-    m_vertices[0].position=all_nodes[m_vertex_nodes[0]].AbsPosition-center;
+    m_vertices[0].position=all_nodes[m_vertex_nodes[0]].RelPosition;
     //normals
-    m_vertices[0].normal=approx_normalise(all_nodes[m_vertex_nodes[0]].AbsPosition-all_nodes[m_vertex_nodes[1]].AbsPosition);
+    m_vertices[0].normal=approx_normalise(all_nodes[m_vertex_nodes[0]].RelPosition-all_nodes[m_vertex_nodes[1]].RelPosition);
 
-    m_vertices[1].position=all_nodes[m_vertex_nodes[1]].AbsPosition-center;
+    m_vertices[1].position=all_nodes[m_vertex_nodes[1]].RelPosition;
     //normals
     m_vertices[1].normal=-m_vertices[0].normal;
 
     for (int i=0; i<m_num_rays*2; i++)
     {
-        m_vertices[2+i].position=all_nodes[m_vertex_nodes[2+i]].AbsPosition-center;
+        m_vertices[2+i].position=all_nodes[m_vertex_nodes[2+i]].RelPosition;
         //normals
         if ((i%2)==0)
         {
-            m_vertices[2+i].normal=approx_normalise(all_nodes[m_vertex_nodes[0]].AbsPosition-all_nodes[m_vertex_nodes[1]].AbsPosition);
+            m_vertices[2+i].normal=approx_normalise(all_nodes[m_vertex_nodes[0]].RelPosition-all_nodes[m_vertex_nodes[1]].RelPosition);
         } else
         {
             m_vertices[2+i].normal=-m_vertices[2+i-1].normal;
         }
         if (m_is_rimmed)
         {
-            m_vertices[2+4*m_num_rays+i].position=all_nodes[m_vertex_nodes[2+4*m_num_rays+i]].AbsPosition-center;
+            m_vertices[2+4*m_num_rays+i].position=all_nodes[m_vertex_nodes[2+4*m_num_rays+i]].RelPosition;
             //normals
             if ((i%2)==0)
             {
-                m_vertices[2+4*m_num_rays+i].normal=approx_normalise(all_nodes[m_vertex_nodes[2+4*m_num_rays+i]].AbsPosition-all_nodes[m_vertex_nodes[2+4*m_num_rays+i+1]].AbsPosition);
+                m_vertices[2+4*m_num_rays+i].normal=approx_normalise(all_nodes[m_vertex_nodes[2+4*m_num_rays+i]].RelPosition-all_nodes[m_vertex_nodes[2+4*m_num_rays+i+1]].RelPosition);
             } else
             {
                 m_vertices[2+4*m_num_rays+i].normal=-m_vertices[2+4*m_num_rays+i-1].normal;
@@ -287,16 +286,14 @@ Vector3 FlexMesh::updateVertices()
             m_vertices[2+2*m_num_rays+i].normal=approx_normalise(m_vertices[2+i].position);
         }
     }
-    return center;
 }
 
-void FlexMesh::flexitCompute()
+void FlexWheel::FlexitCompute()
 {
-    m_flexit_center = updateVertices();
+    this->UpdateVertices();
 }
 
-Vector3 FlexMesh::flexitFinal()
+void FlexWheel::FlexitFinalize()
 {
     m_hw_vbuf->writeData(0, m_hw_vbuf->getSizeInBytes(), m_vertices.data(), true);
-    return m_flexit_center;
 }

@@ -2,6 +2,7 @@
     This source file is part of Rigs of Rods
     Copyright 2005-2012 Pierre-Michel Ricordel
     Copyright 2007-2012 Thomas Fischer
+    Copyright 2013-2026 Petr Ohlidal
 
     For more information, see http://www.rigsofrods.org/
 
@@ -30,17 +31,14 @@ namespace RoR {
 /// @addtogroup Flex
 /// @{
 
-// NOTE: class FlexBody no longer uses this interface ~ only_a_ptr, 05/2018
-class Flexable
+class IFlexWheel
 {
 public:
-    virtual ~Flexable() {}
+    virtual ~IFlexWheel() {}
 
-    virtual bool flexitPrepare() = 0;
-    virtual void flexitCompute() = 0;
-    virtual Ogre::Vector3 flexitFinal() = 0;
-
-    virtual void setVisible(bool visible) = 0;
+    virtual void FlexitCompute() = 0;
+    virtual void FlexitFinalize() = 0;
+    virtual void FlexitSetVisible(bool visible) = 0;
 };
 
 /// @} // addtogroup Flex

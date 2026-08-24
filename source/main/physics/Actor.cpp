@@ -39,7 +39,7 @@
 #include "ErrorUtils.h"
 #include "FlexAirfoil.h"
 #include "FlexBody.h"
-#include "FlexMesh.h"
+#include "FlexWheel.h"
 #include "FlexMeshWheel.h"
 #include "FlexObj.h"
 #include "GameContext.h"

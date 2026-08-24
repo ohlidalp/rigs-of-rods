@@ -23,7 +23,7 @@
 
 #include "Application.h"
 
-#include "Flexable.h"
+#include "IFlexWheel.h"
 #include "SimData.h" // NodeNum_t
 
 #include <OgreString.h>
@@ -41,11 +41,11 @@ namespace RoR {
 /// @addtogroup Flex
 /// @{
 
-class FlexMesh: public Flexable
+class FlexWheel: public IFlexWheel
 {
 public:
 
-    FlexMesh(
+    FlexWheel(
         Ogre::String const& name,
         RoR::GfxActor* gfx_actor,
         NodeNum_t n1,
@@ -60,18 +60,16 @@ public:
         float rimratio = 1.f
     );
 
-    ~FlexMesh();
+    ~FlexWheel();
 
-    Ogre::Vector3 updateVertices();
-
-    // Flexable
-    bool flexitPrepare() { return true; };
-    void flexitCompute();
-    Ogre::Vector3 flexitFinal();
-
-    void setVisible(bool visible) {} // Nothing to do here
+    // IFlexWheel
+    void FlexitCompute() override;
+    void FlexitFinalize() override;
+    void FlexitSetVisible(bool visible) override {} // Nothing to do here
 
 private:
+
+    void UpdateVertices();
 
     struct FlexMeshVertex // staging
     {
@@ -81,7 +79,6 @@ private:
     };
 
     // Wheel
-    Ogre::Vector3     m_flexit_center;
     RoR::GfxActor*    m_gfx_actor;
     int               m_num_rays;
     bool              m_is_rimmed;

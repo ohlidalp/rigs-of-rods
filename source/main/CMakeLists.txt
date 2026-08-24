@@ -48,11 +48,11 @@ set(SOURCE_FILES
         gfx/camera/CameraManager.{h,cpp}
         gfx/camera/PerVehicleCameraContext.h
         gfx/flex/FalselyMovingMesh.{h,cpp}
-        gfx/flex/Flexable.h
+        gfx/flex/IFlexWheel.h
         gfx/flex/FlexAirfoilMesh.{h,cpp}
         gfx/flex/FlexBody.{h,cpp}
         gfx/flex/FlexFactory.{h,cpp}
-        gfx/flex/FlexMesh.{h,cpp}
+        gfx/flex/FlexWheel.{h,cpp}
         gfx/flex/FlexMeshWheel.{h,cpp}
         gfx/flex/FlexObj.{h,cpp}
         gfx/flex/Locator_t.h        

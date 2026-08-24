@@ -126,7 +126,7 @@ namespace RoR
     class  DustPool;
     class  DiscordRpc;
     class  Engine;
-    class  Flexable;
+    class  IFlexWheel;
     class  FlexAirfoil;
     class  FlexAirfoilMesh;
     class  FlexBody;
