@@ -27,6 +27,7 @@
 #include "Application.h"
 #include "Actor.h"
 #include "CacheSystem.h"
+#include "FalselyMovingMesh.h"
 #include "FlexBody.h"
 #include "FlexMeshWheel.h"
 #include "GfxScene.h"
@@ -130,7 +131,7 @@ FlexMeshWheel* FlexFactory::CreateFlexMeshWheel(
 
     // Load+instantiate static mesh for rim (may be located in addonpart ZIP-bundle!)
     Ogre::MeshPtr rim_mesh = Ogre::MeshManager::getSingleton().load(rim_mesh_name, rim_mesh_rg);
-    FlexMeshWheel::SetupRimMeshSkeletalAnim(rim_mesh, rim_mesh_rg);
+    FalselyMovingMesh::SetupFalseMotionSkeletalAnim(rim_mesh, rim_mesh_rg);
     const std::string rim_entity_name = m_rig_spawner->ComposeName("rim @ *wheel*", wheel_index);
     Ogre::Entity* rim_prop_entity = App::GetGfxScene()->GetSceneManager()->createEntity(rim_entity_name, rim_mesh);
     m_rig_spawner->SetupNewEntity(rim_prop_entity, Ogre::ColourValue(0, 0.5, 0.8));

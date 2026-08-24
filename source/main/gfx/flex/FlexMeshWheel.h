@@ -56,10 +56,6 @@ public:
 
     void setVisible(bool visible);
 
-    /// This is a trick to prevent the prop from jittering at large world distances;
-    /// we place the scenenode at physics origin and move the verts relatively using a bone.
-    static void SetupRimMeshSkeletalAnim(Ogre::MeshPtr mesh, const std::string& rg);
-
 private:
 
     FlexMeshWheel( // Use FlexFactory

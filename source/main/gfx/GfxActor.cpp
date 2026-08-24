@@ -202,11 +202,6 @@ RoR::GfxActor::~GfxActor()
                 prop.pp_scene_node->removeAndDestroyAllChildren();
                 App::GetGfxScene()->GetSceneManager()->destroySceneNode(prop.pp_scene_node);
             }
-            if (prop.pp_wheel_scene_node)
-            {
-                prop.pp_wheel_scene_node->removeAndDestroyAllChildren();
-                App::GetGfxScene()->GetSceneManager()->destroySceneNode(prop.pp_wheel_scene_node);
-            }
         }
         catch (...)
         {
@@ -1725,9 +1720,9 @@ void RoR::GfxActor::ScaleActor(Ogre::Vector3 relpos, float ratio)
         if (prop.pp_scene_node)
             prop.pp_scene_node->scale(ratio, ratio, ratio);
 
-        if (prop.pp_wheel_scene_node)
+        if (prop.pp_wheel_mesh_obj)
         {
-            prop.pp_wheel_scene_node->scale(ratio, ratio, ratio);
+            prop.pp_wheel_mesh_obj->scale(Ogre::Vector3(ratio, ratio, ratio));
             prop.pp_wheel_pos = relpos + (prop.pp_wheel_pos - relpos) * ratio;
         }
 
@@ -2351,26 +2346,34 @@ void RoR::GfxActor::UpdateProps(float dt, bool is_player_actor)
         }
 
         // Update position and orientation
-        // -- quick ugly port from `Actor::updateProps()` --- ~ 06/2018
-        Vector3 diffX = nodes[prop.pp_node_x].AbsPosition - nodes[prop.pp_node_ref].AbsPosition;
-        Vector3 diffY = nodes[prop.pp_node_y].AbsPosition - nodes[prop.pp_node_ref].AbsPosition;
+        // We do a trick to prevent the prop from jittering at large world distances;
+        // we fix the scenenode at physics origin and move the verts relatively using a bone.
+        const Vector3 origin = this->GetSimDataBuffer().simbuf_origin;
+        prop.pp_mesh_obj->SetOriginWorldPosition(origin);
+
+        Vector3 diffX = nodes[prop.pp_node_x].RelPosition - nodes[prop.pp_node_ref].RelPosition;
+        Vector3 diffY = nodes[prop.pp_node_y].RelPosition - nodes[prop.pp_node_ref].RelPosition;
 
         Vector3 normal = (diffY.crossProduct(diffX)).normalisedCopy();
 
-        Vector3 mposition = nodes[prop.pp_node_ref].AbsPosition + prop.pp_offset.x * diffX + prop.pp_offset.y * diffY;
-        prop.pp_scene_node->setPosition(mposition + normal * prop.pp_offset.z);
+        Vector3 mposition = nodes[prop.pp_node_ref].RelPosition + prop.pp_offset.x * diffX + prop.pp_offset.y * diffY;
+        const Vector3 mesh_relpos = mposition + normal * prop.pp_offset.z;
+        prop.pp_scene_node->setPosition(mesh_relpos + origin); // Dummy, just to store world pos.
+        prop.pp_mesh_obj->SetBoneRelPosition(mesh_relpos); // Actual visible positioning.
 
         Vector3 refx = diffX.normalisedCopy();
         Vector3 refy = refx.crossProduct(normal);
-        Quaternion orientation = Quaternion(refx, normal, refy) * prop.pp_rot;
-        prop.pp_scene_node->setOrientation(orientation);
+        const Quaternion orientation = Quaternion(refx, normal, refy) * prop.pp_rot;
+        prop.pp_scene_node->setOrientation(orientation); // Dummy just to store world transform.
+        prop.pp_mesh_obj->SetBoneRelOrientation(orientation); // Actual visible positioning.
 
-        if (prop.pp_wheel_scene_node) // special prop - steering wheel
+        if (prop.pp_wheel_mesh_obj) // special prop - steering wheel
         {
             Quaternion brot = Quaternion(Degree(-59.0), Vector3::UNIT_X);
             brot = brot * Quaternion(Degree(m_simbuf.simbuf_hydro_dir_state * prop.pp_wheel_rot_degree), Vector3::UNIT_Y);
-            prop.pp_wheel_scene_node->setPosition(mposition + normal * prop.pp_offset.z + orientation * prop.pp_wheel_pos);
-            prop.pp_wheel_scene_node->setOrientation(orientation * brot);
+            prop.pp_wheel_mesh_obj->SetOriginWorldPosition(origin);
+            prop.pp_wheel_mesh_obj->SetBoneRelPosition(mposition + normal * prop.pp_offset.z + orientation * prop.pp_wheel_pos);
+            prop.pp_wheel_mesh_obj->SetBoneRelOrientation(orientation * brot);
         }
     }
 

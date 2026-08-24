@@ -47,6 +47,7 @@ set(SOURCE_FILES
         gfx/GfxWater.{h,cpp}
         gfx/camera/CameraManager.{h,cpp}
         gfx/camera/PerVehicleCameraContext.h
+        gfx/flex/FalselyMovingMesh.{h,cpp}
         gfx/flex/Flexable.h
         gfx/flex/FlexAirfoilMesh.{h,cpp}
         gfx/flex/FlexBody.{h,cpp}

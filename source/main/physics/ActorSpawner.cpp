@@ -1727,14 +1727,13 @@ void ActorSpawner::ProcessProp(RigDef::Prop & def)
             steering_wheel_offset = def.special_prop_dashboard.offset;
         }
         prop.pp_wheel_rot_degree = def.special_prop_dashboard.rotation_angle;
-        prop.pp_wheel_scene_node = m_props_parent_scenenode->createChildSceneNode(this->ComposeName("steering wheel @ prop", prop_id));
         prop.pp_wheel_pos = steering_wheel_offset;
         prop.pp_media[1] = TuneupUtil::getTweakedPropMedia(m_actor->getWorkingTuneupDef(), prop_id, 1, def.special_prop_dashboard.mesh_name);
-        prop.pp_wheel_mesh_obj = new MeshObject(
+        prop.pp_wheel_mesh_obj = new FalselyMovingMesh(
             prop.pp_media[1],
             TuneupUtil::getTweakedPropMediaRG(m_actor->getWorkingTuneupDef(), prop_id, 1, this->GetCurrentElementMediaRG()),
             this->ComposeName("steering wheel entity @ prop", prop_id),
-            prop.pp_wheel_scene_node
+            m_props_parent_scenenode->createChildSceneNode(this->ComposeName("steering wheel FMM-scenenode @ prop", prop_id))
             );
         this->SetupNewEntity(prop.pp_wheel_mesh_obj->getEntity(), Ogre::ColourValue(0, 0.5, 0.5));
     }
@@ -1742,11 +1741,12 @@ void ActorSpawner::ProcessProp(RigDef::Prop & def)
     /* CREATE THE PROP */
     prop.pp_scene_node = m_props_parent_scenenode->createChildSceneNode(this->ComposeName("prop", prop_id));
     prop.pp_media[0] = TuneupUtil::getTweakedPropMedia(m_actor->getWorkingTuneupDef(), prop_id, 0, def.mesh_name);
-    prop.pp_mesh_obj = new MeshObject(
-            prop.pp_media[0],
-            TuneupUtil::getTweakedPropMediaRG(m_actor->getWorkingTuneupDef(), prop_id, 0, this->GetCurrentElementMediaRG()),
-            this->ComposeName("prop entity", prop_id),
-            prop.pp_scene_node);
+    prop.pp_mesh_obj = new FalselyMovingMesh(
+        prop.pp_media[0],
+        TuneupUtil::getTweakedPropMediaRG(m_actor->getWorkingTuneupDef(), prop_id, 0, this->GetCurrentElementMediaRG()),
+        this->ComposeName("prop entity", prop_id),
+        m_props_parent_scenenode->createChildSceneNode(this->ComposeName("FMM-scenenode @ prop", prop_id))
+    );
 
     prop.pp_mesh_obj->setCastShadows(true); // Orig code {{ prop.pp_mesh_obj->setCastShadows(shadowmode != 0); }}, shadowmode has default value 1 and changes with undocumented directive 'set_shadows'
 
@@ -1901,7 +1901,7 @@ void ActorSpawner::ProcessProp(RigDef::Prop & def)
 
         if (m_curr_mirror_prop_type != CustomMaterial::MirrorPropType::MPROP_NONE)
         {
-            m_curr_mirror_prop_scenenode = prop.pp_mesh_obj->GetSceneNode();
+            m_curr_mirror_prop_scenenode = prop.pp_scene_node;
         }
     }
 
