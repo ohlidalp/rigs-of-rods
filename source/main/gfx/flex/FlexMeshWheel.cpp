@@ -54,9 +54,14 @@ FlexMeshWheel::FlexMeshWheel(
     , m_is_rim_reverse(rimreverse)
     , m_rim_radius(rimradius)
 {
+    // Rim entity setup
     m_rim_entity = rim_prop_entity;
     m_rim_scene_node = rim_scene_node;
     m_rim_scene_node->attachObject(m_rim_entity);
+    m_rim_skelinst = m_rim_entity->getSkeleton();
+    ROR_ASSERT(m_rim_skelinst);
+    m_rim_boneinst = m_rim_skelinst->getBone(0);
+    ROR_ASSERT(m_rim_boneinst);
 
     // Create the tire mesh via the MeshManager
     m_mesh = MeshManager::getSingleton().createManual(tire_mesh_name, tire_mesh_rg);
@@ -236,20 +241,31 @@ void FlexMeshWheel::setVisible(bool visible)
 
 bool FlexMeshWheel::flexitPrepare()
 {
-    RoR::NodeSB* all_nodes = m_gfx_actor->GetSimNodeBuffer();
-    Vector3 center = (all_nodes[m_axis_node0_idx].AbsPosition + all_nodes[m_axis_node1_idx].AbsPosition) / 2.0;
-    m_rim_scene_node->setPosition(center);
+    // Update the rim entity:
+    //  to prevent the prop from jittering at large world distances,
+    //  we fix the scenenode at physics origin and move the verts relatively using a bone.
+    /// -----------------------------------------------------------------------------------
 
-    Vector3 axis = all_nodes[m_axis_node0_idx].AbsPosition - all_nodes[m_axis_node1_idx].AbsPosition;
+    m_rim_scene_node->setPosition(m_gfx_actor->GetSimDataBuffer().simbuf_origin);
+    m_rim_boneinst->setManuallyControlled(true);
+
+    RoR::NodeSB* all_nodes = m_gfx_actor->GetSimNodeBuffer();
+    Vector3 center = (all_nodes[m_axis_node0_idx].RelPosition + all_nodes[m_axis_node1_idx].RelPosition) / 2.0;
+    m_rim_boneinst->setPosition(center);
+
+    Vector3 axis = all_nodes[m_axis_node0_idx].RelPosition - all_nodes[m_axis_node1_idx].RelPosition;
     axis.normalise();
 
     if (m_is_rim_reverse) axis = -axis;
-    Vector3 ray = all_nodes[m_start_node_idx].AbsPosition - all_nodes[m_axis_node0_idx].AbsPosition;
-    Vector3 onormal = axis.crossProduct(ray);
-    onormal.normalise();
+    Vector3 ray = all_nodes[m_start_node_idx].RelPosition - all_nodes[m_axis_node0_idx].RelPosition;
+    Vector3 onormal = axis.crossProduct(ray).normalisedCopy();
     ray = axis.crossProduct(onormal);
-    m_rim_scene_node->setOrientation(Quaternion(axis, onormal, ray));
+    m_rim_boneinst->setOrientation(Quaternion(axis, onormal, ray));
 
+    m_rim_skelinst->_notifyManualBonesDirty();
+
+
+    
     return true;
 }
 
@@ -262,4 +278,65 @@ Vector3 FlexMeshWheel::flexitFinal()
 {
     m_hw_vbuf->writeData(0, m_hw_vbuf->getSizeInBytes(), m_vertices.data(), true);
     return m_flexit_center;
+}
+
+void FlexMeshWheel::SetupRimMeshSkeletalAnim(Ogre::MeshPtr mesh, const std::string& rg)
+{
+    /// This is a trick to prevent the prop from jittering at large world distances;
+    /// we fix the scenenode at physics origin and move the verts relatively using a bone.
+    /// -----------------------------------------------------------------------------------
+
+    ROR_ASSERT(mesh);
+    if (mesh->hasSkeleton())
+    {
+        return; // already done before
+    }
+
+    Ogre::SkeletonPtr skel = Ogre::SkeletonManager::getSingleton().create(
+        mesh->getName() + "_prop-skeleton-gen", rg, /*isManual*/true);
+    Ogre::Bone* bone = skel->createBone(0);
+
+    mesh->setSkeletonName(skel->getName()); // doc says this must be done before adding bone assignments
+    
+    // see struct VertexBoneAssignment https://ogrecave.github.io/ogre/api/14/struct_ogre_1_1_vertex_bone_assignment.html
+    // see addBoneAssignment() https://ogrecave.github.io/ogre/api/14/class_ogre_1_1_mesh.html#a05554a4e54cbb820a243f5b9f5967cc8
+
+    // For the proof of concept, let's only consider one submesh ~ ohlidalp, 08/2026
+    Ogre::SubMesh* submesh = mesh->getSubMeshes()[0];
+
+    // bind all verts to the single bone with full weight (1.0)
+    const unsigned short boneId = bone->getHandle();
+
+    if (submesh->useSharedVertices)
+    {
+        for (size_t i = 0; i < mesh->sharedVertexData->vertexCount; i++)
+        {
+            Ogre::VertexBoneAssignment vba;
+            vba.boneIndex = boneId;
+            vba.vertexIndex = static_cast<unsigned int>(i);
+            vba.weight = 1.f;
+            mesh->addBoneAssignment(vba); // <---  works on top of `sharedVertexData`
+        }
+        mesh->_compileBoneAssignments();
+    }
+    else
+    {
+        for (size_t i = 0; i < submesh->vertexData->vertexCount; i++)
+        {
+            Ogre::VertexBoneAssignment vba;
+            vba.boneIndex = boneId;
+            vba.vertexIndex = static_cast<unsigned int>(i);
+            vba.weight = 1.f;
+            submesh->addBoneAssignment(vba); // <---  works on top of submesh's `vertexData`
+        }
+        submesh->_compileBoneAssignments();
+    }
+    
+    bone->setBindingPose();
+
+    skel->load();
+    mesh->_notifySkeleton(skel); // <--- needed for dynamic setup
+
+    // Set bounding information (for culling) - 100x100 is the size of actor-local physics space (relative to `ar_origin`)
+    mesh->_setBounds(AxisAlignedBox(-100,-100,-100,100,100,100), true);
 }

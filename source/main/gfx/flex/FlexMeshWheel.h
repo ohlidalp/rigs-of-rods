@@ -56,6 +56,10 @@ public:
 
     void setVisible(bool visible);
 
+    /// This is a trick to prevent the prop from jittering at large world distances;
+    /// we place the scenenode at physics origin and move the verts relatively using a bone.
+    static void SetupRimMeshSkeletalAnim(Ogre::MeshPtr mesh, const std::string& rg);
+
 private:
 
     FlexMeshWheel( // Use FlexFactory
@@ -89,14 +93,18 @@ private:
     int              m_axis_node1_idx;
     int              m_start_node_idx; //!< First node (lowest index) belonging to this wheel.
 
-    // Meshes
+    // Tire mesh
     Ogre::Vector3    m_flexit_center;
     Ogre::MeshPtr    m_mesh;
     Ogre::SubMesh*   m_submesh;
+    Ogre::Entity*    m_tire_entity; // Assigned by friend FlexFactory
+
+    // Rim mesh
+    Ogre::SceneNode* m_rim_scene_node;
     bool             m_is_rim_reverse;
     Ogre::Entity*    m_rim_entity;
-    Ogre::Entity*    m_tire_entity; // Assigned by friend FlexFactory
-    Ogre::SceneNode* m_rim_scene_node;
+    Ogre::SkeletonInstance* m_rim_skelinst{nullptr};
+    Ogre::Bone*      m_rim_boneinst{nullptr};
 
     // Vertices
     float            m_norm_y;
