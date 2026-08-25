@@ -206,35 +206,40 @@ void FalselyMovingMesh::SetupFalseMotionSkeletalAnim(Ogre::MeshPtr mesh, const s
 
     mesh->setSkeletonName(skel->getName()); // doc says this must be done before adding bone assignments
 
-    // For the proof of concept, let's only consider one submesh ~ ohlidalp, 08/2026
-    Ogre::SubMesh* submesh = mesh->getSubMeshes()[0];
-
     // bind all verts to the single bone with full weight (1.0)
     const unsigned short boneId = bone->getHandle();
 
-    if (submesh->useSharedVertices)
+    bool sharedVertsProcessed = false;
+    for (Ogre::SubMesh* submesh: mesh->getSubMeshes())
     {
-        for (size_t i = 0; i < mesh->sharedVertexData->vertexCount; i++)
+        if (submesh->useSharedVertices)
         {
-            Ogre::VertexBoneAssignment vba;
-            vba.boneIndex = boneId;
-            vba.vertexIndex = static_cast<unsigned int>(i);
-            vba.weight = 1.f;
-            mesh->addBoneAssignment(vba); // <---  works on top of `sharedVertexData`
+            if (!sharedVertsProcessed)
+            {
+                for (size_t i = 0; i < mesh->sharedVertexData->vertexCount; i++)
+                {
+                    Ogre::VertexBoneAssignment vba;
+                    vba.boneIndex = boneId;
+                    vba.vertexIndex = static_cast<unsigned int>(i);
+                    vba.weight = 1.f;
+                    mesh->addBoneAssignment(vba); // <---  works on top of `sharedVertexData`
+                }
+                mesh->_compileBoneAssignments();
+                sharedVertsProcessed = true;
+            }
         }
-        mesh->_compileBoneAssignments();
-    }
-    else
-    {
-        for (size_t i = 0; i < submesh->vertexData->vertexCount; i++)
+        else
         {
-            Ogre::VertexBoneAssignment vba;
-            vba.boneIndex = boneId;
-            vba.vertexIndex = static_cast<unsigned int>(i);
-            vba.weight = 1.f;
-            submesh->addBoneAssignment(vba); // <---  works on top of submesh's `vertexData`
+            for (size_t i = 0; i < submesh->vertexData->vertexCount; i++)
+            {
+                Ogre::VertexBoneAssignment vba;
+                vba.boneIndex = boneId;
+                vba.vertexIndex = static_cast<unsigned int>(i);
+                vba.weight = 1.f;
+                submesh->addBoneAssignment(vba); // <---  works on top of submesh's `vertexData`
+            }
+            submesh->_compileBoneAssignments();
         }
-        submesh->_compileBoneAssignments();
     }
     
     bone->setBindingPose();
