@@ -232,8 +232,9 @@ void ServerScriptEngine::ExceptionCallback(asIScriptContext *ctx, void *param) {
     Logger::Log(LOG_INFO, "desc: %s", ctx->GetExceptionString());
     Logger::Log(LOG_INFO, "func: %s", function->GetDeclaration());
     Logger::Log(LOG_INFO, "modl: %s", function->GetModuleName());
-    Logger::Log(LOG_INFO, "sect: %s", function->GetScriptSectionName());
-    int col, line = ctx->GetExceptionLineNumber(&col);
+    const char* sectName = nullptr;
+    int col, line = ctx->GetExceptionLineNumber(&col, &sectName);
+    Logger::Log(LOG_INFO, "sect: %s", sectName ? sectName : "NULL");
     Logger::Log(LOG_INFO, "line: %d,%d", line, col);
 
     // Show the call stack with the variables
@@ -241,7 +242,11 @@ void ServerScriptEngine::ExceptionCallback(asIScriptContext *ctx, void *param) {
     char tmp[2048] = "";
     for (asUINT n = 0; n < ctx->GetCallstackSize(); n++) {
         function = ctx->GetFunction(n);
-        sprintf(tmp, "%s (%d): %s", function->GetScriptSectionName(), ctx->GetLineNumber(n),
+        const char* fnDeclSectionName = nullptr;
+        int fnDeclRow = 0;
+        int fnDeclCol = 0;
+        function->GetDeclaredAt(&fnDeclSectionName, &fnDeclRow, &fnDeclCol);
+        sprintf(tmp, "%s (%d): %s", fnDeclSectionName, fnDeclRow,
                 function->GetDeclaration());
         Logger::Log(LOG_INFO, tmp);
         PrintVariables(ctx, n);
@@ -282,9 +287,9 @@ void ServerScriptEngine::PrintVariables(asIScriptContext *ctx, int stackLevel) {
     // Print the value of each variable, including parameters
     int numVars = ctx->GetVarCount(stackLevel);
     for (int n = 0; n < numVars; n++) {
-        // RIFGSOFRODS: Latest angelscript doesn't have `GetVar()` anymore
-        int typeId = ctx->GetVarTypeId(n, stackLevel);
-        const char* varName = ctx->GetVarName(n, stackLevel);
+        int typeId = 0;
+        const char* varName = nullptr;
+        ctx->GetVar(n, stackLevel, &varName, &typeId);
         void *varPointer = ctx->GetAddressOfVar(n, stackLevel);
         if (typeId == asTYPEID_INT32) {
             Logger::Log(LOG_INFO, " %s = %d", ctx->GetVarDeclaration(n, stackLevel), *(int *) varPointer);
