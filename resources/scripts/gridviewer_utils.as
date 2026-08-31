@@ -2,6 +2,8 @@
 /// \brief Generic scrolling & zooming UI for drawing via ImDrawList
 // ===================================================
 
+#include "math_utils.as"
+
 // By convention, all includes have filename '*_utils' and namespace matching filename.
 namespace gridviewer_utils
 {
@@ -58,6 +60,7 @@ namespace gridviewer_utils
         
         vector2 localToScreenPos(vector3 posIn)
         {
+            using namespace math_utils;
             // zoom only, without scrolling
             vector2 pos= midWindowScreenPos+vector2(posIn[hAxis], posIn[vAxis])*zoom;
             nodesMin=vector2(fmin(nodesMin.x, pos.x), fmin(nodesMin.y, pos.y));
@@ -72,6 +75,7 @@ namespace gridviewer_utils
         
         vector3 screenToLocalPos(vector2 screenPosIn)
         {
+            using namespace math_utils;
             vector2 localXY = (screenPosIn -midWindowScreenPos)/zoom;
             // add scrolling
             localXY -= vector2(
@@ -118,21 +122,8 @@ namespace gridviewer_utils
             ImGui::EndChild();
         }
         
-        // HELPERS:
         
-    private float fmax(float a, float b) { return a>b?a:b; }
         
-    private float fmin(float a, float b) { return a<b?a:b; }
-        
-        private void setAxisVal(vector3&inout vec, int axis, float val)
-        {
-            switch(axis) {
-                case 0: vec.x=val; break;
-                case 1: vec.y=val; break;
-                case 2: vec.z=val; break;
-                default: break;
-            }
-        }
     }
     
 } // namespace gridviewer_utils

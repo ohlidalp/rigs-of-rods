@@ -1,6 +1,7 @@
 /// \title Example pedestrian NPCs (characters following path network)
 /// based on OGRE example - character posing (skeletal animations)
 
+#include "math_utils.as"
 
 // Window [X] button handler
 #include "imgui_utils.as"
@@ -144,7 +145,6 @@ void drawPathEditor()
     
     gVertsViewer.end();
     
-    
 }
 
 //#endregion
@@ -280,7 +280,7 @@ vector2 drawWaypointSelectionUI(vector2 controlsCursor)
 // copypasted from "imgui - node higlight" demo
 void drawWaypointHighlights()
 {
-    
+    using namespace math_utils;
     int mouseClosestNodeID = -1;
     
     int mouseClosestNodeDist = 999999;
@@ -339,40 +339,6 @@ void drawWaypointHighlights()
 
 // #endregion
 
-// #region HELPERS
-
-// shamelessly copypasted from 'road_editor.as', line 803
-int getMouseShortestDistance(vector2 mouse, vector2 target)
-{
-    int dx = iabs(int(mouse.x) - int(target.x));
-    int dy = iabs(int(mouse.y) - int(target.y));
-    return imax(dx, dy);
-}
-
-int imin(int a, int b)
-{
-    return (a < b) ? a : b;
-}
-
-int imax(int a, int b)
-{
-    return (a > b) ? a : b;
-}
-
-int iabs(int a)
-{
-    return (a < 0) ? -a : a;
-}
-
-// from demo_script.as
-string formatVector3(vector3 val, int total, int frac)
-{
-    return "X:" + formatFloat(val.x, "", total, frac)
-    + " Y:" + formatFloat(val.y, "", total, frac)
-    + " Z:" + formatFloat(val.z, "", total, frac);
-}
-
-// #endregion
 
 
 
@@ -502,6 +468,7 @@ class NpcCharacter
     
     void draw()
     {
+using namespace math_utils;
         ImGui::PushID(this.uniqueName);
         vector3 pos1 = npcWaypoints[this.currentWp1].position;
         vector3 pos2 = npcWaypoints[this.currentWp2].position;
