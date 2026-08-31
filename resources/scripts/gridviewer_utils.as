@@ -22,6 +22,7 @@ namespace gridviewer_utils
         vector2 controlsBoxPadding = vector2(4,4);
         int gridSizeMin = 100;
         int gridSizeMax = 10000;
+        float mouseWheelToZoomRatio = 0.0001;
         
         // STATE:
         float zoom = 1.f;
@@ -44,6 +45,7 @@ namespace gridviewer_utils
             midWindowScreenPos = ImGui::GetWindowPos()+ contentRegionSize/2;
             nodesMin=vector2(FLT_MAX, FLT_MAX);
             nodesMax=vector2(-999999, -999999);
+            this.updateMouseWheelZoom();
             drawingControlsStarted=false;
         }
         
@@ -122,6 +124,18 @@ namespace gridviewer_utils
             ImGui::EndChild();
         }
         
+        // #region Mouse controls
+        void updateMouseWheelZoom()
+        {
+            // zooming with mouse when Ctrl is pressed
+            if (inputs.isKeyDown(KC_LCTRL) || inputs.isKeyDown(KC_RCTRL))
+            {
+                float deltaZoom = float(inputs.getMouseWheelMotion()) *this.mouseWheelToZoomRatio;
+                this.zoom += deltaZoom;
+                this.zoom = math_utils::fclamp(this.zoom, this.zoomMin, this.zoomMax);
+            }
+        }
+        //#endregion
         
         
     }
