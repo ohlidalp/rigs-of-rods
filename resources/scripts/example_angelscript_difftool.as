@@ -33,7 +33,7 @@ void frameStep(float dt)
 
 //#endregion (game glue)
 
-//#region Data + preprocessing
+//#region Test data
 
 
 
@@ -79,6 +79,10 @@ if (ImGui::Begin("Diff test", closeBtnHandler.windowOpen, 0))
     ImGui::End();
 }
 """;
+
+//#endregion
+
+//#region Data preprocessing
 
 array<string> splitLines(const string &in text)
 {
@@ -277,7 +281,10 @@ void drawDiff(const array<DiffLine> &in diff)
         if (d.type != Added)
         ImGui::Text("" + lineA);
         else
-        ImGui::Text(" ");
+        {
+            vector2 digitSize = ImGui::CalcTextSize(""+lineA);
+            ImGui::Dummy(digitSize);
+        }
         
         ImGui::PopStyleColor();
         ImGui::SameLine(0, 8);
@@ -292,7 +299,10 @@ void drawDiff(const array<DiffLine> &in diff)
         if (d.type != Removed)
         ImGui::Text("" + lineB);
         else
-        ImGui::Text(" ");
+        {
+            vector2 digitSize = ImGui::CalcTextSize(""+lineB);
+            ImGui::Dummy(digitSize);
+        }
         
         ImGui::PopStyleColor();
         ImGui::EndGroup();
