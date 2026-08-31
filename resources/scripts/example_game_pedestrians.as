@@ -82,7 +82,7 @@ void addPathBetweenSelected()
 gridviewer_utils::GridViewer gVertsViewer;
 
 // waypoint display conf
-float gBottomBarHeight = 80;
+float gBottomBarHeight = 0;
 // surveymap texture
 Ogre::TexturePtr gTex;
 color gColorViewerImageTint(1,1,1,1); // white
@@ -106,7 +106,7 @@ void setupPathEditor()
 void drawPathEditor()
 {
     vector2 windowSize = ImGui::GetWindowContentRegionMax() - ImGui::GetWindowContentRegionMin();    
-    float spaceUnderViewer = 50;
+    float spaceUnderViewer = 0;
     vector2 viewerSize = vector2(windowSize.x , windowSize.y - (gBottomBarHeight+spaceUnderViewer));
     
     gVertsViewer.begin(viewerSize);
@@ -131,15 +131,20 @@ void drawPathEditor()
     
     updateWaypointMouseControls();
     
-    gVertsViewer.end();
+    vector2 controlsCursor = gVertsViewer.endGridBeginControls();
     
-    ImGui::TextColored( cfgNodeColor, "Total waypoints: "+npcWaypoints.length() + " (use right mouse button to create)");
-    drawWaypointSelectionUI();
+    controlsCursor = drawWaypointSelectionUI(controlsCursor);
     
+    // Walker management
+    ImGui::SetCursorPos(controlsCursor);
     if (ImGui::SmallButton("release a walker!"))
     {
         releaseWalker();
     }
+    
+    gVertsViewer.end();
+    
+    
 }
 
 //#endregion
@@ -203,8 +208,17 @@ void updateWaypointMouseControls()
     }
 }
 
-void drawWaypointSelectionUI()
+vector2 drawWaypointSelectionUI(vector2 controlsCursor)
 {
+    // First line
+    ImGui::SetCursorPos(controlsCursor);
+    
+    ImGui::TextColored( cfgNodeColor, "Total waypoints: "+npcWaypoints.length() + " (use right mouse button to create)");
+    
+    // Next line
+    controlsCursor.y += ImGui::GetTextLineHeightWithSpacing();
+    ImGui::SetCursorPos(controlsCursor);
+    
     int totalSelected = 0;
     string strSelected = "";
     string strJoiner = "";
@@ -217,10 +231,11 @@ void drawWaypointSelectionUI()
             totalSelected++;
         }
     }
-    ImGui::TextDisabled("Selected waypoints (" + totalSelected + ")" + mouseHoverDebugString);
+    ImGui::TextDisabled("Selected waypoints (" + totalSelected + ")"); // + mouseHoverDebugString);
     lastNumSelected = totalSelected; // for editing checks
-    ImGui::Text(strSelected);
-    if (ImGui::Button("Select all"))
+    //   ImGui::Text(strSelected);
+    ImGui::SameLine();
+    if (ImGui::SmallButton("Select all"))
     {
         for (uint i=0; i < npcWaypoints.length(); i++)
         {
@@ -228,7 +243,7 @@ void drawWaypointSelectionUI()
         }
     }
     ImGui::SameLine();
-    if (ImGui::Button("UnSelect all"))
+    if (ImGui::SmallButton("UnSelect all"))
     {
         for (uint i=0; i < npcWaypoints.length(); i++)
         {
@@ -236,13 +251,17 @@ void drawWaypointSelectionUI()
         }
     }
     ImGui::SameLine();
-    if (ImGui::Button("Flip selection"))
+    if (ImGui::SmallButton("Flip selection"))
     {
         for (uint i=0; i < npcWaypoints.length(); i++)
         {
             npcWaypoints[i].selected = !npcWaypoints[i].selected;
         }
     }
+    
+    // Next line
+    controlsCursor.y += ImGui::GetTextLineHeightWithSpacing();
+    ImGui::SetCursorPos(controlsCursor);
     
     // Path editing buttons
     ImGui::TextColored(cfgPathColor, "Path tools (total paths: "+int(npcPaths.length())+")");
@@ -251,6 +270,10 @@ void drawWaypointSelectionUI()
     {
         addPathBetweenSelected();
     }    
+    
+    // Next line
+    controlsCursor.y += ImGui::GetTextLineHeightWithSpacing();
+    return controlsCursor;
 }
 
 
@@ -398,7 +421,7 @@ class NpcCharacter
     {
         // we have wp1 and want to select new wp2, preferably a different one than we came from
         int usableWp = -1;
-     game.log("DBG findRoute() currentWp1="+this.currentWp1+", previousWp1="+previousWp1);
+        game.log("DBG findRoute() currentWp1="+this.currentWp1+", previousWp1="+previousWp1);
         for (int i = 0; i<int(npcPaths.length()); i++)
         {
             game.log("DBG findRoute() i="+i+" Wp1="+npcPaths[i].wp1+", Wp2="+npcPaths[i].wp2);
@@ -415,7 +438,7 @@ class NpcCharacter
             if (testWp != -1)
             {
                 usableWp = testWp;
- game.log("DBG findRoute() found usable wp="+usableWp);
+                game.log("DBG findRoute() found usable wp="+usableWp);
                 if (previousWp1 !=  testWp)
                 {
                     this.currentWp2 =  testWp;
@@ -437,7 +460,7 @@ class NpcCharacter
         {
             // skip to new path
             newDist = newDist - totalDist;
-int prevWp1 = this.currentWp1;
+            int prevWp1 = this.currentWp1;
             this.currentWp1 = this.currentWp2;
             this.findRoute(prevWp1);
             totalDist = npcWaypoints[this.currentWp1].position.distance(npcWaypoints[this.currentWp2].position);
@@ -449,16 +472,16 @@ int prevWp1 = this.currentWp1;
         vector3 pos2 = npcWaypoints[this.currentWp2].position;
         TerrainClass@ terrain = game.getTerrain();
         
-vector3 walkVec = (pos2-pos1);
+        vector3 walkVec = (pos2-pos1);
         vector3 charaPos = pos1 + walkVec*pctDist;
         charaPos.y = terrain.getHeightAt(charaPos.x, charaPos.z);
         snode.setPosition(charaPos);
         this.currentPos = charaPos;
         
         // update character rotation
-
+        
         snode.lookAt(pos2, Ogre::TS_WORLD);
-snode.yaw(radian(degree(90).valueRadians()), Ogre::TS_WORLD);
+        snode.yaw(radian(degree(90).valueRadians()), Ogre::TS_WORLD);
         
         // update character walking animation
         
@@ -482,8 +505,8 @@ snode.yaw(radian(degree(90).valueRadians()), Ogre::TS_WORLD);
         ImGui::PushID(this.uniqueName);
         vector3 pos1 = npcWaypoints[this.currentWp1].position;
         vector3 pos2 = npcWaypoints[this.currentWp2].position;
-vector3 walkVec = (pos2-pos1);
-         ImGui::Text("DBG rot str: " + this.dbgRotStr+ " walkVec="+formatVector3(walkVec, 7, 2));
+        vector3 walkVec = (pos2-pos1);
+        ImGui::Text("DBG rot str: " + this.dbgRotStr+ " walkVec="+formatVector3(walkVec, 7, 2));
         ImGui::Text("DBG position:"+formatVector3(this.currentPos, 7, 2));
         ImGui::Text("DBG error: " + this.error);
         ImGui::Text("DBG wp1= " + this.currentWp1 + ", wp2="+this.currentWp2);
@@ -602,6 +625,7 @@ vector3 walkVec = (pos2-pos1);
         
     }
 };
+// #region Walker management
 array<NpcCharacter@> npcCharacters;
 void releaseWalker()
 {
@@ -645,6 +669,18 @@ void releaseWalker()
     }
 }
 
+void killWalker(int iKill)
+{
+    if (iKill < 0 || iKill >= int( npcCharacters.length()))
+    {
+        gErrorStr = "cannot delete npcCahcarcter "+iKill+", count is "+npcCharacters.length();
+        return;
+    }
+    npcCharacters[iKill].removeFromScene();
+    npcCharacters.removeAt(iKill);
+    
+}
+
 void advanceWalkers(float dt)
 {
     // advance the NPC characters
@@ -663,10 +699,10 @@ void advanceWalkers(float dt)
     }
     if (iKill != -1)
     {
-        npcCharacters[iKill].removeFromScene();
-        npcCharacters.removeAt(iKill);
+        killWalker(iKill);
     }
 }
+//#endregion
 
 // #region Game callbacks
 
