@@ -33,7 +33,7 @@
 #include "HydraxWater.h"
 #include "Language.h"
 #include "ScriptEngine.h"
-#include "ShadowManager.h"
+#include "RTSSManager.h"
 #include "SkyManager.h"
 #include "SkyXManager.h"
 #include "TerrainGeometryManager.h"
@@ -54,7 +54,7 @@ RoR::Terrain::Terrain(CacheEntryPtr entry, Terrn2DocumentPtr def)
     : m_collisions(0)
     , m_geometry_manager(0)
     , m_object_manager(0)
-    , m_shadow_manager(0)
+    , m_rtss_manager(0)
     , m_sky_manager(0)
     , SkyX_manager(0)
     , m_main_light(0)
@@ -121,10 +121,10 @@ void RoR::Terrain::dispose()
         m_geometry_manager = nullptr;
     }
 
-    if (m_shadow_manager != nullptr)
+    if (m_rtss_manager != nullptr)
     {
-        delete(m_shadow_manager);
-        m_shadow_manager = nullptr;
+        delete(m_rtss_manager);
+        m_rtss_manager = nullptr;
     }
 
     if (m_collisions != nullptr)
@@ -152,14 +152,14 @@ bool RoR::Terrain::initialize()
 
     this->setGravity(this->m_def->gravity);
 
-    loading_window->SetProgress(10, _L("Initializing Object Subsystem"));
-    this->initObjects(); // *.odef files
-
-    loading_window->SetProgress(14, _L("Initializing Shadow Subsystem"));
-    this->initShadows();
+    loading_window->SetProgress(15, _L("Initializing RTSS Subsystem"));
+    this->initRTSS();
 
     loading_window->SetProgress(17, _L("Initializing Geometry Subsystem"));
     this->m_geometry_manager = new TerrainGeometryManager(this);
+
+    loading_window->SetProgress(19, _L("Initializing Object Subsystem"));
+    this->initObjects(); // *.odef files
 
     loading_window->SetProgress(23, _L("Initializing Camera Subsystem"));
     this->initCamera();
@@ -416,10 +416,10 @@ void RoR::Terrain::initWater()
     }
 }
 
-void RoR::Terrain::initShadows()
+void RoR::Terrain::initRTSS()
 {
-    m_shadow_manager = new ShadowManager();
-    m_shadow_manager->setupShadows();
+    m_rtss_manager = new RTSSManager();
+    m_rtss_manager->SetupRTSS();
 }
 
 void RoR::Terrain::loadTerrainObjects()

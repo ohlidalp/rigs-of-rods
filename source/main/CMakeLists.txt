@@ -36,7 +36,7 @@ set(SOURCE_FILES
         gfx/HydraxWater.{h,cpp}
         gfx/IGfxWater.h
         gfx/MovableText.{h,cpp}
-        gfx/ShadowManager.{h,cpp}
+        gfx/RTSSManager.{h,cpp}
         gfx/SimBuffers.{h,cpp}
         gfx/Skidmark.{h,cpp}
         gfx/SkyManager.{h,cpp}
@@ -196,7 +196,6 @@ set(SOURCE_FILES
         system/Console.{h,cpp}
         system/ConsoleCmd.{h,cpp}
         system/CVar.{h,cpp}
-        terrain/OgreTerrainPSSMMaterialGenerator.{h,cpp}
         terrain/ProceduralManager.{h,cpp}
         terrain/ProceduralRoad.{h,cpp}
         terrain/SurveyMapEntity.h

@@ -22,10 +22,6 @@
 #include "ContentManager.h"
 
 
-#include <Overlay/OgreOverlayManager.h>
-#include <Overlay/OgreOverlay.h>
-
-
 #include "Application.h"
 #include "ErrorUtils.h"
 #include "SoundScriptManager.h"
@@ -49,12 +45,15 @@
 
 #include "Utils.h"
 
-#include <OgreFileSystem.h>
+#include <Ogre.h>
+#include <OgreMeshLodGenerator.h>
+#include <Overlay/OgreOverlayManager.h>
+#include <Overlay/OgreOverlay.h>
+#include <RTShaderSystem/OgreRTShaderSystem.h>
 #include <regex>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <sstream>
-#include <OgreMeshLodGenerator.h>
 
 using namespace Ogre;
 using namespace RoR;

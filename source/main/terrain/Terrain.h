@@ -81,7 +81,7 @@ public:
     HydraxWater*            getHydraxManager()            { return m_hydrax_water; }
     SkyManager*             getSkyManager();
     SkyXManager*            getSkyXManager()              { return SkyX_manager; }
-    ShadowManager*          getShadowManager()            { return m_shadow_manager; }
+    RTSSManager*            getRTSSManager()              { return m_rtss_manager; }
     TerrainEditor*          GetTerrainEditor()            { return &m_terrain_editor; }
     Collisions*             GetCollisions()               { return m_collisions; }
     Wavefield*              getWater()                    { return m_wavefield.get(); }
@@ -120,8 +120,8 @@ private:
     void initLight();
     void initObjects();
     void initScripting();
+    void initRTSS();
     void initAiPresets();
-    void initShadows();
     void initSkySubSystem();
     void initVegetation();
     void initWater();
@@ -137,7 +137,7 @@ private:
     std::unique_ptr<Wavefield> m_wavefield;
     TerrainEditor           m_terrain_editor;
     Collisions*             m_collisions = nullptr;
-    ShadowManager*          m_shadow_manager = nullptr;
+    RTSSManager*            m_rtss_manager;
     SkyManager*             m_sky_manager = nullptr;
     SkyXManager*            SkyX_manager = nullptr;
     HydraxWater*            m_hydrax_water = nullptr;
