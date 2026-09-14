@@ -29,7 +29,6 @@ MAIN_PARAMETERS
     IN(vec3 viewDirection, TEXCOORD1)
     IN(vec3 normal, TEXCOORD2)
     IN(vec4 incol, COLOR) // Not used with MM_NOCOLOR
-    OUT(vec4 oColor, 0)
 MAIN_DECLARATION
 {
     vec3 N = normalize(normal);
@@ -43,8 +42,6 @@ MAIN_DECLARATION
     vec4 emissiveColor = texture2D(Specular_Map, uv);
 #endif
 
-   //oColor = reflectedColor*emissiveColor;
-   // OHL DBG
-   oColor.xyz = normal;
-    oColor.a=1;
+    gl_FragColor = reflectedColor*emissiveColor;
+    gl_FragColor.a=1;
 }       

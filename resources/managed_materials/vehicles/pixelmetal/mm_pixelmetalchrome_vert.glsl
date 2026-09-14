@@ -16,7 +16,7 @@ OGRE_NATIVE_GLSL_VERSION_DIRECTIVE
 
 OGRE_UNIFORMS(
     uniform mat4 worldViewProj;
-    uniform mat3 world;
+    uniform mat4 world;
     uniform vec3 camPosition;
 )
 
@@ -35,6 +35,8 @@ MAIN_DECLARATION
     oUv=uv;
 	oCols=cols;
     gl_Position = mul(worldViewProj, position);
-    oNormal = mul(world, normal);
-    oViewDirection = mul(world, position.xyz - camPosition);
+    // 'world' is the 4x4 world_matrix, so transform as directions (w=0) to drop translation,
+    // matching the original Cg's mul((float3x3)world, ...).
+    oNormal = mul(world, vec4(normal, 0.0)).xyz;
+    oViewDirection = mul(world, vec4(position.xyz - camPosition, 0.0)).xyz;
 }
