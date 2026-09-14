@@ -79,6 +79,7 @@ bool SurveyMapTextureCreator::init(int res, int fsaa)
     mCamera_snode->setDirection(-Vector3::UNIT_Y);
 
     auto mViewport = mRttTex->addViewport(mCamera);
+    mViewport->setMaterialScheme(Ogre::MSN_SHADERGEN);
     mViewport->setBackgroundColour(ColourValue::Black);
     mViewport->setOverlaysEnabled(false);
     mViewport->setShadowsEnabled(false);

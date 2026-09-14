@@ -178,6 +178,7 @@ void GfxWater::PrepareWater()
                 m_refract_cam_snode->attachObject(m_refract_cam);
 
                 m_refract_rtt_viewport = m_refract_rtt_target->addViewport(m_refract_cam);
+                m_refract_rtt_viewport->setMaterialScheme(Ogre::MSN_SHADERGEN);
                 m_refract_rtt_viewport->setClearEveryFrame(true);
                 m_refract_rtt_viewport->setBackgroundColour(App::GetGfxScene()->GetSceneManager()->getFogColour());
 
@@ -214,6 +215,7 @@ void GfxWater::PrepareWater()
             m_reflect_cam_snode->attachObject(m_reflect_cam);
 
             m_reflect_rtt_viewport = m_reflect_rtt_target->addViewport(m_reflect_cam);
+            m_reflect_rtt_viewport->setMaterialScheme(Ogre::MSN_SHADERGEN);
             m_reflect_rtt_viewport->setClearEveryFrame(true);
             m_reflect_rtt_viewport->setBackgroundColour(App::GetGfxScene()->GetSceneManager()->getFogColour());
 

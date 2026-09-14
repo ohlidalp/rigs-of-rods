@@ -55,6 +55,10 @@ void RoR::GfxEnvmap::SetupEnvMap()
         m_cameras[face]->setFarClipDistance(App::GetCameraManager()->GetCamera()->getFarClipDistance());
 
         Ogre::Viewport* v = m_render_targets[face]->addViewport(m_cameras[face]);
+        // RTSS only generates shaders for its own scheme, and D3D9 (having a fixed
+        // pipeline) defaults viewports to the Default one, where those techniques do not
+        // exist - the render target then comes out empty.
+        v->setMaterialScheme(Ogre::MSN_SHADERGEN);
         v->setOverlaysEnabled(false);
         v->setClearEveryFrame(true);
         v->setBackgroundColour(App::GetCameraManager()->GetCamera()->getViewport()->getBackgroundColour());
