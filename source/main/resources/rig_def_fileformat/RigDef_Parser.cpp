@@ -3256,7 +3256,8 @@ WingControlSurface Parser::GetArgWingSurface(int index)
             return WingControlSurface(c);
 
         default:
-            fmt::format("invalid WingControlSurface '{}', falling back to 'n' (none)", c);
+            this->LogMessage(Console::CONSOLE_SYSTEM_WARNING,
+                fmt::format("invalid WingControlSurface '{}', falling back to 'n' (none)", c));
             return WingControlSurface::n_NONE;
     }
 }
