@@ -58,6 +58,10 @@ private:
     int m_specular_sampler = -1;
     int m_env_sampler = -1;
     bool m_transparent = false;
+    /// Whether the mesh actually carries the per-node flags. Only flexbodies get a
+    /// VES_DIFFUSE buffer; ordinary meshes have none, and reading a COLOR0 input that the
+    /// vertex declaration lacks is a hard error on some render systems.
+    bool m_is_flexbody = true;
     /// Produce only the blended surface colour, leaving lighting to another sub render
     /// state - used to feed the damage blend into the physically based pipeline.
     bool m_surface_only = false;

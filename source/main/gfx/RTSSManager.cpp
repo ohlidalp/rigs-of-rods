@@ -89,7 +89,7 @@ void RTSSManager::EnableRTSS(const MaterialPtr& mat)
     mShaderGenerator->createShaderBasedTechnique(*mat, Ogre::MaterialManager::DEFAULT_SCHEME_NAME, Ogre::RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME);
 }
 
-void RTSSManager::ApplyActorShading(const MaterialPtr& mat, bool transparent)
+void RTSSManager::ApplyActorShading(const MaterialPtr& mat, bool transparent, bool is_flexbody)
 {
     Pass* pass = mat->getTechnique("BaseTechnique")->getPass("BaseRender");
 
@@ -117,17 +117,17 @@ void RTSSManager::ApplyActorShading(const MaterialPtr& mat, bool transparent)
 
     if (has_specular && App::gfx_actor_shading->getEnum<GfxActorShading>() == GfxActorShading::PBR)
     {
-        this->ApplyPbrShading(render_state, pass);
+        this->ApplyPbrShading(render_state, pass, is_flexbody);
     }
     else
     {
-        this->ApplyClassicShading(render_state, pass, transparent);
+        this->ApplyClassicShading(render_state, pass, transparent, is_flexbody);
     }
 
     Ogre::RTShader::ShaderGenerator::getSingleton().invalidateMaterial(Ogre::MSN_SHADERGEN, *mat);
 }
 
-void RTSSManager::ApplyClassicShading(Ogre::RTShader::RenderState* render_state, Pass* pass, bool transparent)
+void RTSSManager::ApplyClassicShading(Ogre::RTShader::RenderState* render_state, Pass* pass, bool transparent, bool is_flexbody)
 {
     // The sub render state samples these itself, so keep FFPTexturing off them. This is
     // also what keeps the vertex colour out of the lighting stage: it carries damage and
@@ -139,10 +139,11 @@ void RTSSManager::ApplyClassicShading(Ogre::RTShader::RenderState* render_state,
 
     auto* srs = Ogre::RTShader::ShaderGenerator::getSingleton().createSubRenderState(NiceMetalSubRenderState::Type);
     srs->setParameter("transparent", transparent ? "true" : "false");
+    srs->setParameter("is_flexbody", is_flexbody ? "true" : "false");
     render_state->addTemplateSubRenderState(srs);
 }
 
-void RTSSManager::ApplyPbrShading(Ogre::RTShader::RenderState* render_state, Pass* pass)
+void RTSSManager::ApplyPbrShading(Ogre::RTShader::RenderState* render_state, Pass* pass, bool is_flexbody)
 {
     // NOTE: CookTorrance reads roughness from the green channel and metalness from the
     // blue one, whereas a legacy specular map is a single reflectivity mask. Feeding it
@@ -161,6 +162,7 @@ void RTSSManager::ApplyPbrShading(Ogre::RTShader::RenderState* render_state, Pas
     // survive; Cook-Torrance then treats its result as the base colour.
     auto* surface = shader_gen->createSubRenderState(NiceMetalSubRenderState::Type);
     surface->setParameter("surface_only", "true");
+    surface->setParameter("is_flexbody", is_flexbody ? "true" : "false");
     render_state->addTemplateSubRenderState(surface);
 
     auto* cook_torrance = shader_gen->createSubRenderState(Ogre::RTShader::SRS_COOK_TORRANCE_LIGHTING);

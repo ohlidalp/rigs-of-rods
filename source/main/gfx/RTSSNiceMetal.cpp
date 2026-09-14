@@ -36,7 +36,7 @@ using namespace RoR;
 
 // Varyings private to this effect; the reserved custom range avoids clashing
 // with anything the stock sub render states allocate.
-static const int NICEMETAL_VERTEX_FLAGS  = Parameter::SPC_CUSTOM_CONTENT_BEGIN + 1;
+static const int NICEMETAL_is_flexbody  = Parameter::SPC_CUSTOM_CONTENT_BEGIN + 1;
 static const int NICEMETAL_WORLD_NORMAL  = Parameter::SPC_CUSTOM_CONTENT_BEGIN + 2;
 static const int NICEMETAL_WORLD_EYE_DIR = Parameter::SPC_CUSTOM_CONTENT_BEGIN + 3;
 
@@ -51,6 +51,7 @@ void NiceMetalSubRenderState::copyFrom(const SubRenderState& rhs)
 
     m_env_map_name = other.m_env_map_name;
     m_transparent = other.m_transparent;
+    m_is_flexbody = other.m_is_flexbody;
     m_surface_only = other.m_surface_only;
 }
 
@@ -64,6 +65,10 @@ bool NiceMetalSubRenderState::setParameter(const String& name, const String& val
     else if (name == "transparent")
     {
         return StringConverter::parse(value, m_transparent);
+    }
+    else if (name == "is_flexbody")
+    {
+        return StringConverter::parse(value, m_is_flexbody);
     }
     else if (name == "surface_only")
     {
@@ -125,16 +130,32 @@ bool NiceMetalSubRenderState::createCpuSubPrograms(ProgramSet* programSet)
     // --- vertex colour ---------------------------------------------------------
     // Deliberately forwarded on a private varying: these are simulation flags, so
     // they must not reach the lighting stage the way tracked vertex colour would.
-    auto vsInVertexFlags = vsMain->resolveInputParameter(Parameter::SPC_COLOR_DIFFUSE, GCT_FLOAT4);
-    auto vsOutVertexFlags = vsMain->resolveOutputParameter(NICEMETAL_VERTEX_FLAGS, GCT_FLOAT4);
-    auto psInVertexFlags = psMain->resolveInputParameter(vsOutVertexFlags);
+    // Meshes without a VES_DIFFUSE buffer get a zero constant instead. The formulas then
+    // collapse to the undamaged, dry case, which is what the legacy 'simplemetal' variants
+    // did for non-flexbody meshes. Declaring a COLOR0 input the vertex declaration lacks is
+    // a hard error on some render systems, so this is not merely cosmetic.
+    ParameterPtr psInVertexFlags;
+    ParameterPtr vsInVertexFlags, vsOutVertexFlags;
+    if (m_is_flexbody)
+    {
+        vsInVertexFlags = vsMain->resolveInputParameter(Parameter::SPC_COLOR_DIFFUSE, GCT_FLOAT4);
+        vsOutVertexFlags = vsMain->resolveOutputParameter(NICEMETAL_is_flexbody, GCT_FLOAT4);
+        psInVertexFlags = psMain->resolveInputParameter(vsOutVertexFlags);
+    }
+    else
+    {
+        psInVertexFlags = psMain->resolveLocalParameter(GCT_FLOAT4, "nicemetalNoFlags");
+    }
 
     auto vstage = vsMain->getStage(FFP_VS_TEXTURING);
     if (vsInTexcoord)
     {
         vstage.assign(vsInTexcoord, vsOutTexcoord);
     }
-    vstage.assign(vsInVertexFlags, vsOutVertexFlags);
+    if (m_is_flexbody)
+    {
+        vstage.assign(vsInVertexFlags, vsOutVertexFlags);
+    }
 
     // --- world space normal and eye direction, for the reflection --------------
     ParameterPtr psInWorldNormal, psInWorldEyeDir;
@@ -168,6 +189,11 @@ bool NiceMetalSubRenderState::createCpuSubPrograms(ProgramSet* programSet)
     auto surface = psMain->resolveLocalParameter(GCT_FLOAT4, "nicemetalSurface");
 
     auto fstage = psMain->getStage(FFP_PS_TEXTURING + 10);
+
+    if (!m_is_flexbody)
+    {
+        fstage.assign(Vector4::ZERO, psInVertexFlags);
+    }
 
     fstage.sampleTexture(diffuseSampler, psInTexcoord, diffuseSample);
 

@@ -2660,7 +2660,11 @@ void ActorSpawner::ProcessManagedMaterial(RigDef::ManagedMaterial & def)
         const bool transparent
             = def.type == RigDef::ManagedMaterialType::FLEXMESH_TRANSPARENT
             || def.type == RigDef::ManagedMaterialType::MESH_TRANSPARENT;
-        App::GetGameContext()->GetTerrain()->getRTSSManager()->ApplyActorShading(material, transparent);
+        // Only flexbodies get a VES_DIFFUSE buffer carrying the per-node damage/wetness flags.
+        const bool is_flexbody
+            = def.type == RigDef::ManagedMaterialType::FLEXMESH_STANDARD
+            || def.type == RigDef::ManagedMaterialType::FLEXMESH_TRANSPARENT;
+        App::GetGameContext()->GetTerrain()->getRTSSManager()->ApplyActorShading(material, transparent, is_flexbody);
     }
 
     material->compile();

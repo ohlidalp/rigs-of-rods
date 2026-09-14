@@ -50,14 +50,16 @@ public:
     /// Attaches the vehicle surface shading selected by `App::gfx_actor_shading` to a
     /// spawned managed material. Must be called after the spawner has assigned the
     /// textures, because the chosen shading depends on which texture units are present.
-    void ApplyActorShading(const Ogre::MaterialPtr& mat, bool transparent);
+    /// `is_flexbody` says whether the mesh carries the per-node damage/wetness colours;
+    /// only flexbodies do.
+    void ApplyActorShading(const Ogre::MaterialPtr& mat, bool transparent, bool is_flexbody);
 
     Ogre::PSSMShadowCameraSetup* pssmSetup{nullptr};
 
 private:
 
-    void ApplyClassicShading(Ogre::RTShader::RenderState* render_state, Ogre::Pass* pass, bool transparent);
-    void ApplyPbrShading(Ogre::RTShader::RenderState* render_state, Ogre::Pass* pass);
+    void ApplyClassicShading(Ogre::RTShader::RenderState* render_state, Ogre::Pass* pass, bool transparent, bool is_flexbody);
+    void ApplyPbrShading(Ogre::RTShader::RenderState* render_state, Ogre::Pass* pass, bool is_flexbody);
 };
 
 /// @} // addtogroup Gfx
