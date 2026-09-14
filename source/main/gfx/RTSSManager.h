@@ -30,6 +30,8 @@
 
 #include "Application.h"
 
+namespace Ogre { namespace RTShader { class RenderState; } }
+
 namespace RoR {
 
 /// @addtogroup Gfx
@@ -54,8 +56,8 @@ public:
 
 private:
 
-    void ApplyClassicShading(const Ogre::MaterialPtr& mat, Ogre::Pass* pass, bool transparent);
-    void ApplyPbrShading(const Ogre::MaterialPtr& mat, Ogre::Pass* pass);
+    void ApplyClassicShading(Ogre::RTShader::RenderState* render_state, Ogre::Pass* pass, bool transparent);
+    void ApplyPbrShading(Ogre::RTShader::RenderState* render_state, Ogre::Pass* pass);
 };
 
 /// @} // addtogroup Gfx
