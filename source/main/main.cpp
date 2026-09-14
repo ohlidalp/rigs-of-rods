@@ -2297,10 +2297,18 @@ int main(int argc, char *argv[])
             }
             else
             {
+                try
+                {
                 App::GetAppContext()->GetOgreRoot()->renderOneFrame();
                 if (!render_window->isActive() && render_window->isVisible())
                 {
                     render_window->update(); // update even when in background !
+                }
+                }
+                catch (...)
+                {
+                    HandleGenericException("Main: rendering a frame");
+                    App::GetGameContext()->PushMessage(Message(MSG_APP_SHUTDOWN_REQUESTED));
                 }
             } // Render block
 

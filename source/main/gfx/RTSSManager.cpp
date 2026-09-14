@@ -55,6 +55,16 @@ RTSSManager::~RTSSManager()
 
 void RTSSManager::SetupRTSS()
 {
+    // RTSS sizes its light arrays from the number of lights in the frustum, which is
+    // unbounded - one vehicle's flares alone push it past 70. OGRE never binds more than
+    // OGRE_MAX_SIMULTANEOUS_LIGHTS to a pass, so everything above that is dead weight, and
+    // on D3D9 the oversized arrays overrun the ps_3_0 constant register budget and the
+    // shader fails to assemble.
+    auto* scheme_render_state = Ogre::RTShader::ShaderGenerator::getSingleton()
+        .getRenderState(Ogre::MSN_SHADERGEN);
+    scheme_render_state->setLightCountAutoUpdate(false);
+    scheme_render_state->setLightCount(OGRE_MAX_SIMULTANEOUS_LIGHTS);
+
     // RTSS PSSM3
     if (App::gfx_shadow_type->getEnum<GfxShadowType>() == GfxShadowType::PSSM)
     {
