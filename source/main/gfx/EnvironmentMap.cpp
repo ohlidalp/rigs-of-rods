@@ -241,7 +241,15 @@ void RoR::GfxEnvmap::UpdateEnvMap(Ogre::Vector3 center, GfxActor* gfx_actor, boo
             App::GetGameContext()->GetTerrain()->getSkyManager()->NotifySkyCameraChanged(m_cameras[m_update_round]);
         }
 #endif // USE_CAELUM
-        m_render_targets[m_update_round]->update();
+        try
+        {
+            m_render_targets[m_update_round]->update();
+        }
+        catch (Ogre::Exception& e)
+        {
+            App::gfx_envmap_enabled->setVal(false);
+            HandleGenericException("UpdateEnvMap()");
+        }
         m_update_round = (m_update_round + 1) % NUM_FACES;
     }
 #ifdef USE_CAELUM
