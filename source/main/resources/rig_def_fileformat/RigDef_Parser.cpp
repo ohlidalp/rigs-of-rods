@@ -3535,7 +3535,8 @@ EngineType Parser::GetArgEngineType(int index)
             return EngineType(c);
 
         default:
-            fmt::format("invalid EngineType '{}', falling back to 't' (truck)", c);
+            this->LogMessage(Console::CONSOLE_SYSTEM_WARNING,
+                fmt::format("invalid EngineType '{}', falling back to 't' (truck)", c));
             return EngineType::t_TRUCK;
     }
 }
