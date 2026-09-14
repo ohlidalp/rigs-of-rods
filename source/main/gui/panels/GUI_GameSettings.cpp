@@ -574,8 +574,9 @@ void GameSettings::SetVisible(bool v)
 
     if (m_combo_items_actor_shading == "")
     {
-        ImAddItemToComboboxString(m_combo_items_actor_shading, ToLocalizedString(GfxActorShading::CLASSIC));
+        ImAddItemToComboboxString(m_combo_items_actor_shading, ToLocalizedString(GfxActorShading::RTSS));
         ImAddItemToComboboxString(m_combo_items_actor_shading, ToLocalizedString(GfxActorShading::PBR));
+        ImAddItemToComboboxString(m_combo_items_actor_shading, ToLocalizedString(GfxActorShading::PIXELMETAL));
         ImTerminateComboboxString(m_combo_items_actor_shading);
     }
 

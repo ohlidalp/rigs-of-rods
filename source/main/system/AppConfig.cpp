@@ -42,8 +42,9 @@ using namespace RoR;
 const char* CONF_GFX_SHADOW_PSSM    = "Parallel-split Shadow Maps";
 const char* CONF_GFX_SHADOW_NONE    = "No shadows (fastest)";
 
-const char* CONF_ACTOR_SHADING_CLASSIC = "Classic";
-const char* CONF_ACTOR_SHADING_PBR     = "Physically based";
+const char* CONF_ACTOR_SHADING_RTSS    = "RTShaderSystem";
+const char* CONF_ACTOR_SHADING_PBR     = "PBR";
+const char* CONF_ACTOR_SHADING_PIXELMT = "PixelMetal";
 
 const char* CONF_EXTCAM_PITCHING    = "Pitching";
 const char* CONF_EXTCAM_STATIC      = "Static";
@@ -105,8 +106,9 @@ GfxShadowType ParseGfxShadowType(std::string const & s)
 
 GfxActorShading ParseGfxActorShading(std::string const & s)
 {
-    if (s == CONF_ACTOR_SHADING_PBR)  { return GfxActorShading::PBR     ; }
-    else                              { return GfxActorShading::CLASSIC ; }
+    if (s == CONF_ACTOR_SHADING_PBR)     { return GfxActorShading::PBR        ; }
+    if (s == CONF_ACTOR_SHADING_PIXELMT) { return GfxActorShading::PIXELMETAL ; }
+    else                                 { return GfxActorShading::RTSS       ; }
 }
 
 GfxExtCamMode ParseGfxExtCamMode(std::string const & s)
@@ -206,8 +208,9 @@ const char* GfxActorShadingToStr(GfxActorShading v)
 {
     switch (v)
     {
-    case GfxActorShading::PBR     : return CONF_ACTOR_SHADING_PBR;
-    case GfxActorShading::CLASSIC : return CONF_ACTOR_SHADING_CLASSIC;
+    case GfxActorShading::PBR        : return CONF_ACTOR_SHADING_PBR;
+    case GfxActorShading::PIXELMETAL : return CONF_ACTOR_SHADING_PIXELMT;
+    case GfxActorShading::RTSS       : return CONF_ACTOR_SHADING_RTSS;
     default                       : return "";
     }
 }

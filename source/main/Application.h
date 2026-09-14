@@ -372,8 +372,9 @@ std::string ToLocalizedString(GfxShadowType e);
 /// Vehicle surface shading, see `RTSSManager::ApplyActorShading()`.
 enum class GfxActorShading
 {
-    CLASSIC, //!< Legacy 'nicemetal' look: specular map as a chrome mask over cubemap reflections.
-    PBR      //!< Cook-Torrance lighting with image based lighting from the environment cubemap.
+    RTSS,      //!< Nicemetal reinterpreted as an RTSS sub render state, gaining shadows and fog.
+    PBR,       //!< Cook-Torrance lighting with image based lighting from the environment cubemap.
+    PIXELMETAL //!< Hand-written cross-platform port of 'nicemetal.cg'. The original look; bypasses RTSS.
 };
 std::string ToLocalizedString(GfxActorShading e);
 

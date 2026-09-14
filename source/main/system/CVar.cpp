@@ -205,7 +205,7 @@ void Console::cVarSetupBuiltins()
     App::gfx_flexbody_cache      = this->cVarCreate("gfx_flexbody_cache",      "Flexbody_UseCache",          CVAR_ARCHIVE | CVAR_TYPE_BOOL,    "false");
     App::gfx_reduce_shadows      = this->cVarCreate("gfx_reduce_shadows",      "Shadow optimizations",       CVAR_ARCHIVE | CVAR_TYPE_BOOL,    "true");
     App::gfx_enable_rtshaders    = this->cVarCreate("gfx_enable_rtshaders",    "Use RTShader System",        CVAR_ARCHIVE | CVAR_TYPE_BOOL,    "false");
-    App::gfx_actor_shading       = this->cVarCreate("gfx_actor_shading",       "Vehicle surface shading",    CVAR_ARCHIVE | CVAR_TYPE_INT,     "0"/*(int)GfxActorShading::CLASSIC*/);
+    App::gfx_actor_shading       = this->cVarCreate("gfx_actor_shading",       "Vehicle surface shading",    CVAR_ARCHIVE | CVAR_TYPE_INT,     "0"/*(int)GfxActorShading::RTSS*/);
     App::gfx_auto_lod            = this->cVarCreate("gfx_auto_lod",            "Use OGREs Automatic Mesh LOD Generator", CVAR_ARCHIVE | CVAR_TYPE_BOOL, "true");
 
     App::flexbody_defrag_enabled           = this->cVarCreate("flexbody_defrag_enabled",           "", CVAR_TYPE_BOOL);

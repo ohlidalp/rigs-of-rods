@@ -352,6 +352,10 @@ void ContentManager::InitActorManagedMaterials(std::string const & rg_name)
     Ogre::String managed_materials_dir = PathCombine(App::sys_resources_dir->getStr(), "managed_materials");
 
     ResourceGroupManager::getSingleton().addResourceLocation(PathCombine(managed_materials_dir, "vehicles"), "FileSystem", rg_name);
+
+    // The PixelMetal materials carry their own GLSL programs and distinct material names, so
+    // they can be parsed unconditionally - `ActorSpawner` decides which set a vehicle uses.
+    ResourceGroupManager::getSingleton().addResourceLocation(PathCombine(managed_materials_dir, "vehicles/pixelmetal"), "FileSystem", rg_name);
 }
 
 std::string ContentManager::ListAllUserContent()

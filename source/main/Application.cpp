@@ -514,8 +514,9 @@ std::string ToLocalizedString(GfxActorShading e)
 {
     switch (e)
     {
-    case GfxActorShading::CLASSIC:    return _LC("GfxActorShading", "Classic");
-    case GfxActorShading::PBR:        return _LC("GfxActorShading", "Physically based");
+    case GfxActorShading::RTSS:       return _LC("GfxActorShading", "RTShaderSystem");
+    case GfxActorShading::PBR:        return _LC("GfxActorShading", "PBR");
+    case GfxActorShading::PIXELMETAL: return _LC("GfxActorShading", "PixelMetal (classic look)");
     default:                          return "";
     }
 }

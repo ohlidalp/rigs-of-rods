@@ -2554,6 +2554,9 @@ void ActorSpawner::ProcessManagedMaterial(RigDef::ManagedMaterial & def)
     }
 
     std::string custom_name = this->ComposeName(def.name);
+    const GfxActorShading shading = App::gfx_actor_shading->getEnum<GfxActorShading>();
+    // PixelMetal brings its own two-pass, shader-driven variants of the specular materials.
+    const std::string shading_suffix = (shading == GfxActorShading::PIXELMETAL) ? "_pixelmetal" : "";
     Ogre::MaterialPtr material;
     if (TuneupUtil::isManagedMatAnyhowRemoved(m_actor->getWorkingTuneupDef(), def.name))
     {
@@ -2572,7 +2575,7 @@ void ActorSpawner::ProcessManagedMaterial(RigDef::ManagedMaterial & def)
             if (def.specular_map != "")
             {
                 /* FLEXMESH, damage, specular */
-                material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/speculardamage", custom_name);
+                material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/speculardamage" + shading_suffix, custom_name);
                 if (!material)
                 {
                     return;
@@ -2580,6 +2583,10 @@ void ActorSpawner::ProcessManagedMaterial(RigDef::ManagedMaterial & def)
                 this->AssignManagedMaterialTexture(material, "Diffuse_Map", def.name, 0, def.diffuse_map);
                 this->AssignManagedMaterialTexture(material, "Dmg_Diffuse_Map", def.name, 2, def.damaged_diffuse_map);
                 this->AssignManagedMaterialTexture(material, "Specular_Map", def.name, 1, def.specular_map);
+                if (shading == GfxActorShading::PIXELMETAL)
+                {
+                    this->AssignManagedMaterialTexture(material, "Specular_Map", def.name, 1, def.specular_map, "Specular");
+                }
             }
             else
             {
@@ -2598,13 +2605,17 @@ void ActorSpawner::ProcessManagedMaterial(RigDef::ManagedMaterial & def)
             if (def.specular_map != "")
             {
                 /* FLEXMESH, no_damage, specular */
-                material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/specularonly", custom_name);
+                material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/specularonly" + shading_suffix, custom_name);
                 if (!material)
                 {
                     return;
                 }
                 this->AssignManagedMaterialTexture(material, "Diffuse_Map", def.name, 0, def.diffuse_map);
                 this->AssignManagedMaterialTexture(material, "Specular_Map", def.name, 1, def.specular_map);
+                if (shading == GfxActorShading::PIXELMETAL)
+                {
+                    this->AssignManagedMaterialTexture(material, "Specular_Map", def.name, 1, def.specular_map, "Specular");
+                }
             }
             else
             {
@@ -2628,13 +2639,17 @@ void ActorSpawner::ProcessManagedMaterial(RigDef::ManagedMaterial & def)
         if (def.specular_map != "")
         {
             /* MESH, specular */
-            material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/specular", custom_name);
+            material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/specular" + shading_suffix, custom_name);
             if (!material)
             {
                 return;
             }
             this->AssignManagedMaterialTexture(material, "Diffuse_Map", def.name, 0, def.diffuse_map);
             this->AssignManagedMaterialTexture(material, "Specular_Map", def.name, 1, def.specular_map);
+            if (shading == GfxActorShading::PIXELMETAL)
+            {
+                this->AssignManagedMaterialTexture(material, "Specular_Map", def.name, 1, def.specular_map, "Specular");
+            }
         }
         else
         {
@@ -2664,7 +2679,9 @@ void ActorSpawner::ProcessManagedMaterial(RigDef::ManagedMaterial & def)
     // above) must already be in place.
     material->compile();
 
-    if (shading_applies)
+    // PixelMetal materials already reference their own vertex/fragment programs, so RTSS
+    // must not generate anything for them.
+    if (shading_applies && shading != GfxActorShading::PIXELMETAL)
     {
         const bool transparent
             = def.type == RigDef::ManagedMaterialType::FLEXMESH_TRANSPARENT
@@ -7516,21 +7533,21 @@ std::string ActorSpawner::GetCurrentElementMediaRG()
     }
 }
 
-void ActorSpawner::AssignManagedMaterialTexture(const Ogre::MaterialPtr& material, const char* tu_name, const std::string & mm_name, int media_id, const std::string& tex_name)
+void ActorSpawner::AssignManagedMaterialTexture(const Ogre::MaterialPtr& material, const char* tu_name, const std::string & mm_name, int media_id, const std::string& tex_name, const char* pass_name /*= "BaseRender"*/)
 {
     // Helper for `ProcessManagedMaterial()`, resolves tweaks
     // ======================================================
 
     Ogre::Technique* tech = material->getTechnique("BaseTechnique");
-    Ogre::Pass* pass = (tech) ? tech->getPass("BaseRender") : nullptr;
+    Ogre::Pass* pass = (tech) ? tech->getPass(pass_name) : nullptr;
     Ogre::TextureUnitState* tus = (pass) ? pass->getTextureUnitState(tu_name) : nullptr;
 
     if (!tus)
     {
         // This may happen during development if build directory's resources remain dirty.
         this->AddMessage(Message::TYPE_ERROR, fmt::format(
-            "Managed material '{}': built-in material '{}' has no texture unit '{}' in technique 'BaseTechnique', pass 'BaseRender'",
-            mm_name, material->getName(), tu_name));
+            "Managed material '{}': built-in material '{}' has no texture unit '{}' in technique 'BaseTechnique', pass '{}'",
+            mm_name, material->getName(), tu_name, pass_name));
         ROR_ASSERT(tus);
         return;
     }
