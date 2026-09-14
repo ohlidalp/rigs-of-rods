@@ -369,6 +369,14 @@ enum class GfxShadowType
 };
 std::string ToLocalizedString(GfxShadowType e);
 
+/// Vehicle surface shading, see `RTSSManager::ApplyActorShading()`.
+enum class GfxActorShading
+{
+    CLASSIC, //!< Legacy 'nicemetal' look: specular map as a chrome mask over cubemap reflections.
+    PBR      //!< Cook-Torrance lighting with image based lighting from the environment cubemap.
+};
+std::string ToLocalizedString(GfxActorShading e);
+
 enum class GfxExtCamMode
 {
     NONE,
@@ -815,7 +823,7 @@ extern CVar* gfx_speedo_imperial;
 extern CVar* gfx_flexbody_cache;
 extern CVar* gfx_reduce_shadows;
 extern CVar* gfx_enable_rtshaders;
-extern CVar* gfx_alt_actor_materials;
+extern CVar* gfx_actor_shading;
 extern CVar* gfx_auto_lod;
 
 // Flexbodies

@@ -23,6 +23,7 @@
 #include "Actor.h"
 #include "CameraManager.h"
 #include "GfxScene.h"
+#include "RTSSNiceMetal.h"
 
 #include <Ogre.h>
 #include <Terrain/OgreTerrain.h>
@@ -37,6 +38,15 @@ using namespace RoR;
 
 RTSSManager::RTSSManager()
 {
+    // The factory outlives every RTSSManager - one is constructed per terrain load,
+    // but RTSS keeps sub render state factories for the lifetime of the process.
+    static NiceMetalSubRenderStateFactory nicemetal_factory;
+    static bool nicemetal_factory_registered = false;
+    if (!nicemetal_factory_registered)
+    {
+        Ogre::RTShader::ShaderGenerator::getSingleton().addSubRenderStateFactory(&nicemetal_factory);
+        nicemetal_factory_registered = true;
+    }
 }
 
 RTSSManager::~RTSSManager()
@@ -77,4 +87,75 @@ void RTSSManager::EnableRTSS(const MaterialPtr& mat)
 {
     Ogre::RTShader::ShaderGenerator* mShaderGenerator = Ogre::RTShader::ShaderGenerator::getSingletonPtr();
     mShaderGenerator->createShaderBasedTechnique(*mat, Ogre::MaterialManager::DEFAULT_SCHEME_NAME, Ogre::RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME);
+}
+
+void RTSSManager::ApplyActorShading(const MaterialPtr& mat, bool transparent)
+{
+    Pass* pass = mat->getTechnique("BaseTechnique")->getPass("BaseRender");
+
+    // A plain diffuse-only material needs nothing special - FFP texturing, which RTSS
+    // turns into a per-pixel shader anyway, already does the right thing.
+    const bool has_specular = pass->getTextureUnitState("Specular_Map") != nullptr;
+    if (!has_specular && !pass->getTextureUnitState("Dmg_Diffuse_Map"))
+    {
+        return;
+    }
+
+    if (has_specular && App::gfx_actor_shading->getEnum<GfxActorShading>() == GfxActorShading::PBR)
+    {
+        this->ApplyPbrShading(mat, pass);
+    }
+    else
+    {
+        this->ApplyClassicShading(mat, pass, transparent);
+    }
+
+    Ogre::RTShader::ShaderGenerator::getSingleton().invalidateMaterial(Ogre::MSN_SHADERGEN, *mat);
+}
+
+void RTSSManager::ApplyClassicShading(const MaterialPtr& mat, Pass* pass, bool transparent)
+{
+    // The sub render state samples these itself, so keep FFPTexturing off them. This is
+    // also what keeps the vertex colour out of the lighting stage: it carries damage and
+    // wetness flags rather than a colour, so it must not tint the surface.
+    for (TextureUnitState* tus : pass->getTextureUnitStates())
+    {
+        Ogre::RTShader::ShaderGenerator::_markNonFFP(tus);
+    }
+
+    auto* shader_gen = Ogre::RTShader::ShaderGenerator::getSingletonPtr();
+    auto* srs = shader_gen->createSubRenderState(NiceMetalSubRenderState::Type);
+    srs->setParameter("transparent", transparent ? "true" : "false");
+    shader_gen->getRenderState(Ogre::MSN_SHADERGEN, *mat, 0)->addTemplateSubRenderState(srs);
+}
+
+void RTSSManager::ApplyPbrShading(const MaterialPtr& mat, Pass* pass)
+{
+    // NOTE: CookTorrance reads roughness from the green channel and metalness from the
+    // blue one, whereas a legacy specular map is a single reflectivity mask. Feeding it
+    // in directly therefore makes reflective areas read as rough. Deciding how to map
+    // the old masks onto metal-roughness is still open.
+    const String spec_tex_name = pass->getTextureUnitState("Specular_Map")->getTextureName();
+
+    for (TextureUnitState* tus : pass->getTextureUnitStates())
+    {
+        Ogre::RTShader::ShaderGenerator::_markNonFFP(tus);
+    }
+
+    auto* shader_gen = Ogre::RTShader::ShaderGenerator::getSingletonPtr();
+    auto* render_state = shader_gen->getRenderState(Ogre::MSN_SHADERGEN, *mat, 0);
+
+    // Reuse the classic surface blend so that damage textures and the wetness darkening
+    // survive; Cook-Torrance then treats its result as the base colour.
+    auto* surface = shader_gen->createSubRenderState(NiceMetalSubRenderState::Type);
+    surface->setParameter("surface_only", "true");
+    render_state->addTemplateSubRenderState(surface);
+
+    auto* cook_torrance = shader_gen->createSubRenderState(Ogre::RTShader::SRS_COOK_TORRANCE_LIGHTING);
+    cook_torrance->setParameter("texture", spec_tex_name);
+    render_state->addTemplateSubRenderState(cook_torrance);
+
+    auto* ibl = shader_gen->createSubRenderState(Ogre::RTShader::SRS_IMAGE_BASED_LIGHTING);
+    ibl->setParameter("texture", "EnvironmentTexture");
+    render_state->addTemplateSubRenderState(ibl);
 }

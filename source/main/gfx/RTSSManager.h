@@ -45,7 +45,17 @@ public:
     void SetupRTSS();
     void EnableRTSS(const Ogre::MaterialPtr& mat);
 
+    /// Attaches the vehicle surface shading selected by `App::gfx_actor_shading` to a
+    /// spawned managed material. Must be called after the spawner has assigned the
+    /// textures, because the chosen shading depends on which texture units are present.
+    void ApplyActorShading(const Ogre::MaterialPtr& mat, bool transparent);
+
     Ogre::PSSMShadowCameraSetup* pssmSetup{nullptr};
+
+private:
+
+    void ApplyClassicShading(const Ogre::MaterialPtr& mat, Ogre::Pass* pass, bool transparent);
+    void ApplyPbrShading(const Ogre::MaterialPtr& mat, Ogre::Pass* pass);
 };
 
 /// @} // addtogroup Gfx

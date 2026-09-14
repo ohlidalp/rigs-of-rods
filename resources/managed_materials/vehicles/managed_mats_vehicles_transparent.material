@@ -1,15 +1,59 @@
-import * from "shadows.material"
+// Vehicle managed materials, transparent variants.
+// See managed_mats_vehicles.material for why these carry no shader or vertex colour setup.
 
-
-material managed/flexmesh_transparent/simple
+material managed/mesh_transparent/simple
 {
-	technique BaseTechnique: Shadows/managed_transparent/base_receiver //Include shadows
+	technique BaseTechnique
 	{
 		pass BaseRender
 		{
 			scene_blend alpha_blend
 			alpha_rejection greater 0
 			depth_write off
+
+			texture_unit Diffuse_Map
+			{
+				texture FilledAtSpawn
+			}
+		}
+	}
+}
+
+
+material managed/mesh_transparent/specular
+{
+	technique BaseTechnique
+	{
+		pass BaseRender
+		{
+			scene_blend alpha_blend
+			alpha_rejection greater 0
+			depth_write off
+			specular 1 1 1 1 127
+
+			texture_unit Diffuse_Map
+			{
+				texture FilledAtSpawn
+			}
+			texture_unit Specular_Map
+			{
+				texture FilledAtSpawn
+			}
+		}
+	}
+}
+
+
+material managed/flexmesh_transparent/simple
+{
+	technique BaseTechnique
+	{
+		pass BaseRender
+		{
+			scene_blend alpha_blend
+			alpha_rejection greater 0
+			depth_write off
+
 			texture_unit Diffuse_Map
 			{
 				texture FilledAtSpawn
@@ -21,42 +65,71 @@ material managed/flexmesh_transparent/simple
 
 material managed/flexmesh_transparent/damageonly
 {
-	technique BaseTechnique: Shadows/managed_transparent/base_receiver //Include shadows
+	technique BaseTechnique
 	{
 		pass BaseRender
 		{
 			scene_blend alpha_blend
 			alpha_rejection greater 0
 			depth_write off
-			
-			diffuse vertexcolour
+
 			texture_unit Diffuse_Map
 			{
 				texture FilledAtSpawn
-				colour_op_ex source1 src_texture src_current 
-				alpha_op_ex source1 src_texture src_current
 			}
 			texture_unit Dmg_Diffuse_Map
 			{
 				texture FilledAtSpawn
-				colour_op_ex blend_diffuse_alpha src_texture src_current 
-				alpha_op_ex blend_diffuse_alpha src_texture src_current
 			}
 		}
 	}
 }
 
 
-material managed/mesh_transparent/simple
+material managed/flexmesh_transparent/specularonly
 {
-	technique BaseTechnique: Shadows/managed_transparent/base_receiver //Include shadows
+	technique BaseTechnique
 	{
 		pass BaseRender
 		{
 			scene_blend alpha_blend
 			alpha_rejection greater 0
 			depth_write off
+			specular 1 1 1 1 127
+
 			texture_unit Diffuse_Map
+			{
+				texture FilledAtSpawn
+			}
+			texture_unit Specular_Map
+			{
+				texture FilledAtSpawn
+			}
+		}
+	}
+}
+
+
+material managed/flexmesh_transparent/speculardamage
+{
+	technique BaseTechnique
+	{
+		pass BaseRender
+		{
+			scene_blend alpha_blend
+			alpha_rejection greater 0
+			depth_write off
+			specular 1 1 1 1 127
+
+			texture_unit Diffuse_Map
+			{
+				texture FilledAtSpawn
+			}
+			texture_unit Dmg_Diffuse_Map
+			{
+				texture FilledAtSpawn
+			}
+			texture_unit Specular_Map
 			{
 				texture FilledAtSpawn
 			}

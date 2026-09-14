@@ -37,6 +37,7 @@ set(SOURCE_FILES
         gfx/IGfxWater.h
         gfx/MovableText.{h,cpp}
         gfx/RTSSManager.{h,cpp}
+        gfx/RTSSNiceMetal.{h,cpp}
         gfx/SimBuffers.{h,cpp}
         gfx/Skidmark.{h,cpp}
         gfx/SkyManager.{h,cpp}

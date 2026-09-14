@@ -60,6 +60,7 @@
 #include "Language.h"
 #include "MeshObject.h"
 #include "PointColDetector.h"
+#include "RTSSManager.h"
 #include "ScrewProp.h"
 #include "ScriptEngine.h"
 #include "Skidmark.h"
@@ -2571,33 +2572,14 @@ void ActorSpawner::ProcessManagedMaterial(RigDef::ManagedMaterial & def)
             if (def.specular_map != "")
             {
                 /* FLEXMESH, damage, specular */
-                if (App::gfx_alt_actor_materials->getBool())
-                {
-                    material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/speculardamage", custom_name);
-                }
-                else
-                {
-                    material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/speculardamage_nicemetal", custom_name);
-                }
-
+                material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/speculardamage", custom_name);
                 if (!material)
                 {
                     return;
                 }
-
-                if (App::gfx_alt_actor_materials->getBool())
-                {
-                    this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Diffuse_Map"), def.name, 0, def.diffuse_map);
-                    this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Dmg_Diffuse_Map"), def.name, 2, def.damaged_diffuse_map);
-                    this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("SpecularMapping1")->getTextureUnitState("SpecularMapping1_Tex"), def.name, 1, def.specular_map);
-                }
-                else
-                {
-                    this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Diffuse_Map"), def.name, 0, def.diffuse_map);
-                    this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Dmg_Diffuse_Map"), def.name, 2, def.damaged_diffuse_map);
-                    this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Specular_Map"), def.name, 1, def.specular_map);
-                    this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("Specular")->getTextureUnitState("Specular_Map"), def.name, 1, def.specular_map);
-                }
+                this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Diffuse_Map"), def.name, 0, def.diffuse_map);
+                this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Dmg_Diffuse_Map"), def.name, 2, def.damaged_diffuse_map);
+                this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Specular_Map"), def.name, 1, def.specular_map);
             }
             else
             {
@@ -2616,31 +2598,13 @@ void ActorSpawner::ProcessManagedMaterial(RigDef::ManagedMaterial & def)
             if (def.specular_map != "")
             {
                 /* FLEXMESH, no_damage, specular */
-                if (App::gfx_alt_actor_materials->getBool())
-                {
-                    material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/specularonly", custom_name);
-                }
-                else
-                {
-                    material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/specularonly_nicemetal", custom_name);
-                }
-
+                material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/specularonly", custom_name);
                 if (!material)
                 {
                     return;
                 }
-
-                if (App::gfx_alt_actor_materials->getBool())
-                {
-                    this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Diffuse_Map"), def.name, 0, def.diffuse_map);
-                    this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("SpecularMapping1")->getTextureUnitState("SpecularMapping1_Tex"), def.name, 1, def.specular_map);
-                }
-                else
-                {
-                    this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Diffuse_Map") , def.name, 0, def.diffuse_map);
-                    this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Specular_Map"), def.name, 1, def.specular_map);
-                    this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("Specular")->getTextureUnitState("Specular_Map")  , def.name, 1, def.specular_map);
-                }
+                this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Diffuse_Map"), def.name, 0, def.diffuse_map);
+                this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Specular_Map"), def.name, 1, def.specular_map);
             }
             else
             {
@@ -2664,31 +2628,13 @@ void ActorSpawner::ProcessManagedMaterial(RigDef::ManagedMaterial & def)
         if (def.specular_map != "")
         {
             /* MESH, specular */
-            if (App::gfx_alt_actor_materials->getBool())
-            {
-                material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/specular", custom_name);
-            }
-            else
-            {
-                material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/specular_nicemetal", custom_name);
-            }
-
+            material = this->InstantiateManagedMaterial(resource_group, mat_name_base + "/specular", custom_name);
             if (!material)
             {
                 return;
             }
-
-            if (App::gfx_alt_actor_materials->getBool())
-            {
-                this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Diffuse_Map"), def.name, 0, def.diffuse_map);
-                this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("SpecularMapping1")->getTextureUnitState("SpecularMapping1_Tex"), def.name, 1, def.specular_map);
-            }
-            else
-            {
-                this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Diffuse_Map") ,def.name, 0, def.diffuse_map);
-                this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Specular_Map"),def.name, 1, def.specular_map);
-                this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("Specular")->getTextureUnitState("Specular_Map")  ,def.name, 1, def.specular_map);
-            }
+            this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Diffuse_Map"), def.name, 0, def.diffuse_map);
+            this->AssignManagedMaterialTexture(material->getTechnique("BaseTechnique")->getPass("BaseRender")->getTextureUnitState("Specular_Map"), def.name, 1, def.specular_map);
         }
         else
         {
@@ -2703,24 +2649,18 @@ void ActorSpawner::ProcessManagedMaterial(RigDef::ManagedMaterial & def)
         }
     }
 
-    if (!TuneupUtil::isManagedMatAnyhowRemoved(m_actor->getWorkingTuneupDef(), def.name) 
+    if (!TuneupUtil::isManagedMatAnyhowRemoved(m_actor->getWorkingTuneupDef(), def.name)
         && def.type != RigDef::ManagedMaterialType::INVALID)
     {
         if (def.options.double_sided)
         {
             material->getTechnique("BaseTechnique")->getPass("BaseRender")->setCullingMode(Ogre::CULL_NONE);
-            if (def.specular_map != "")
-            {
-                if (App::gfx_alt_actor_materials->getBool())
-                {
-                    material->getTechnique("BaseTechnique")->getPass("SpecularMapping1")->setCullingMode(Ogre::CULL_NONE);
-                }
-                else
-                {
-                    material->getTechnique("BaseTechnique")->getPass("Specular")->setCullingMode(Ogre::CULL_NONE);
-                }
-            }
         }
+
+        const bool transparent
+            = def.type == RigDef::ManagedMaterialType::FLEXMESH_TRANSPARENT
+            || def.type == RigDef::ManagedMaterialType::MESH_TRANSPARENT;
+        App::GetGameContext()->GetTerrain()->getRTSSManager()->ApplyActorShading(material, transparent);
     }
 
     material->compile();

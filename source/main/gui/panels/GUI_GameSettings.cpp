@@ -400,6 +400,9 @@ void GameSettings::DrawGraphicsSettings()
     DrawGCombo(App::gfx_shadow_type, _LC("GameSettings", "Shadow type (requires restart)"),
         m_combo_items_shadow_type.c_str());
 
+    DrawGCombo(App::gfx_actor_shading, _LC("GameSettings", "Vehicle shading (affects newly spawned)"),
+        m_combo_items_actor_shading.c_str());
+
     DrawGCombo(App::gfx_sky_mode, _LC("GameSettings", "Sky gfx"),
         m_combo_items_sky_mode.c_str());
 
@@ -444,7 +447,6 @@ void GameSettings::DrawGraphicsSettings()
 
     DrawGCheckbox(App::gfx_enable_videocams, _LC("GameSettings", "Render video cameras"));
     DrawGCheckbox(App::gfx_water_waves,      _LC("GameSettings", "Waves on water"));
-    DrawGCheckbox(App::gfx_alt_actor_materials,      _LC("GameSettings", "Use alternate vehicle materials"));
 
     DrawGCombo(App::gfx_extcam_mode, "Exterior camera mode",
         m_combo_items_extcam_mode.c_str());
@@ -568,6 +570,13 @@ void GameSettings::SetVisible(bool v)
         ImAddItemToComboboxString(m_combo_items_shadow_type, ToLocalizedString(GfxShadowType::NONE));
         ImAddItemToComboboxString(m_combo_items_shadow_type, ToLocalizedString(GfxShadowType::PSSM));
         ImTerminateComboboxString(m_combo_items_shadow_type);
+    }
+
+    if (m_combo_items_actor_shading == "")
+    {
+        ImAddItemToComboboxString(m_combo_items_actor_shading, ToLocalizedString(GfxActorShading::CLASSIC));
+        ImAddItemToComboboxString(m_combo_items_actor_shading, ToLocalizedString(GfxActorShading::PBR));
+        ImTerminateComboboxString(m_combo_items_actor_shading);
     }
 
     if (m_combo_items_sky_mode == "")

@@ -266,7 +266,7 @@ CVar* gfx_speedo_imperial;
 CVar* gfx_flexbody_cache;
 CVar* gfx_reduce_shadows;
 CVar* gfx_enable_rtshaders;
-CVar* gfx_alt_actor_materials;
+CVar* gfx_actor_shading;
 CVar* gfx_auto_lod;
 
 // Flexbodies
@@ -506,6 +506,16 @@ std::string ToLocalizedString(GfxShadowType e)
     {
     case GfxShadowType::NONE:         return _LC("GfxShadowType", "Disabled");
     case GfxShadowType::PSSM:         return _LC("GfxShadowType", "PSSM");
+    default:                          return "";
+    }
+}
+
+std::string ToLocalizedString(GfxActorShading e)
+{
+    switch (e)
+    {
+    case GfxActorShading::CLASSIC:    return _LC("GfxActorShading", "Classic");
+    case GfxActorShading::PBR:        return _LC("GfxActorShading", "Physically based");
     default:                          return "";
     }
 }

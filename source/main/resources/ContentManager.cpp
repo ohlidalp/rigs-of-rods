@@ -352,18 +352,6 @@ void ContentManager::InitActorManagedMaterials(std::string const & rg_name)
     Ogre::String managed_materials_dir = PathCombine(App::sys_resources_dir->getStr(), "managed_materials");
 
     ResourceGroupManager::getSingleton().addResourceLocation(PathCombine(managed_materials_dir, "vehicles"), "FileSystem", rg_name);
-
-    // We can't have `EnvironmentTexture` both use shaders (nicemetal) and not use shaders (alternate).
-    // RoR.log: Error: ScriptCompiler - invalid parameters in texture_manager.material(16): 
-    //          overriding previous declarations of texture 'EnvironmentTexture' with different parameters
-    if (App::gfx_alt_actor_materials->getBool())
-    {
-        ResourceGroupManager::getSingleton().addResourceLocation(PathCombine(managed_materials_dir, "vehicles/alternate"), "FileSystem", rg_name);
-    }
-    else
-    {
-        ResourceGroupManager::getSingleton().addResourceLocation(PathCombine(managed_materials_dir, "vehicles/nicemetal"), "FileSystem", rg_name);
-    }
 }
 
 std::string ContentManager::ListAllUserContent()

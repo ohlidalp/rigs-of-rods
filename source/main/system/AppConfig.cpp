@@ -42,6 +42,9 @@ using namespace RoR;
 const char* CONF_GFX_SHADOW_PSSM    = "Parallel-split Shadow Maps";
 const char* CONF_GFX_SHADOW_NONE    = "No shadows (fastest)";
 
+const char* CONF_ACTOR_SHADING_CLASSIC = "Classic";
+const char* CONF_ACTOR_SHADING_PBR     = "Physically based";
+
 const char* CONF_EXTCAM_PITCHING    = "Pitching";
 const char* CONF_EXTCAM_STATIC      = "Static";
 const char* CONF_EXTCAM_NONE        = "None";
@@ -98,6 +101,12 @@ GfxShadowType ParseGfxShadowType(std::string const & s)
 {
     if (s == CONF_GFX_SHADOW_PSSM)    { return GfxShadowType::PSSM    ; }
     else                              { return GfxShadowType::NONE    ; }
+}
+
+GfxActorShading ParseGfxActorShading(std::string const & s)
+{
+    if (s == CONF_ACTOR_SHADING_PBR)  { return GfxActorShading::PBR     ; }
+    else                              { return GfxActorShading::CLASSIC ; }
 }
 
 GfxExtCamMode ParseGfxExtCamMode(std::string const & s)
@@ -190,6 +199,16 @@ const char* GfxShadowTypeToStr(GfxShadowType v)
     case GfxShadowType::PSSM   : return CONF_GFX_SHADOW_PSSM;
     case GfxShadowType::NONE   : return CONF_GFX_SHADOW_NONE;
     default                    : return "";
+    }
+}
+
+const char* GfxActorShadingToStr(GfxActorShading v)
+{
+    switch (v)
+    {
+    case GfxActorShading::PBR     : return CONF_ACTOR_SHADING_PBR;
+    case GfxActorShading::CLASSIC : return CONF_ACTOR_SHADING_CLASSIC;
+    default                       : return "";
     }
 }
 
@@ -312,6 +331,10 @@ void ParseHelper(CVar* cvar, std::string const & val)
     {
         AssignHelper(App::gfx_shadow_type, (int)ParseGfxShadowType(val));
     }
+    else if (cvar->getName() == App::gfx_actor_shading->getName())
+    {
+        AssignHelper(App::gfx_actor_shading, (int)ParseGfxActorShading(val));
+    }
     else if (cvar->getName() == App::gfx_extcam_mode->getName())
     {
         AssignHelper(App::gfx_extcam_mode, (int)ParseGfxExtCamMode(val));
@@ -410,6 +433,7 @@ void WriteVarsHelper(std::stringstream& f, const char* label, const char* prefix
             }
 
                  if (pair.second->getName() == App::gfx_shadow_type->getName()     ){ f << GfxShadowTypeToStr(App::gfx_shadow_type     ->getEnum<GfxShadowType>()); }
+            else if (pair.second->getName() == App::gfx_actor_shading->getName()   ){ f << GfxActorShadingToStr(App::gfx_actor_shading->getEnum<GfxActorShading>()); }
             else if (pair.second->getName() == App::gfx_extcam_mode->getName()     ){ f << GfxExtCamModeToStr(App::gfx_extcam_mode     ->getEnum<GfxExtCamMode>()); }
             else if (pair.second->getName() == App::gfx_texture_filter->getName()  ){ f << GfxTexFilterToStr (App::gfx_texture_filter  ->getEnum<GfxTexFilter>());  }
             else if (pair.second->getName() == App::gfx_vegetation_mode->getName() ){ f << GfxVegetationToStr(App::gfx_vegetation_mode ->getEnum<GfxVegetation>()); }
