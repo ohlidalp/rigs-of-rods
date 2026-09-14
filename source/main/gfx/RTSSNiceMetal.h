@@ -37,6 +37,14 @@ namespace RoR {
 /// the lit diffuse colour and a mirror highlight. Vertex colour carries per-node
 /// simulation flags rather than a colour (alpha = damaged, blue = wet), so it is
 /// deliberately kept out of OGRE's vertex colour tracking and sampled directly.
+///
+/// Lighting is consumed from the lighting sub render state rather than computed here,
+/// which is what earns vehicles shadows, fog and multiple lights that the legacy Cg
+/// shader never had. The trade-off is that the result cannot be identical to that
+/// shader: RTSS clamps the accumulated diffuse after every light and works in view
+/// space, where the original multiplied the texture in first and lit a single light in
+/// object space. That difference is accepted, not a defect - see 'mm_pixelmetal*.glsl'
+/// on the 'pixelmetal' branch for a faithful single-light port if it ever matters.
 class NiceMetalSubRenderState : public Ogre::RTShader::SubRenderState
 {
 public:
