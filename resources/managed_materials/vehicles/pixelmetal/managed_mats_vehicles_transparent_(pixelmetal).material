@@ -58,7 +58,7 @@ material managed/flexmesh_transparent/specularonly_pixelmetal
               }
               texture_unit envmaptex
               {
-                  cubic_texture EnvironmentTexture combinedUVW
+                  texture EnvironmentTexture cubic
                   tex_address_mode clamp
                   tex_coord_set 1
               }
@@ -134,7 +134,7 @@ material managed/flexmesh_transparent/speculardamage_pixelmetal
               }
               texture_unit envmaptex
               {
-                  cubic_texture EnvironmentTexture combinedUVW
+                  texture EnvironmentTexture cubic
                   tex_address_mode clamp
                   tex_coord_set 1
               }
@@ -199,7 +199,7 @@ material managed/mesh_transparent/specular_pixelmetal
               }
               texture_unit envmaptex
               {
-                  cubic_texture EnvironmentTexture combinedUVW
+                  texture EnvironmentTexture cubic
                   tex_address_mode clamp
                   tex_coord_set 1
               }
