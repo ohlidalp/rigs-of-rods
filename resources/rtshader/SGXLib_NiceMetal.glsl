@@ -27,14 +27,16 @@ void SGX_NiceMetal_Surface(in vec4 diffuseSample,
 	surface.rgb *= 1.0 - vertexFlags.b * NICEMETAL_WET_DARKEN;
 }
 
+// Deliberately per-channel and unclamped, as the original was: a coloured specular map
+// tints the blend, and a wet surface pushes the weight above 1 so that mix() extrapolates
+// past the highlight and brightens the reflection.
 void SGX_NiceMetal_Mask(in vec4 specularSample,
                         in vec4 vertexFlags,
-                        out float mask)
+                        out vec3 mask)
 {
-	mask = specularSample.r
+	mask = specularSample.rgb
 	     + vertexFlags.b * NICEMETAL_WET_SHINE
 	     - vertexFlags.a * NICEMETAL_DAMAGE_DULL;
-	mask = saturate(mask);
 }
 
 void SGX_NiceMetal_WorldSpace(in mat4 mWorld,
@@ -63,7 +65,7 @@ void SGX_NiceMetal_Reflect(in vec3 worldNormal,
 // add back in at FFP_PS_COLOUR_END -- so the reflection is written there to ride
 // along on that same add, replacing the legacy additive second pass.
 void SGX_NiceMetal_Combine(in vec4 surface,
-                           in float mask,
+                           in vec3 mask,
                            in vec4 reflectionSample,
                            inout vec4 litDiffuse,
                            inout vec4 specular)

@@ -214,7 +214,7 @@ bool NiceMetalSubRenderState::createCpuSubPrograms(ProgramSet* programSet)
         auto specularSampler = psProgram->resolveParameter(GCT_SAMPLER2D, "nicemetalSpecularSampler", m_specular_sampler);
         auto envSampler = psProgram->resolveParameter(GCT_SAMPLERCUBE, "nicemetalEnvSampler", m_env_sampler);
         auto specularSample = psMain->resolveLocalParameter(GCT_FLOAT4, "nicemetalSpecularSample");
-        auto mask = psMain->resolveLocalParameter(GCT_FLOAT1, "nicemetalMask");
+        auto mask = psMain->resolveLocalParameter(GCT_FLOAT3, "nicemetalMask");
         auto reflectDir = psMain->resolveLocalParameter(GCT_FLOAT3, "nicemetalReflectDir");
         auto reflectionSample = psMain->resolveLocalParameter(GCT_FLOAT4, "nicemetalReflectionSample");
 
