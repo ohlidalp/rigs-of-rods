@@ -2649,14 +2649,23 @@ void ActorSpawner::ProcessManagedMaterial(RigDef::ManagedMaterial & def)
         }
     }
 
-    if (!TuneupUtil::isManagedMatAnyhowRemoved(m_actor->getWorkingTuneupDef(), def.name)
-        && def.type != RigDef::ManagedMaterialType::INVALID)
-    {
-        if (def.options.double_sided)
-        {
-            material->getTechnique("BaseTechnique")->getPass("BaseRender")->setCullingMode(Ogre::CULL_NONE);
-        }
+    const bool shading_applies
+        = !TuneupUtil::isManagedMatAnyhowRemoved(m_actor->getWorkingTuneupDef(), def.name)
+        && def.type != RigDef::ManagedMaterialType::INVALID;
 
+    if (shading_applies && def.options.double_sided)
+    {
+        material->getTechnique("BaseTechnique")->getPass("BaseRender")->setCullingMode(Ogre::CULL_NONE);
+    }
+
+    // RTSS only considers techniques already known to be supported, and compile() is what
+    // fills that list - without it there is nothing for ApplyActorShading() to base a shader
+    // on. It also clones the source technique there and then, so any pass tweak (the culling
+    // above) must already be in place.
+    material->compile();
+
+    if (shading_applies)
+    {
         const bool transparent
             = def.type == RigDef::ManagedMaterialType::FLEXMESH_TRANSPARENT
             || def.type == RigDef::ManagedMaterialType::MESH_TRANSPARENT;
@@ -2667,7 +2676,6 @@ void ActorSpawner::ProcessManagedMaterial(RigDef::ManagedMaterial & def)
         App::GetGameContext()->GetTerrain()->getRTSSManager()->ApplyActorShading(material, transparent, is_flexbody);
     }
 
-    material->compile();
     m_managed_materials.insert(std::make_pair(def.name, material));
 }
 
@@ -7189,6 +7197,7 @@ void ActorSpawner::CreateVideoCamera(RigDef::VideoCamera* def)
         if (vcam.vcam_render_target)
         {
             Ogre::Viewport* vp = vcam.vcam_render_target->addViewport(vcam.vcam_ogre_camera);
+            vp->setMaterialScheme(Ogre::MSN_SHADERGEN);
             vp->setClearEveryFrame(true);
             vp->setBackgroundColour(App::GetCameraManager()->GetCamera()->getViewport()->getBackgroundColour());
             vp->setVisibilityMask(~HIDE_MIRROR);
@@ -7205,6 +7214,7 @@ void ActorSpawner::CreateVideoCamera(RigDef::VideoCamera* def)
         if (vcam.vcam_render_window)
         {
             Ogre::Viewport* vp = vcam.vcam_render_window->addViewport(vcam.vcam_ogre_camera);
+            vp->setMaterialScheme(Ogre::MSN_SHADERGEN);
             vp->setClearEveryFrame(true);
             vp->setBackgroundColour(App::GetCameraManager()->GetCamera()->getViewport()->getBackgroundColour());
             vp->setVisibilityMask(~HIDE_MIRROR);
@@ -7284,6 +7294,7 @@ void ActorSpawner::CreateMirrorPropVideoCam(
         vcam.vcam_render_target = vcam.vcam_render_tex->getBuffer()->getRenderTarget();
         vcam.vcam_render_target->setActive(true);
         Ogre::Viewport* v = vcam.vcam_render_target->addViewport(vcam.vcam_ogre_camera);
+        v->setMaterialScheme(Ogre::MSN_SHADERGEN);
         v->setClearEveryFrame(true);
         v->setBackgroundColour(App::GetCameraManager()->GetCamera()->getViewport()->getBackgroundColour());
         v->setOverlaysEnabled(false);
