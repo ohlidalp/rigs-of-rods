@@ -26,6 +26,7 @@
 #include "RTSSNiceMetal.h"
 
 #include <Ogre.h>
+#include <OgreCodec.h>
 #include <Terrain/OgreTerrain.h>
 #include <Overlay/OgreOverlayManager.h>
 #include <Overlay/OgreOverlayContainer.h>
@@ -153,13 +154,65 @@ void RTSSManager::ApplyClassicShading(Ogre::RTShader::RenderState* render_state,
     render_state->addTemplateSubRenderState(srs);
 }
 
+/// Cook-Torrance wants roughness in the green channel and metalness in blue, but a legacy
+/// specular map is a single reflectivity mask - handing it over unchanged makes reflective
+/// areas read as fully rough. This rewrites the mask into both channels, inverted for
+/// roughness, so that what the artist marked as reflective comes out as smooth metal.
+static TexturePtr DeriveMetalRoughnessTexture(const TexturePtr& spec_tex)
+{
+    const String mr_name = spec_tex->getName() + "/RoR_metalrough";
+    TexturePtr existing = TextureManager::getSingleton().getByName(mr_name, spec_tex->getGroup());
+    if (existing)
+    {
+        return existing;
+    }
+
+    // Specular maps are often DXT compressed, which cannot be sampled on the CPU, so ask the
+    // DDS codec to decode rather than hand the compressed blocks straight to the GPU.
+    Image spec;
+    Codec* dds_codec = Codec::getCodec("dds");
+    if (dds_codec) { dds_codec->setParameter("decode_enforce", "true"); }
+    try
+    {
+        spec.load(spec_tex->getName(), spec_tex->getGroup());
+    }
+    catch (Ogre::Exception& e)
+    {
+        if (dds_codec) { dds_codec->setParameter("decode_enforce", "false"); }
+        LogManager::getSingleton().logError(
+            "RTSSManager: cannot derive metal-roughness from '" + spec_tex->getName() + "': " + e.getDescription());
+        return TexturePtr();
+    }
+    if (dds_codec) { dds_codec->setParameter("decode_enforce", "false"); }
+
+    const uint32 width = spec.getWidth();
+    const uint32 height = spec.getHeight();
+    std::vector<uint8> pixels(size_t(width) * height * 4);
+    for (uint32 y = 0; y < height; ++y)
+    {
+        for (uint32 x = 0; x < width; ++x)
+        {
+            const float mask = spec.getColourAt(x, y, 0).r;
+            uint8* texel = &pixels[(size_t(y) * width + x) * 4];
+            texel[0] = 255;                                             // occlusion, unused
+            texel[1] = static_cast<uint8>((1.0f - mask) * 255.0f);      // roughness
+            texel[2] = static_cast<uint8>(mask * 255.0f);               // metalness
+            texel[3] = 255;
+        }
+    }
+
+    TexturePtr mr_tex = TextureManager::getSingleton().createManual(
+        mr_name, spec_tex->getGroup(), TEX_TYPE_2D, width, height, MIP_DEFAULT, PF_BYTE_RGBA);
+    PixelBox box(width, height, 1, PF_BYTE_RGBA, pixels.data());
+    mr_tex->getBuffer()->blitFromMemory(box);
+    return mr_tex;
+}
+
 void RTSSManager::ApplyPbrShading(Ogre::RTShader::RenderState* render_state, Pass* pass, bool is_flexbody)
 {
-    // NOTE: CookTorrance reads roughness from the green channel and metalness from the
-    // blue one, whereas a legacy specular map is a single reflectivity mask. Feeding it
-    // in directly therefore makes reflective areas read as rough. Deciding how to map
-    // the old masks onto metal-roughness is still open.
-    const String spec_tex_name = pass->getTextureUnitState("Specular_Map")->getTextureName();
+    const TexturePtr& spec_tex = pass->getTextureUnitState("Specular_Map")->_getTexturePtr();
+    TexturePtr mr_tex = (spec_tex) ? DeriveMetalRoughnessTexture(spec_tex) : TexturePtr();
+    const String metal_roughness_name = (mr_tex) ? mr_tex->getName() : String();
 
     for (TextureUnitState* tus : pass->getTextureUnitStates())
     {
@@ -176,7 +229,12 @@ void RTSSManager::ApplyPbrShading(Ogre::RTShader::RenderState* render_state, Pas
     render_state->addTemplateSubRenderState(surface);
 
     auto* cook_torrance = shader_gen->createSubRenderState(Ogre::RTShader::SRS_COOK_TORRANCE_LIGHTING);
-    cook_torrance->setParameter("texture", spec_tex_name);
+    if (!metal_roughness_name.empty())
+    {
+        // Without a map Cook-Torrance falls back to the pass's specular colour, which at
+        // least keeps the vehicle lit rather than leaving it black.
+        cook_torrance->setParameter("texture", metal_roughness_name);
+    }
     render_state->addTemplateSubRenderState(cook_torrance);
 
     auto* ibl = shader_gen->createSubRenderState(Ogre::RTShader::SRS_IMAGE_BASED_LIGHTING);

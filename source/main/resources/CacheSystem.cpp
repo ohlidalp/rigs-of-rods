@@ -1555,7 +1555,10 @@ void CacheSystem::LoadResource(CacheEntryPtr& entry)
     const bool inGlobalPool = false; // Prevent resource name conflicts with other mods.
     ResourceGroupManager::getSingleton().createResourceGroup(group, inGlobalPool);
 
-    // Initialize "managed materials" first
+    // Load RTShader media, used by managed materials
+    App::GetContentManager()->AddResourcePack("rtshader", group);
+
+    // Initialize "managed materials"
     //   These are base materials referenced by user content
     //   They must be initialized before any content is loaded,
     //   otherwise material links are unresolved and loading ends with an exception

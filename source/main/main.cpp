@@ -167,6 +167,10 @@ int main(int argc, char *argv[])
         int fsaa = 2 * (Ogre::StringConverter::parseInt(ropts["FSAA"].currentValue, 0) / 4);
         int res = std::pow(2, std::floor(std::log2(resolution)));
 
+        // Deliberately no mip chain: nothing regenerates mips for a cube render target, so
+        // image based lighting would sample uninitialised levels for any non-zero roughness.
+        // The metal-roughness derived from specular maps is smooth wherever it is reflective,
+        // which wants the top level anyway.
         Ogre::TextureManager::getSingleton().createManual ("EnvironmentTexture",
             Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, Ogre::TEX_TYPE_CUBE_MAP, res / 4, res / 4, 0,
             Ogre::PF_R8G8B8, Ogre::TU_RENDERTARGET, 0, false, fsaa);
