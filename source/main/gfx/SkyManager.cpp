@@ -291,9 +291,17 @@ bool SkyManager::SetCaelumParameter(const std::string& section, const std::strin
         const std::type_info& typeInfo = prop->getValueTypeId();
 
         // Handle different value types
-        if (typeInfo == typeid(Ogre::Real) || typeInfo == typeid(float) || typeInfo == typeid(double))
+        if (typeInfo == typeid(Ogre::Real))
         {
             prop->setValue(target, Ogre::Any(static_cast<Ogre::Real>(arg1)));
+        }
+        else if (typeInfo == typeid(float))
+        {
+            prop->setValue(target, Ogre::Any(arg1));
+        }
+        else if (typeInfo == typeid(double))
+        {
+            prop->setValue(target, Ogre::Any(static_cast<double>(arg1)));
         }
         else if (typeInfo == typeid(Ogre::Degree))
         {
