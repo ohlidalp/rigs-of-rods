@@ -81,23 +81,6 @@ material CaelumSkyDomeMaterial
 		}
 	}
 
-	technique
-	{
-		pass
-		{
-			lighting off
-			depth_check off
-			depth_write off
-			scene_blend alpha_blend
-			fog_override true
-			
-			texture_unit
-			{
-				texture EarthClearSky2.png 0
-				tex_address_mode clamp
-				tex_coord_set 0
-			}
-		}
-	}
+	
 }
 
