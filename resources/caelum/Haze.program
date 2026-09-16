@@ -18,11 +18,11 @@
 //along with Caelum. If not, see <http://www.gnu.org/licenses/>.
 //
 
-vertex_program CaelumHazeVP cg
+vertex_program CaelumHazeVP glsl hlsl
 {
-	source CaelumSkyDome.cg
-	entry_point HazeVP
+	source Haze_vp.glsl
 	profiles vs_2_0 arbvp1 vp30
+	target vs_3_0
 
 	default_params
 	{
@@ -31,11 +31,11 @@ vertex_program CaelumHazeVP cg
 	}
 }
 
-fragment_program CaelumHazeFP cg
+fragment_program CaelumHazeFP glsl hlsl
 {
-	source CaelumSkyDome.cg
-	entry_point HazeFP
+	source Haze_fp.glsl
 	profiles ps_2_0 arbfp1 fp30
+	target ps_3_0
 
 	default_params
 	{

@@ -1,29 +1,13 @@
-//
-//This file is part of Caelum.
-//See http://www.ogre3d.org/wiki/index.php/Caelum 
-//
-//Copyright (c) 2006-2007 Caelum team. See Contributors.txt for details.
-//
-//Caelum is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Lesser General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
-//
-//Caelum is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Lesser General Public License for more details.
-//
-//You should have received a copy of the GNU Lesser General Public License
-//along with Caelum. If not, see <http://www.gnu.org/licenses/>.
-//
+// This file is part of the Caelum project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution.
 
-fragment_program CaelumSkyDomeFP cg
+fragment_program CaelumSkyDomeFP glsl hlsl
 {
-	source CaelumSkyDome.cg
-	entry_point SkyDomeFP
-	compile_arguments -DHAZE
+	source SkyDome_fp.glsl
+	preprocessor_defines HAZE
 	profiles ps_2_0 arbfp1
+	target ps_3_0
 
 	default_params
 	{
@@ -33,11 +17,11 @@ fragment_program CaelumSkyDomeFP cg
 	}
 }
 
-fragment_program CaelumSkyDomeFP_NoHaze cg
+fragment_program CaelumSkyDomeFP_NoHaze glsl hlsl
 {
-	source CaelumSkyDome.cg
-	entry_point SkyDomeFP
+	source SkyDome_fp.glsl
 	profiles ps_2_0 arbfp1
+	target ps_3_0
 
 	default_params
 	{
@@ -46,11 +30,11 @@ fragment_program CaelumSkyDomeFP_NoHaze cg
 	}
 }
 
-vertex_program CaelumSkyDomeVP cg
+vertex_program CaelumSkyDomeVP glsl hlsl
 {
-	source CaelumSkyDome.cg
-	entry_point SkyDomeVP
+	source SkyDome_vp.glsl
 	profiles vs_2_0 arbvp1
+	target vs_3_0
 	
 	default_params
 	{
@@ -97,35 +81,6 @@ material CaelumSkyDomeMaterial
 		}
 	}
 
-	technique
-	{
-		pass
-		{
-			lighting off
-			depth_check off
-			depth_write off
-			scene_blend alpha_blend
-			fog_override true
-			
-			texture_unit
-			{
-				texture EarthClearSky2.png 0
-				tex_address_mode clamp
-				tex_coord_set 0
-			}
-		}
-	}
-	 technique HydraxDepth
-    {
-        scheme HydraxDepth
-        pass
-        {
-					lighting off
-					texture_unit
-					{
-            colour_op_ex modulate src_manual src_current 0 0 0
-					}
-        }
-    } 
+
 }
 
