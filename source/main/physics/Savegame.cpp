@@ -38,6 +38,7 @@
 #include "ScrewProp.h"
 #include "Skidmark.h"
 #include "SkyManager.h"
+#include "SkyXManager.h"
 #include "Terrain.h"
 #include "TuneupFileFormat.h"
 #include "Utils.h"
@@ -280,7 +281,8 @@ bool ActorManager::LoadScene(Ogre::String save_filename)
 
     App::GetGameContext()->GetActorManager()->SetSimulationPaused(j_doc["physics_paused"].GetBool());
 
-    if (App::gfx_sky_mode->getEnum<GfxSkyMode>() == GfxSkyMode::CAELUM)
+    // Sky system daytime
+    if (App::GetGameContext()->GetTerrain()->GetActiveSkyMode() == GfxSkyMode::CAELUM)
     {
         if (j_doc.HasMember("daytime"))
         {
@@ -441,7 +443,7 @@ bool ActorManager::SaveScene(Ogre::String filename)
     // Terrain
     j_doc.AddMember("terrain_name", rapidjson::StringRef(App::sim_terrain_name->getStr().c_str()), j_doc.GetAllocator());
 
-    if (App::gfx_sky_mode->getEnum<GfxSkyMode>() == GfxSkyMode::CAELUM)
+    if (App::GetGameContext()->GetTerrain()->GetActiveSkyMode() == GfxSkyMode::CAELUM)
     {
         j_doc.AddMember("daytime", App::GetGameContext()->GetTerrain()->getSkyManager()->GetTime(), j_doc.GetAllocator());
     }
