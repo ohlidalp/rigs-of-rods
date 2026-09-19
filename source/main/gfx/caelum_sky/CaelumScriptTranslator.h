@@ -151,10 +151,8 @@ namespace Caelum
     public:
         explicit CaelumScriptTranslatorManager (CaelumDefaultTypeDescriptorData* typeData);
 
-        virtual size_t getNumTranslators () const;
-
         /// @copydoc Ogre::ScriptTranslatorManager::getTranslator.
-        virtual Ogre::ScriptTranslator* getTranslator (const Ogre::AbstractNodePtr& node);
+        Ogre::ScriptTranslator* getTranslator (const Ogre::AbstractNodePtr& node) override;
 
         void _setPropScriptResourceManager (PropScriptResourceManager* mgr);
 

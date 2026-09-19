@@ -268,15 +268,16 @@ void RoR::Terrain::CreateSky()
         m_sky_manager = new SkyManager();
 
         // try to load caelum config
-        if (!m_def->caelum_config.empty() && ResourceGroupManager::getSingleton().resourceExistsInAnyGroup(m_def->caelum_config))
+        if (m_def->caelum_config != "" && ResourceGroupManager::getSingleton().resourceExistsInAnyGroup(m_def->caelum_config))
         {
             // config provided and existing, use it :)
-            m_sky_manager->LoadCaelumScript(m_def->caelum_config, m_def->caelum_fog_start, m_def->caelum_fog_end);
+            m_sky_manager->SetupCaelumFog(m_def->caelum_fog_start, m_def->caelum_fog_end);
+            m_sky_manager->LoadCaelumScript(m_def->caelum_config, ResourceGroupManager::getSingleton().findGroupContainingResource(m_def->caelum_config));
         }
         else
         {
-            // no config provided, fall back to the default one
-            m_sky_manager->LoadCaelumScript("ror_default_sky");
+            // no config provided, fall back to the default one in 'resources/caelum/RoRSkies.os'
+            m_sky_manager->LoadCaelumScript("ror_default_sky", Ogre::RGN_DEFAULT);
         }
 
         // initLight()

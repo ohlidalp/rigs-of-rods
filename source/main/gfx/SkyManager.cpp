@@ -83,72 +83,42 @@ void SkyManager::UpdateSky(float dt_sim)
     m_last_clock = c;
 }
 
-void SkyManager::LoadCaelumScript(std::string script, int fogStart, int fogEnd)
+void SkyManager::SetupCaelumFog(int fogStart, int fogEnd)
+{
+    // Note: Our farclip is always finite, see `CameraManager::CameraManager()`
+    // ------------------------------------------------------------------------
+
+    if (fogStart != -1 && fogEnd != -1)
+    {
+        LOG("[RoR|SkyManager] CaelumFogStart must be smaller then CaelumFogEnd in terrn2. Ignoring boundaries.");
+        return;
+    }
+    else if (fogStart != -1 || fogEnd != -1)
+    {
+        LOG("[RoR|SkyManager] You always need to define both boundaries (CaelumFogStart AND CaelumFogEnd) in terrn2. Ignoring boundaries.");
+        return;
+    }
+    m_caelum_system->setManageSceneFog(Ogre::FOG_LINEAR);
+    m_caelum_system->setManageSceneFogStart(fogStart);
+    m_caelum_system->setManageSceneFogEnd(fogEnd);
+}
+
+void SkyManager::LoadCaelumScript(const std::string& script, const std::string& rg)
 {
     // load the caelum config
     try
     {
-        Caelum::CaelumPlugin::getSingleton().loadCaelumSystemFromScript(m_caelum_system, script,
-            "CaelumRG");
-
-        // overwrite some settings
-#ifdef CAELUM_VERSION_SEC
-        // important: overwrite fog settings if not using infinite farclip
-        if (fogStart != -1 && fogEnd != -1 && fogStart < fogEnd)
-        {
-            // setting farclip (hacky)
-            App::GetCameraManager()->GetCamera()->setFarClipDistance(fogEnd / 0.8);
-            // custom boundaries
-            m_caelum_system->setManageSceneFog(Ogre::FOG_LINEAR);
-            m_caelum_system->setManageSceneFogStart(fogStart);
-            m_caelum_system->setManageSceneFogEnd(fogEnd);
-        }
-        else if (App::GetCameraManager()->GetCamera()->getFarClipDistance() > 0)
-        {
-            if (fogStart != -1 && fogEnd != -1)
-            {
-                LOG("CaelumFogStart must be smaller then CaelumFogEnd. Ignoring boundaries.");
-            }
-            else if (fogStart != -1 || fogEnd != -1)
-            {
-                LOG("You always need to define both boundaries (CaelumFogStart AND CaelumFogEnd). Ignoring boundaries.");
-            }
-            // non infinite farclip
-            float farclip = App::GetCameraManager()->GetCamera()->getFarClipDistance();
-            m_caelum_system->setManageSceneFog(Ogre::FOG_LINEAR);
-            m_caelum_system->setManageSceneFogStart(farclip * 0.7);
-            m_caelum_system->setManageSceneFogEnd(farclip * 0.9);
-        }
-        else
-        {
-            // no fog in infinite farclip
-            m_caelum_system->setManageSceneFog(Ogre::FOG_NONE);
-        }
-#else
-#error please use a recent Caelum version, see http://www.rigsofrods.org/wiki/pages/Compiling_3rd_party_libraries#Caelum
-#endif // CAELUM_VERSION
-
-        m_caelum_system->setEnsureSingleShadowSource(true);
-        m_caelum_system->setEnsureSingleLightSource(true);
+        Caelum::CaelumPlugin::getSingleton().loadCaelumSystemFromScript(m_caelum_system, script, rg);
 
         // enforcing update, so shadows are set correctly before creating the terrain
         m_caelum_system->frameStepSubcomponents(0.01);
     }
-    catch (Ogre::Exception& e)
+    catch (...)
     {
-        RoR::LogFormat("[RoR] Exception while loading sky script: %s", e.getFullDescription().c_str());
+        HandleGenericException(fmt::format("Could not load Caelum script '{}' from resource group '{}'", script, rg));
     }
     Ogre::Vector3 lightsrc = m_caelum_system->getSun()->getMainLight()->getDerivedDirection();
     m_caelum_system->getSun()->getMainLight()->getParentSceneNode()->setDirection(lightsrc.normalisedCopy());
-
-    // now optimize the moon a bit
-    if (m_caelum_system->getMoon())
-    {
-        m_caelum_system->getMoon()->setAutoDisable(true);
-        //m_caelum_system->getMoon()->setAutoDisableThreshold(1);
-        m_caelum_system->getMoon()->setForceDisable(true);
-        m_caelum_system->getMoon()->getMainLight()->setCastShadows(false);
-    }
 }
 
 Ogre::Light* SkyManager::GetSkyMainLight()
