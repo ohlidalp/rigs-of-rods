@@ -530,12 +530,6 @@ namespace Caelum
             mgr->registerCustomWordId(it->first);
     }
 
-    size_t CaelumScriptTranslatorManager::getNumTranslators () const {
-        // Turns out this is never called.
-        assert(0 && "This method should be removed from Ogre::ScriptTranslatorManager");
-        return mTranslatorMap.size ();
-    }
-
     void CaelumScriptTranslatorManager::_setPropScriptResourceManager (PropScriptResourceManager* mgr)
     {
         mCaelumSystemTranslator.setResourceManager (mgr);

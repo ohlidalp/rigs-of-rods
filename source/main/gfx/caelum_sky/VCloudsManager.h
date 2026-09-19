@@ -67,7 +67,7 @@ namespace Caelum
 
 
 		/** Set height parameters
-		    @param Height x = Cloud field y-coord start, y: Field height (both in world coordinates)
+		    @param Height x = Cloud field y-coord start, y = Field height (both in world coordinates)
 			@remarks Call it before create(), for now...
 			         For autocalculated height based on the radius length set (-1,-1) as height params
 		 */
@@ -77,7 +77,7 @@ namespace Caelum
 		}
 
 		/** Get height parameters
-		    @return Height: x = Cloud field y-coord start, y: Field height (both in world coordinates)
+		    @return Height: x = Cloud field y-coord start, y = Field height (both in world coordinates)
 		 */
 		inline const Ogre::Vector2 getHeight() const
 		{

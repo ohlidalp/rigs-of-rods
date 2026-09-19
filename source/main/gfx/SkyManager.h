@@ -39,7 +39,8 @@ public:
     SkyManager();
     ~SkyManager();
 
-    void           LoadCaelumScript(Ogre::String script, int fogStart = -1, int fogEnd = -1);
+    void           SetupCaelumFog(int fogStart, int fogEnd);
+    void           LoadCaelumScript(const std::string& script, const std::string& rg);
     Ogre::Light*   GetSkyMainLight();
     std::string    GetPrettyTime();                 //!< prints the current time of the simulation in the format of HH:MM:SS
     double         GetTime()                    { return m_caelum_system->getJulianDay(); };
