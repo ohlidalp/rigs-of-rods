@@ -62,47 +62,15 @@ namespace VClouds{
 		struct GeometrySettings 
 		{
 			/// Height: x = Altitude over the camera, y: Field height (both in world coordinates)
-			Ogre::Vector2 Height;
+            Ogre::Vector2 Height{Ogre::Vector2(10,50)};
 			/// Angles
-			Ogre::Radian Alpha, Beta;
+            Ogre::Radian Alpha{Ogre::Degree(12)}, Beta{Ogre::Degree(40)};
 			/// Radius
-			float Radius;
-			/// Number of blocks
-			int NumberOfBlocks;
+            float Radius{100};
+			/// Number of geometry blocks
+            int NumberOfBlocks{12};
 			/// Number of slices per geometry zone
-			int Na, Nb, Nc;
-
-			/** Default constructor
-			 */
-			GeometrySettings()
-				: Height(Ogre::Vector2(10,50))
-				, Alpha(Ogre::Degree(12)), Beta(Ogre::Degree(40))
-				, Radius(100)
-				, NumberOfBlocks(12)
-				, Na(10), Nb(8), Nc(6)
-			{
-			}
-
-			/** Constructor
-			    @param _Height x = Cloud field y-coord start, y: Field height (both in world coordinates)
-				@param _Radius Radius
-				@param _Alpha Alpha angle
-				@param _Beta Beta angle
-				@param _NumberOfBlocks Number of geometry blocks
-				@param _Na Number of slices in A zone
-				@param _Nb Number of slices in B zone
-				@param _Nc Number of slices in C zone
-			 */
-			GeometrySettings(const Ogre::Vector2& _Height, const float& _Radius,
-					const Ogre::Radian& _Alpha = Ogre::Degree(12), const Ogre::Radian& _Beta = Ogre::Degree(40), 
-					const int& _NumberOfBlocks = 12, const int& _Na = 10, const int& _Nb = 8, const int& _Nc = 6)
-				: Height(_Height)
-				, Alpha(_Alpha), Beta(_Beta)
-				, Radius(_Radius)
-				, NumberOfBlocks(_NumberOfBlocks)
-				, Na(_Na), Nb(_Nb), Nc(_Nc)
-			{
-			}
+            int Na{10}, Nb{8}, Nc{6};
 		};
 
 		/** Camera data struct
@@ -154,17 +122,6 @@ namespace VClouds{
 		 */
 		void create();
 
-		/** Create
-			@param gs Geometry settings
-		 */
-		void create(const GeometrySettings& gs);
-
-		/** Create
-			@param Height x = Cloud field y-coord start, y: Field height (both in world coordinates)
-			@param Radius Radius
-		 */
-		void create(const Ogre::Vector2& Height, const float& Radius);
-
 		/** Remove
 		 */
 		void remove();
@@ -202,14 +159,25 @@ namespace VClouds{
 			return mCreated;
 		}
 
-		/** Set geometry settings
-		    @param GeometrySettings Geometry settings
-			@remarks Set geometry settings before call create(...)
-		 */
-		inline void setGeometrySettings(const GeometrySettings& gs)
+		inline void setHeight(const Ogre::Vector2 height)
 		{
-			mGeometrySettings = gs;
+			mGeometrySettings.Height = height;
 		}
+
+        const Ogre::Vector2& getHeight() const
+        {
+            return mGeometrySettings.Height;
+        }
+
+        void setRadius(float radius)
+        {
+            mGeometrySettings.Radius = radius;
+        }
+
+        float getRadius() const
+        {
+            return mGeometrySettings.Radius;
+        }
 
 		/** Get geometry settings
 		    @return Geometry settings

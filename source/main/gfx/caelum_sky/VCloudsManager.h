@@ -44,9 +44,8 @@ namespace Caelum
 		~VCloudsManager();
 
 		/** Create all resources
-		    @param radius Volumetric cloud field radius, -1 to use current VClouds::mGeometrySettings::Radius
 		 */
-		void create(const Ogre::Real& radius = -1);
+		void create();
 
 		/** Update
 		    @param timeSinceLastFrame Time since last frame
@@ -63,26 +62,6 @@ namespace Caelum
 		/** Remove all resources
 		 */
 		void remove();
-
-
-
-		/** Set height parameters
-		    @param Height x = Cloud field y-coord start, y = Field height (both in world coordinates)
-			@remarks Call it before create(), for now...
-			         For autocalculated height based on the radius length set (-1,-1) as height params
-		 */
-		inline void setHeight(const Ogre::Vector2& Height)
-		{
-			mHeight = Height;
-		}
-
-		/** Get height parameters
-		    @return Height: x = Cloud field y-coord start, y = Field height (both in world coordinates)
-		 */
-		inline const Ogre::Vector2 getHeight() const
-		{
-			return mHeight;
-		}
 
 		void setWindSpeed(float WindSpeed)
 		{
@@ -110,7 +89,8 @@ namespace Caelum
 			return mVClouds->getWindDirection();
 		}
 
-        // config parser - vclouds
+        /// @name Config parser proxies - vclouds
+        /// @{
         void setAmbientColor(const Ogre::Vector3& ambientColor)
         {
             mVClouds->setAmbientColor(ambientColor);
@@ -143,7 +123,26 @@ namespace Caelum
         {
             return mVClouds->getWheater();
         }
-        // config parser - lightnings
+        
+		/** 'vertical_bounds' in the config.
+		    @param Height x = Cloud field y-coord start, y = Field height (both in world coordinates)
+			@remarks Calling this does not update existing geometry.
+		 */
+		inline void setHeight(const Ogre::Vector2& Height)
+		{
+			mVClouds->setHeight(Height);
+		}
+
+		/** 'vertical_bounds' in the config.
+		    @return Height: x = Cloud field y-coord start, y = Field height (both in world coordinates)
+		 */
+		inline const Ogre::Vector2 getHeight() const
+		{
+			return mVClouds->getHeight();
+		}
+        /// @}
+
+        /// @name Config parser proxies - lightnings
         void setEnableLightnings(bool val)
         {
             mVClouds->getLightningManager()->setEnabled(val);
@@ -176,6 +175,15 @@ namespace Caelum
         {
             return mVClouds->getLightningManager()->getLightningColor();
         }
+        void setRadius(float val)
+        {
+            mVClouds->setRadius(val);
+        }
+        float getRadius() const
+        {
+            return mVClouds->getRadius();
+        }
+        /// @}
 
 		/** Get VClouds
 		 */
@@ -203,9 +211,6 @@ namespace Caelum
 
 		/// VClouds pointer
 		VClouds::VClouds* mVClouds;
-
-		/// Height parameters, x = Cloud field y-coord start, y: Field height (both in world coordinates)
-		Ogre::Vector2 mHeight;
 
 		/// Is vclouds manager created?
 		bool mCreated;
