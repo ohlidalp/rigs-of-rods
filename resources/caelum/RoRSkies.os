@@ -1,6 +1,5 @@
 caelum_sky_system ror_default_sky
 {
-    // J2000
     julian_day 0
     time_scale 1
 
@@ -60,11 +59,11 @@ caelum_sky_system ror_default_sky
         wind_speed 80.0
         wind_direction 0
         auto_update no
-        vertical_bounds 825 3500
-        ambient_color 0.63 0.63 0.7
+        vertical_bounds 825 500
         light_response 0.25 0.2 1.0 0.1
         ambient_factors 0.45 0.3 0.6 1.0
         cloudiness 0.1 0.6
+        radius 10000
 
         //Lightnings
         enable_lightnings no

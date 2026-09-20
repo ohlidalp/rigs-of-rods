@@ -70,5 +70,3 @@ private:
 /// @} // addtogroup Gfx
 
 } // namespace RoR
-
-

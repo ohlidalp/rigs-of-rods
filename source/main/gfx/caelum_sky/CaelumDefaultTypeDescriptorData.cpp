@@ -358,11 +358,6 @@ namespace Caelum
                             &Caelum::VCloudsManager::getHeight,
                             &Caelum::VCloudsManager::setHeight));
 
-            td->add("ambient_color",
-                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, Vector3>(
-                            &Caelum::VCloudsManager::getAmbientColor,
-                            &Caelum::VCloudsManager::setAmbientColor));
-
             td->add("light_response",
                     new AccesorPropertyDescriptor<Caelum::VCloudsManager, Vector4>(
                             &Caelum::VCloudsManager::getLightResponse,

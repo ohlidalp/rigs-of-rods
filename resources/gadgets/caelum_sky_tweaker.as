@@ -151,7 +151,6 @@ void initializeParamDefs()
         ParamDef("wind_speed", "Wind Speed", 1, 0.0, 100.0, ""),
         ParamDef("wind_direction", "Wind Direction (deg)", 1, 0.0, 6.28, "Wind direction in degrees (0=eastwards, then clockwise)"),
         ParamDef("vertical_bounds", "Vertical Bounds", 2, 0.0, 10000.0, "x=altitude, y=thickness"),
-        ParamDef("ambient_color", "Ambient Color", NUMCOMPONENTS_RGB, 0.0, 1.0, ""),
         ParamDef("light_response", "Light Response", 4, 0.0, 5.0, ""),
         ParamDef("ambient_factors", "Ambient Factors", 4, 0.0, 5.0, ""),
         ParamDef("cloudiness", "Cloudiness", 2, 0.0, 1.0, ""),

@@ -62,11 +62,11 @@ namespace VClouds{
 		struct GeometrySettings 
 		{
 			/// Height: x = Altitude over the camera, y: Field height (both in world coordinates)
-            Ogre::Vector2 Height{Ogre::Vector2(10,50)};
+            Ogre::Vector2 Height{Ogre::Vector2(820,500)};
 			/// Angles
             Ogre::Radian Alpha{Ogre::Degree(12)}, Beta{Ogre::Degree(40)};
 			/// Radius
-            float Radius{100};
+            float Radius{10000};
 			/// Number of geometry blocks
             int NumberOfBlocks{12};
 			/// Number of slices per geometry zone
@@ -283,28 +283,12 @@ namespace VClouds{
 		/** Set sun color
 		    @param SunColor Sun color
 		 */
-		void setSunColor(const Ogre::Vector3& SunColor);
-
-		/** Get sun color
-		    @return Sun color
-		 */
-		inline const Ogre::Vector3& getSunColor() const
-		{
-			return mSunColor;
-		}
+		void setCurrentSunColor(const Ogre::Vector3& SunColor);
 
 		/** Set ambient color
 		    @param AmbientColor Ambient color
 		 */
-		void setAmbientColor(const Ogre::Vector3& AmbientColor);
-
-		/** Get Ambient color
-		    @return Ambient color
-		 */
-		inline const Ogre::Vector3& getAmbientColor() const
-		{
-			return mAmbientColor;
-		}
+		void setCurrentAmbientColor(const Ogre::Vector3& AmbientColor);
 
 		/** Set light response
 		    @param LightResponse
@@ -489,11 +473,6 @@ namespace VClouds{
 
 		/// Sun direction
 		Ogre::Vector3 mSunDirection;
-
-		/// Sun color
-		Ogre::Vector3 mSunColor;
-		/// Ambient color
-		Ogre::Vector3 mAmbientColor;
 
 		/** Light response:
 		    x - Sun light power

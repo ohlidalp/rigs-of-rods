@@ -100,7 +100,6 @@ set(SOURCE_FILES
         gfx/caelum_sky/TypeDescriptor.{h,cpp}
         gfx/caelum_sky/UniversalClock.{h,cpp}
         gfx/caelum_sky/VCloudsManager.{h,cpp}
-        gfx/caelum_sky/VClouds/VColorGradient.{h,cpp}
         gfx/caelum_sky/VClouds/DataManager.{h,cpp}
         gfx/caelum_sky/VClouds/Ellipsoid.{h,cpp}
         gfx/caelum_sky/VClouds/FastFakeRandom.{h,cpp}
