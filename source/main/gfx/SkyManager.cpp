@@ -454,4 +454,3 @@ bool SkyManager::GetCaelumParameter(const std::string& section, const std::strin
     return false;
 #endif // CAELUM_TYPE_DESCRIPTORS
 }
-

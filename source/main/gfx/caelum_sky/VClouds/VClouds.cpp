@@ -39,8 +39,6 @@ namespace VClouds
 		, mWheater(Ogre::Vector2(0.5f, 1.0f))
 		, mDelayedResponse(false)
 		, mSunDirection(Ogre::Vector3(0,-1,0))
-		, mSunColor(Ogre::Vector3(1,1,1))
-		, mAmbientColor(Ogre::Vector3(0.63f,0.63f,0.7f))
 		, mLightResponse(Ogre::Vector4(0.25f,0.2f,1.0f,0.1f))
 		, mAmbientFactors(Ogre::Vector4(0.45f,0.3f,0.6f,1))
 		, mGlobalOpacity(1.0f)
@@ -98,8 +96,6 @@ namespace VClouds
 		mCreated = true;
 
 		// Update material parameters
-		setSunColor(mSunColor);
-		setAmbientColor(mAmbientColor);
 		setLightResponse(mLightResponse);
 		setAmbientFactors(mAmbientFactors);
 
@@ -237,34 +233,30 @@ namespace VClouds
 		mGeometryManager->_updateRenderQueueGroup(rqg.vclouds);
 	}
 
-	void VClouds::setSunColor(const Ogre::Vector3& SunColor)
+	void VClouds::setCurrentSunColor(const Ogre::Vector3& SunColor)
 	{
-		mSunColor = SunColor;
-
 		if (!mCreated)
 		{
 			return;
 		}
 
 		mVolCloudsMaterial->getTechnique(0)->getPass(0)->getFragmentProgramParameters()
-			->setNamedConstant("uSunColor", mSunColor);
+			->setNamedConstant("uSunColor", SunColor);
 		mVolCloudsLightningMaterial->getTechnique(0)->getPass(0)->getFragmentProgramParameters()
-			->setNamedConstant("uSunColor", mSunColor);
+			->setNamedConstant("uSunColor", SunColor);
 	}
 
-	void VClouds::setAmbientColor(const Ogre::Vector3& AmbientColor)
+	void VClouds::setCurrentAmbientColor(const Ogre::Vector3& AmbientColor)
 	{
-		mAmbientColor = AmbientColor;
-
 		if (!mCreated)
 		{
 			return;
 		}
 
 		mVolCloudsMaterial->getTechnique(0)->getPass(0)->getFragmentProgramParameters()
-			->setNamedConstant("uAmbientColor", mAmbientColor);
+			->setNamedConstant("uAmbientColor", AmbientColor);
 		mVolCloudsLightningMaterial->getTechnique(0)->getPass(0)->getFragmentProgramParameters()
-			->setNamedConstant("uAmbientColor", mAmbientColor);
+			->setNamedConstant("uAmbientColor", AmbientColor);
 	}
 
 	void VClouds::setLightResponse(const Ogre::Vector4& LightResponse)

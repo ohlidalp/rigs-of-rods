@@ -27,7 +27,6 @@ http://www.gnu.org/copyleft/lesser.txt.
 #include "CaelumPrerequisites.h"
 
 #include "VClouds/VClouds.h"
-#include "VClouds/VColorGradient.h"
 
 namespace Caelum
 {
@@ -91,14 +90,6 @@ namespace Caelum
 
         /// @name Config parser proxies - vclouds
         /// @{
-        void setAmbientColor(const Ogre::Vector3& ambientColor)
-        {
-            mVClouds->setAmbientColor(ambientColor);
-        }
-        const Ogre::Vector3 getAmbientColor() const
-        {
-            return mVClouds->getAmbientColor();
-        }
         void setLightResponse(const Ogre::Vector4& lightResponse)
         {
             mVClouds->setLightResponse(lightResponse);
@@ -204,10 +195,6 @@ namespace Caelum
 		/** Set light parameters
 		 */
 		void _setLightParameters();
-        
-		/// Ambient and Sun color gradients
-		VClouds::ColorGradient mAmbientGradient;
-		VClouds::ColorGradient mSunGradient;
 
 		/// VClouds pointer
 		VClouds::VClouds* mVClouds;
