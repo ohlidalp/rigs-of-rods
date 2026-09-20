@@ -378,6 +378,11 @@ namespace Caelum
                             &Caelum::VCloudsManager::getCloudiness,
                             &Caelum::VCloudsManager::setCloudiness));
 
+            td->add("radius",
+                    new AccesorPropertyDescriptor<Caelum::VCloudsManager, Real, Real, Real>(
+                            &Caelum::VCloudsManager::getRadius,
+                            &Caelum::VCloudsManager::setRadius));
+
             td->add("enable_lightnings",
                     new AccesorPropertyDescriptor<Caelum::VCloudsManager, bool, bool, bool>(
                             &Caelum::VCloudsManager::getEnableLightnings,

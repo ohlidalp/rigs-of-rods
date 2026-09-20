@@ -107,23 +107,6 @@ namespace VClouds
 		setWheater(mWheater.x, mWheater.y, mDelayedResponse);
 	}
 
-	void VClouds::create(const GeometrySettings& gs)
-	{
-		// Update geometry settings
-		mGeometrySettings = gs;
-
-		create();
-	}
-
-	void VClouds::create(const Ogre::Vector2& Height, const float& Radius)
-	{
-		// Update geometry params
-		mGeometrySettings.Height = Height;
-		mGeometrySettings.Radius = Radius;
-
-		create();
-	}
-
 	void VClouds::remove()
 	{
 		if (!mCreated)

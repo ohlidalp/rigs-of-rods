@@ -316,6 +316,14 @@ bool SkyManager::SetCaelumParameter(const std::string& section, const std::strin
             return false;
         }
 
+        // Special case updates
+        if (section == "vclouds" &&
+            (name == "vertical_bounds" || name == "radius"))
+        {
+            m_caelum_system->getVCloudsManager()->remove();
+            m_caelum_system->getVCloudsManager()->create();
+        }
+
         return true;
     }
     catch (Ogre::Exception& e)

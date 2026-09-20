@@ -31,7 +31,6 @@ namespace Caelum
 	VCloudsManager::VCloudsManager(CaelumSystem* caelumSys)
 		: mCaelumSys(caelumSys)
 		, mVClouds(0)
-		, mHeight(Ogre::Vector2(-1, -1))
 		, mCreated(false)
 		, mCurrentTimeSinceLastFrame(0)
 	{
@@ -75,21 +74,15 @@ namespace Caelum
 		delete mVClouds;
 	}
 
-	void VCloudsManager::create(const Ogre::Real& radius)
+	void VCloudsManager::create()
 	{
 		if (mCreated)
 		{
 			return;
 		}
 
-		Ogre::Real selectedRadius = radius < 0 ? mVClouds->getGeometrySettings().Radius : radius;
-
-		// Use default options if the user haven't set any specific Height parameters
-		Ogre::Vector2 defaultheight = Ogre::Vector2(selectedRadius*0.025f, selectedRadius*0.1f); 
-		Ogre::Vector2 height = (mHeight.x == -1 || mHeight.y == -1) ? defaultheight : mHeight;
-
 		_setLightParameters();
-		mVClouds->create(height, selectedRadius);
+		mVClouds->create();
 
 		mCreated = true;
 	}
